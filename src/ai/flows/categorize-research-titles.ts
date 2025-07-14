@@ -60,7 +60,7 @@ const categorizeResearchTitlesFlow = ai.defineFlow(
       {{/each}}
       `,
       config: {
-        model: 'gemini-2.0-flash',
+        model: 'gemini-1.5-flash',
         safetySettings: [
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
