@@ -12,7 +12,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 25;
 
 export function InsightMinerApp() {
   const { toast } = useToast();
