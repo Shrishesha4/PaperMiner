@@ -31,17 +31,26 @@ const prompt = ai.definePrompt({
   input: { schema: z.object({ topics: z.array(z.string()) }) },
   output: { schema: GenerateNewTitleOutputSchema },
   model: 'googleai/gemini-1.5-flash',
-  prompt: `You are an expert academic writer specializing in creating compelling research paper titles.
+  prompt: `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
   
-  Based on the following list of topics, generate one new, creative, and insightful title that synthesizes these themes. The new title should be concise and sound like a genuine research paper title.
+  Based on the following list of topics, generate one new, creative, and insightful title that synthesizes these themes.
+  
+  The title must follow these strict conventions:
+  1.  **IEEE Style**: It should be concise, descriptive, and accurately reflect the paper's content. Avoid overly sensational language.
+  2.  **PICO Framework**: Structure the title conceptually around PICO elements where applicable:
+      -   **P (Population/Problem)**: What is the specific problem or group being studied?
+      -   **I (Intervention)**: What is the new method, technology, or approach being proposed?
+      -   **C (Comparison)**: What is the main alternative or baseline it's being compared against? (Optional if not applicable)
+      -   **O (Outcome)**: What is the primary result or benefit of the intervention?
 
-  Topics:
+  Topics to synthesize:
   {{#each topics}}
   - {{{this}}}
   {{/each}}
   
   Respond with only the new title.`,
   config: {
+    temperature: 0.8, // Increase temperature for more creative/varied outputs
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
