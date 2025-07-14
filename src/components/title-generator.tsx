@@ -92,9 +92,19 @@ export function TitleGenerator({ availableCategories }: TitleGeneratorProps) {
   }, [apiKey, topics, toast]);
 
   const handleChatGptClick = () => {
-    const prompt = `You are an expert academic writer. Based on the following list of topics, generate one new, creative, and insightful title that synthesizes their key themes.
+    const prompt = `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
+  
+Based on the following list of topics, generate one new, creative, and insightful title that synthesizes these themes.
 
-Topics:
+The title must follow these strict conventions:
+1. **IEEE Style**: It should be concise, descriptive, and accurately reflect the paper's content. Avoid overly sensational language.
+2. **PICO Framework**: Structure the title conceptually around PICO elements where applicable:
+   - **P (Population/Problem)**: What is the specific problem or group being studied?
+   - **I (Intervention)**: What is the new method, technology, or approach being proposed?
+   - **C (Comparison)**: What is the main alternative or baseline it's being compared against? (Optional if not applicable)
+   - **O (Outcome)**: What is the primary result or benefit of the intervention?
+
+Topics to synthesize:
 ${topics.map(t => `- ${t}`).join('\n')}
 
 Respond with only the new title.`;
