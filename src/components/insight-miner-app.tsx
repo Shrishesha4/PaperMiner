@@ -8,12 +8,15 @@ import { AppHeader } from './header';
 import { UploaderView } from './uploader-view';
 import { ProcessingView } from './processing-view';
 import { DashboardView } from './dashboard-view';
+import { useApiKey } from '@/hooks/use-api-key';
+import { ApiKeyDialog } from './api-key-dialog';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 10;
 
 export function InsightMinerApp() {
   const { toast } = useToast();
+  const { apiKey, isApiKeySet } = useApiKey();
   const [step, setStep] = useState<AppStep>('upload');
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [categorizedPapers, setCategorizedPapers] = useState<CategorizedPaper[]>([]);
@@ -22,9 +25,19 @@ export function InsightMinerApp() {
   const [processingMessage, setProcessingMessage] = useState('');
 
   const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[]) => {
+    if (!apiKey) {
+        toast({
+            variant: 'destructive',
+            title: 'API Key Not Set',
+            description: 'Please set your Gemini API key before processing.',
+        });
+        return;
+    }
+    
     setPapers(parsedPapers);
     setStep('processing');
     setProgress(0);
+    setFailedPapers([]);
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
@@ -49,7 +62,7 @@ export function InsightMinerApp() {
       setProcessingMessage(`Categorizing batch ${i / BATCH_SIZE + 1}...`);
 
       try {
-        const batchResults = await categorizeResearchTitles(titles);
+        const batchResults = await categorizeResearchTitles({ titles, apiKey });
 
         batch.forEach(paper => {
           const result = batchResults.find(r => r.title === paper['Document Title']);
@@ -92,7 +105,7 @@ export function InsightMinerApp() {
     setFailedPapers(prev => [...prev, ...failed]);
     setProcessingMessage('Analysis complete!');
     setTimeout(() => setStep('dashboard'), 1000);
-  }, [toast]);
+  }, [toast, apiKey]);
 
   const handleReset = () => {
     setStep('upload');
@@ -107,6 +120,7 @@ export function InsightMinerApp() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-1 flex flex-col">
+        {!isApiKeySet && <ApiKeyDialog />}
         {step === 'upload' && <UploaderView onProcess={handleDataProcessing} />}
         {step === 'processing' && <ProcessingView progress={progress} message={processingMessage} />}
         {step === 'dashboard' && <DashboardView data={categorizedPapers} failedData={failedPapers} onReset={handleReset} />}
