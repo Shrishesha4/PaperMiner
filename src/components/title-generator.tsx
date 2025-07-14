@@ -17,6 +17,7 @@ import {
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
+import { ScrollArea } from './ui/scroll-area';
 
 interface TitleGeneratorProps {
   availableCategories: string[];
@@ -118,14 +119,14 @@ Respond with only the new title.`;
         Generate Title
       </Button>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-[525px] grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Generate a New Title</DialogTitle>
             <DialogDescription>
               Add topics by typing or selecting from existing categories.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 overflow-y-auto">
             <div className="flex items-center gap-2">
               <Input
                 ref={inputRef}
@@ -140,41 +141,43 @@ Respond with only the new title.`;
               </Button>
             </div>
             
-            <div className="space-y-4">
-                <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics</h4>
-                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/50 rounded-md">
-                    {topics.length > 0 ? topics.map(topic => (
-                        <Badge key={topic} variant="secondary" className="flex items-center gap-1">
-                        {topic}
-                        <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
-                            <X className="h-3 w-3" />
-                        </button>
-                        </Badge>
-                    )) : (
-                        <p className="text-sm text-muted-foreground p-2">No topics selected yet.</p>
-                    )}
-                    </div>
-                </div>
-
-                {availableCategories.length > 0 && (
+            <ScrollArea className="h-64 pr-6">
+                <div className="space-y-4">
                     <div>
-                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Click to Add Existing Categories</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {availableCategories.map(cat => (
-                                <Badge
-                                key={cat}
-                                variant="outline"
-                                onClick={() => handleAddTopic(cat)}
-                                className="cursor-pointer hover:bg-primary/10"
-                                >
-                                {cat}
-                                </Badge>
-                            ))}
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics</h4>
+                        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/50 rounded-md">
+                        {topics.length > 0 ? topics.map(topic => (
+                            <Badge key={topic} variant="secondary" className="flex items-center gap-1">
+                            {topic}
+                            <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                                <X className="h-3 w-3" />
+                            </button>
+                            </Badge>
+                        )) : (
+                            <p className="text-sm text-muted-foreground p-2">No topics selected yet.</p>
+                        )}
                         </div>
                     </div>
-                )}
-            </div>
+
+                    {availableCategories.length > 0 && (
+                        <div>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Click to Add Existing Categories</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {availableCategories.map(cat => (
+                                    <Badge
+                                    key={cat}
+                                    variant="outline"
+                                    onClick={() => handleAddTopic(cat)}
+                                    className="cursor-pointer hover:bg-primary/10"
+                                    >
+                                    {cat}
+                                    </Badge>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
 
             {generatedTitle && (
               <div className="pt-4">
