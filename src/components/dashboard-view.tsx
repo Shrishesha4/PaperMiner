@@ -15,6 +15,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
+import { TitleGenerator } from './title-generator';
 
 interface DashboardViewProps {
   data: CategorizedPaper[];
@@ -36,6 +37,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     category: 'all',
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [selectedPapers, setSelectedPapers] = useState<CategorizedPaper[]>([]);
   
   // We need refs for the individual components we want to capture
   const categoryChartRef = useRef<HTMLDivElement>(null);
@@ -66,6 +68,10 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
 
   const handleCategorySelect = (category: string) => {
     setFilters(prev => ({ ...prev, category }));
+  }
+
+  const handleSelectionChange = (newSelection: CategorizedPaper[]) => {
+    setSelectedPapers(newSelection);
   }
 
   const handleDownloadCSV = () => {
@@ -283,16 +289,24 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
                   </CardContent>
               </Card>
             </div>
+            
+            {selectedPapers.length > 0 && (
+                <TitleGenerator selectedPapers={selectedPapers} />
+            )}
 
             <Card>
             <CardHeader>
                 <CardTitle>Research Papers</CardTitle>
                 <CardDescription>
-                Displaying {filteredData.length} of {data.length} categorized papers.
+                Displaying {filteredData.length} of {data.length} categorized papers. Select papers to generate a new title.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <PapersTable data={filteredData} />
+                <PapersTable 
+                    data={filteredData} 
+                    selectedPapers={selectedPapers}
+                    onSelectionChange={handleSelectionChange}
+                />
             </CardContent>
             </Card>
         </div>
