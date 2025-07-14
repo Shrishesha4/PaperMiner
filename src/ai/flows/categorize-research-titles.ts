@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {generate} from 'genkit';
 import {z} from 'genkit';
 
 const CategorizeResearchTitlesInputSchema = z.object({
@@ -61,11 +60,11 @@ const categorizeResearchTitlesFlow = ai.defineFlow(
     outputSchema: CategorizeResearchTitlesOutputSchema,
   },
   async ({ titles, apiKey }) => {
-    const { output } = await generate({
+    const { output } = await ai.generate({
         prompt: categorizeResearchTitlesPrompt,
         input: { titles },
         config: {
-            model: 'gemini-1.5-flash', // Explicitly setting model here too
+            model: 'gemini-1.5-flash',
         },
         plugins: {
             googleAI: {
