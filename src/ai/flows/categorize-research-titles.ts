@@ -65,11 +65,7 @@ const categorizeResearchTitlesFlow = ai.defineFlow(
     const { output } = await categorizeResearchTitlesPrompt(
         { titles },
         {
-            plugins: {
-                googleAI: {
-                    apiKey: apiKey,
-                }
-            }
+            auth: apiKey,
         }
     );
     
