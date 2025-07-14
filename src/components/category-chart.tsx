@@ -25,19 +25,19 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
 
   if (chartData.length === 0) {
     return (
-        <div className="flex items-center justify-center h-80 w-full text-muted-foreground">
+        <div className="flex items-center justify-center h-96 w-full text-muted-foreground">
             <p>No data to display for the current filters.</p>
         </div>
     );
   }
 
   return (
-    <div className="h-80 w-full">
+    <div className="h-96 w-full">
         <ChartContainer config={{
             count: { label: 'Papers', color: 'hsl(var(--primary))' }
         }}>
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 50 }} accessibilityLayer>
+                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 100 }} accessibilityLayer>
                 <CartesianGrid vertical={false} />
                 <XAxis
                     dataKey="name"

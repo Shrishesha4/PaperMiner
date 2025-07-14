@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import type { CategorizedPaper, FailedPaper } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
@@ -103,6 +103,11 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             scale: 2, // Higher scale for better quality
             useCORS: true,
             logging: false,
+            // Only render the visible part of the content
+            width: content.clientWidth,
+            height: content.scrollHeight,
+            windowWidth: content.clientWidth,
+            windowHeight: content.scrollHeight,
         });
 
         const imgData = canvas.toDataURL('image/png');
@@ -117,20 +122,23 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
         const canvasAspectRatio = canvasWidth / canvasHeight;
 
         // Fit image to page width
-        const imgWidth = pdfWidth - 20; // with some margin
+        const pageMargin = 15;
+        const imgWidth = pdfWidth - (pageMargin * 2);
         const imgHeight = imgWidth / canvasAspectRatio;
 
         let heightLeft = imgHeight;
-        let position = 10; // top margin
+        let position = pageMargin;
 
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= (pdfHeight - 20);
+        // Add the first page
+        pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidth, imgHeight);
+        heightLeft -= (pdfHeight - (pageMargin * 2));
 
+        // Add new pages if the content is taller than one page
         while (heightLeft > 0) {
-            position = -heightLeft - 10;
+            position = -heightLeft - pageMargin;
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= (pdfHeight - 20);
+            pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidth, imgHeight);
+            heightLeft -= (pdfHeight - (pageMargin * 2));
         }
 
         pdf.save('dashboard-report.pdf');
@@ -172,11 +180,11 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
         
         <div ref={dashboardContentRef} className="space-y-6 bg-background">
             <Card>
-            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <CardHeader>
                 <CardTitle>Filters</CardTitle>
-                <div className="flex gap-4 mt-4 sm:mt-0">
+                <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
                 <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Filter by Year" />
                     </SelectTrigger>
                     <SelectContent>
@@ -184,7 +192,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
                     </SelectContent>
                 </Select>
                 <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                    <SelectTrigger className="w-[220px]">
+                    <SelectTrigger className="w-full sm:w-[220px]">
                     <SelectValue placeholder="Filter by Category" />
                     </SelectTrigger>
                     <SelectContent>
