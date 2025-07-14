@@ -13,6 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardViewProps {
   data: CategorizedPaper[];
@@ -28,6 +29,7 @@ declare module 'jspdf' {
 }
 
 export function DashboardView({ data, failedData, onReset }: DashboardViewProps) {
+  const { toast } = useToast();
   const [filters, setFilters] = useState({
     year: 'all',
     category: 'all',
