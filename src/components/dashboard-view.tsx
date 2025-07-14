@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 
@@ -50,6 +50,44 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     setFilters(prev => ({ ...prev, category }));
   }
 
+  const handleDownloadCSV = () => {
+    if (data.length === 0) return;
+
+    // Use a more complete set of headers from the first paper, plus our new ones
+    const originalHeaders = Object.keys(data[0]).filter(key => key !== 'category' && key !== 'confidence');
+    const headers = [...originalHeaders, 'category', 'confidence'];
+
+    const csvRows = [headers.join(',')]; // Header row
+
+    for (const paper of data) {
+        const values = headers.map(header => {
+            // @ts-ignore
+            let value = paper[header] ?? '';
+            if (typeof value === 'string') {
+                // Escape quotes by doubling them and wrap the whole field in quotes if it contains a comma
+                const hasComma = value.includes(',');
+                const hasQuote = value.includes('"');
+                if (hasComma || hasQuote) {
+                    value = `"${value.replace(/"/g, '""')}"`;
+                }
+            }
+            return value;
+        });
+        csvRows.push(values.join(','));
+    }
+
+    const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'categorized-research-papers.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8 bg-background">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -60,9 +98,14 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
               {data.length} papers analyzed. Found {categories.length - 1} unique categories.
             </p>
           </div>
-          <Button onClick={onReset} variant="outline">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Start Over
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleDownloadCSV} disabled={data.length === 0}>
+                <Download className="mr-2 h-4 w-4" /> Download CSV
+            </Button>
+            <Button onClick={onReset} variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Start Over
+            </Button>
+          </div>
         </div>
 
         <Card>
