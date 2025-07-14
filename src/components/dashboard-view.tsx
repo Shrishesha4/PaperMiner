@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import type { CategorizedPaper, FailedPaper } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download, FileDown, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface DashboardViewProps {
   data: CategorizedPaper[];
@@ -23,6 +25,9 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     year: 'all',
     category: 'all',
   });
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const dashboardContentRef = useRef<HTMLDivElement>(null);
+
 
   const years = useMemo(() => {
     const yearSet = new Set(data.map(p => p['Publication Year']).filter(Boolean));
@@ -86,6 +91,55 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     link.click();
     document.body.removeChild(link);
   };
+  
+  const handleDownloadPDF = useCallback(async () => {
+    const content = dashboardContentRef.current;
+    if (!content) return;
+
+    setIsGeneratingPdf(true);
+
+    try {
+        const canvas = await html2canvas(content, { 
+            scale: 2, // Higher scale for better quality
+            useCORS: true,
+            logging: false,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        
+        // A4 page dimensions in mm: 210 x 297
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const canvasAspectRatio = canvasWidth / canvasHeight;
+
+        // Fit image to page width
+        const imgWidth = pdfWidth - 20; // with some margin
+        const imgHeight = imgWidth / canvasAspectRatio;
+
+        let heightLeft = imgHeight;
+        let position = 10; // top margin
+
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= (pdfHeight - 20);
+
+        while (heightLeft > 0) {
+            position = -heightLeft - 10;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+            heightLeft -= (pdfHeight - 20);
+        }
+
+        pdf.save('dashboard-report.pdf');
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+    } finally {
+        setIsGeneratingPdf(false);
+    }
+  }, []);
 
 
   return (
@@ -98,7 +152,15 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
               {data.length} papers analyzed. Found {categories.length - 1} unique categories.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
+                {isGeneratingPdf ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <FileDown className="mr-2 h-4 w-4" />
+                )}
+                Download PDF
+            </Button>
             <Button onClick={handleDownloadCSV} disabled={data.length === 0}>
                 <Download className="mr-2 h-4 w-4" /> Download CSV
             </Button>
@@ -107,64 +169,66 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             </Button>
           </div>
         </div>
+        
+        <div ref={dashboardContentRef} className="space-y-6 bg-background">
+            <Card>
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <CardTitle>Filters</CardTitle>
+                <div className="flex gap-4 mt-4 sm:mt-0">
+                <Select value={filters.year} onValueChange={handleFilterChange('year')}>
+                    <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                <Select value={filters.category} onValueChange={handleFilterChange('category')}>
+                    <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Filter by Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+                </div>
+            </CardHeader>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-            <CardTitle>Filters</CardTitle>
-            <div className="flex gap-4 mt-4 sm:mt-0">
-              <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                <CardTitle>Category Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                <CategoryChart data={filteredData} onCategorySelect={handleCategorySelect} />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                <CardTitle>Top Keywords</CardTitle>
+                </CardHeader>
+                <CardContent>
+                <KeywordDisplay data={filteredData} />
+                </CardContent>
+            </Card>
             </div>
-          </CardHeader>
-        </Card>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
+            <Card>
             <CardHeader>
-              <CardTitle>Category Distribution</CardTitle>
+                <CardTitle>Research Papers</CardTitle>
+                <CardDescription>
+                Displaying {filteredData.length} of {data.length} categorized papers.
+                </CardDescription>
             </CardHeader>
             <CardContent>
-              <CategoryChart data={filteredData} onCategorySelect={handleCategorySelect} />
+                <PapersTable data={filteredData} />
             </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Keywords</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <KeywordDisplay data={filteredData} />
-            </CardContent>
-          </Card>
+            </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Research Papers</CardTitle>
-            <CardDescription>
-              Displaying {filteredData.length} of {data.length} categorized papers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PapersTable data={filteredData} />
-          </CardContent>
-        </Card>
-
         {failedData.length > 0 && (
-          <Accordion type="single" collapsible className="w-full" defaultValue="failed-papers">
+          <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="failed-papers">
               <Card>
                 <AccordionTrigger className="p-6">
