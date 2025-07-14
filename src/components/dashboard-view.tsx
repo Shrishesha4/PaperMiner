@@ -37,7 +37,6 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     category: 'all',
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [selectedPapers, setSelectedPapers] = useState<CategorizedPaper[]>([]);
   
   // We need refs for the individual components we want to capture
   const categoryChartRef = useRef<HTMLDivElement>(null);
@@ -68,10 +67,6 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
 
   const handleCategorySelect = (category: string) => {
     setFilters(prev => ({ ...prev, category }));
-  }
-
-  const handleSelectionChange = (newSelection: CategorizedPaper[]) => {
-    setSelectedPapers(newSelection);
   }
 
   const handleDownloadCSV = () => {
@@ -229,6 +224,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <TitleGenerator />
             <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
                 {isGeneratingPdf ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -237,7 +233,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
                 )}
                 Download PDF
             </Button>
-            <Button onClick={handleDownloadCSV} disabled={data.length === 0}>
+            <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
                 <Download className="mr-2 h-4 w-4" /> Download CSV
             </Button>
             <Button onClick={onReset} variant="outline">
@@ -289,24 +285,16 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
                   </CardContent>
               </Card>
             </div>
-            
-            {selectedPapers.length > 0 && (
-                <TitleGenerator selectedPapers={selectedPapers} />
-            )}
 
             <Card>
             <CardHeader>
                 <CardTitle>Research Papers</CardTitle>
                 <CardDescription>
-                Displaying {filteredData.length} of {data.length} categorized papers. Select papers to generate a new title.
+                Displaying {filteredData.length} of {data.length} categorized papers.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <PapersTable 
-                    data={filteredData} 
-                    selectedPapers={selectedPapers}
-                    onSelectionChange={handleSelectionChange}
-                />
+                <PapersTable data={filteredData} />
             </CardContent>
             </Card>
         </div>
