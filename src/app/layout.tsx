@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'InsightMiner',
+  title: 'PaperMiner',
   description: 'Categorize and analyze research titles from IEEE Xplore.',
 };
 
