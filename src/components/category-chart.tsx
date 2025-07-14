@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import type { CategorizedPaper } from '@/types';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, Brush, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 interface CategoryChartProps {
@@ -37,7 +37,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
             count: { label: 'Papers', color: 'hsl(var(--primary))' }
         }}>
             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 100 }} accessibilityLayer>
+                <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }} accessibilityLayer>
                 <CartesianGrid vertical={false} />
                 <XAxis
                     dataKey="name"
@@ -48,10 +48,18 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     textAnchor="end"
                     interval={0}
                     height={1}
+                    tick={{ display: 'none' }}
                 />
                 <YAxis />
                 <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                 <Bar dataKey="count" fill="hsl(var(--primary))" radius={4} onClick={(bar) => onCategorySelect(bar.name)} style={{cursor: 'pointer'}} />
+                <Brush 
+                    dataKey="name" 
+                    height={30} 
+                    stroke="hsl(var(--primary))" 
+                    y={320}
+                    tickFormatter={(index) => chartData[index]?.name ?? ''}
+                />
                 </BarChart>
             </ResponsiveContainer>
       </ChartContainer>
