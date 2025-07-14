@@ -10,6 +10,7 @@ import { ProcessingView } from './processing-view';
 import { DashboardView } from './dashboard-view';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
+const BATCH_SIZE = 10;
 
 export function InsightMinerApp() {
   const { toast } = useToast();
@@ -30,43 +31,65 @@ export function InsightMinerApp() {
     const failed: FailedPaper[] = [];
     let processedCount = 0;
 
-    for (const paper of parsedPapers) {
-      try {
-        const title = paper['Document Title'];
-        if (!title) {
-          failed.push({ ...paper, failureReason: 'Missing document title.' });
-          processedCount++;
-          setProgress((processedCount / parsedPapers.length) * 100);
-          continue;
-        }
+    // Filter out papers without titles first
+    const papersToProcess = parsedPapers.filter(paper => {
+      if (!paper['Document Title']) {
+        failed.push({ ...paper, failureReason: 'Missing document title.' });
+        return false;
+      }
+      return true;
+    });
 
-        setProcessingMessage(`Categorizing: "${title.substring(0, 40)}..."`);
-        
-        const result = await categorizeResearchTitles({ title });
-        results.push({ ...paper, ...result });
+    const totalToProcess = papersToProcess.length;
+
+    for (let i = 0; i < totalToProcess; i += BATCH_SIZE) {
+      const batch = papersToProcess.slice(i, i + BATCH_SIZE);
+      const titles = batch.map(p => p['Document Title']);
+      
+      setProcessingMessage(`Categorizing batch ${i / BATCH_SIZE + 1}...`);
+
+      try {
+        const batchResults = await categorizeResearchTitles(titles);
+
+        batch.forEach(paper => {
+          const result = batchResults.find(r => r.title === paper['Document Title']);
+          if (result) {
+            results.push({ ...paper, ...result });
+          } else {
+            failed.push({ ...paper, failureReason: 'AI model did not return a category for this title in the batch.' });
+          }
+        });
 
       } catch (error) {
-        console.error('Error categorizing title:', error);
-        let failureReason = 'An unknown error occurred during categorization.';
+        console.error('Error categorizing title batch:', error);
+        let failureReason = 'An unknown error occurred during batch categorization.';
         if (error instanceof Error) {
             failureReason = error.message.includes('SAFETY') 
               ? 'Categorization failed due to safety settings.' 
+              : error.message.includes('429') 
+              ? 'API rate limit exceeded.'
               : error.message;
         }
-        failed.push({ ...paper, failureReason });
+
+        // Mark all papers in the failed batch
+        batch.forEach(paper => {
+            failed.push({ ...paper, failureReason });
+        });
+
         toast({
           variant: 'destructive',
-          title: 'Categorization Error',
-          description: `Failed to categorize a title. It will be shown in the "Failed" section.`,
+          title: 'Batch Categorization Error',
+          description: `Failed to categorize a batch of titles. They will be shown in the "Failed" section.`,
         });
       } finally {
-        processedCount++;
+        processedCount += batch.length;
         setProgress((processedCount / parsedPapers.length) * 100);
       }
     }
 
     setCategorizedPapers(results);
-    setFailedPapers(failed);
+    // Combine papers that failed before processing with papers that failed during processing
+    setFailedPapers(prev => [...prev, ...failed]);
     setProcessingMessage('Analysis complete!');
     setTimeout(() => setStep('dashboard'), 1000);
   }, [toast]);
