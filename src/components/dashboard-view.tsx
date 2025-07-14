@@ -12,6 +12,7 @@ import { ArrowLeft, Download, FileDown, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 
@@ -172,7 +173,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
         ]);
         
         // Use jspdf-autotable for robust table creation
-        (pdf as any).autoTable({
+        pdf.autoTable({
             head: tableHeaders,
             body: tableBody,
             startY: pageMargin,
