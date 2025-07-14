@@ -60,18 +60,18 @@ const categorizeResearchTitlesFlow = ai.defineFlow(
     outputSchema: CategorizeResearchTitlesOutputSchema,
   },
   async ({ titles, apiKey }) => {
-    const { output } = await ai.generate({
-        prompt: categorizeResearchTitlesPrompt,
-        input: { titles },
-        config: {
-            model: 'gemini-1.5-flash',
-        },
-        plugins: {
-            googleAI: {
-                apiKey: apiKey,
+    // When calling a defined prompt, pass the input as the first argument,
+    // and dynamic configuration (like the API key) as the second.
+    const { output } = await categorizeResearchTitlesPrompt(
+        { titles },
+        {
+            plugins: {
+                googleAI: {
+                    apiKey: apiKey,
+                }
             }
         }
-    });
+    );
     
     return output!;
   }
