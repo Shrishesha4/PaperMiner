@@ -9,8 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {generate} from 'genkit';
 import {z} from 'genkit';
 
 const CategorizeResearchTitlesInputSchema = z.object({
@@ -32,6 +31,29 @@ export async function categorizeResearchTitles(input: CategorizeResearchTitlesIn
   return categorizeResearchTitlesFlow(input);
 }
 
+const categorizeResearchTitlesPrompt = ai.definePrompt({
+  name: 'categorizeResearchTitlesPrompt',
+  input: { schema: z.object({titles: z.array(z.string())}) },
+  output: { schema: CategorizeResearchTitlesOutputSchema },
+  prompt: `You are an expert in categorizing research paper titles. Given a list of titles, you will determine the most appropriate category for each paper. You will respond with a JSON array where each object contains the original title, its category, and a confidence level (0-1) for your categorization.
+
+  Titles:
+  {{#each titles}}
+  - {{{this}}}
+  {{/each}}
+  `,
+  config: {
+    model: 'gemini-1.5-flash',
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+    ],
+  },
+});
+
+
 const categorizeResearchTitlesFlow = ai.defineFlow(
   {
     name: 'categorizeResearchTitlesFlow',
@@ -39,38 +61,19 @@ const categorizeResearchTitlesFlow = ai.defineFlow(
     outputSchema: CategorizeResearchTitlesOutputSchema,
   },
   async ({ titles, apiKey }) => {
-    // Initialize Genkit dynamically with the user's API key
-    const dynamicAi = genkit({
-      plugins: [
-        googleAI({
-          apiKey: apiKey,
-        }),
-      ],
+    const { output } = await generate({
+        prompt: categorizeResearchTitlesPrompt,
+        input: { titles },
+        config: {
+            model: 'gemini-1.5-flash', // Explicitly setting model here too
+        },
+        plugins: {
+            googleAI: {
+                apiKey: apiKey,
+            }
+        }
     });
-
-    const categorizeResearchTitlesPrompt = dynamicAi.definePrompt({
-      name: 'categorizeResearchTitlesPrompt',
-      input: { schema: z.array(z.string()) }, // The prompt itself only needs the titles array
-      output: { schema: CategorizeResearchTitlesOutputSchema },
-      prompt: `You are an expert in categorizing research paper titles. Given a list of titles, you will determine the most appropriate category for each paper. You will respond with a JSON array where each object contains the original title, its category, and a confidence level (0-1) for your categorization.
-
-      Titles:
-      {{#each this}}
-      - {{{this}}}
-      {{/each}}
-      `,
-      config: {
-        model: 'gemini-1.5-flash',
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-        ],
-      },
-    });
-
-    const { output } = await categorizeResearchTitlesPrompt(titles);
+    
     return output!;
   }
 );
