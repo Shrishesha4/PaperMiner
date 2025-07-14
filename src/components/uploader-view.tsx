@@ -6,14 +6,10 @@ import { useToast } from '@/hooks/use-toast';
 import { type ResearchPaper } from '@/types';
 import { Button } from '@/components/ui/button';
 
-interface UploaderViewProps {
-  onProcess: (data: ResearchPaper[]) => void;
-}
-
 // A simple CSV parser that handles quoted fields.
-function parseCSV(text: string): ResearchPaper[] {
+function parseCSV(text: string): { data: ResearchPaper[], errors: number } {
   const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
+  if (lines.length < 2) return { data: [], errors: 0 };
 
   // Robustly parse header, removing BOM and quotes
   const headerLine = lines[0].trim().startsWith('\uFEFF') ? lines[0].trim().substring(1) : lines[0].trim();
@@ -26,8 +22,20 @@ function parseCSV(text: string): ResearchPaper[] {
     throw new Error('Invalid CSV format. Missing one of required columns: "Document Title", "Authors", "Publication Year".');
   }
 
-  const data = lines.slice(1).map(line => {
+  const data: ResearchPaper[] = [];
+  let errorCount = 0;
+
+  lines.slice(1).forEach(line => {
+    if (!line.trim()) return; // Skip empty lines
+
     const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    
+    // Skip rows that don't have the same number of columns as the header
+    if (values.length !== headers.length) {
+        errorCount++;
+        return;
+    }
+    
     const entry: { [key: string]: string } = {};
     headers.forEach((header, i) => {
         if(values[i]) {
@@ -36,10 +44,17 @@ function parseCSV(text: string): ResearchPaper[] {
             entry[header] = '';
         }
     });
-    return entry as unknown as ResearchPaper;
+
+    // Skip if essential data is missing
+    if (!entry['Document Title']) {
+        errorCount++;
+        return;
+    }
+
+    data.push(entry as unknown as ResearchPaper);
   });
 
-  return data;
+  return { data, errors: errorCount };
 }
 
 export function UploaderView({ onProcess }: UploaderViewProps) {
@@ -54,12 +69,20 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
       reader.onload = (e) => {
         try {
           const text = e.target?.result as string;
-          const parsedData = parseCSV(text);
+          const { data: parsedData, errors: parsingErrors } = parseCSV(text);
+          
+          if (parsingErrors > 0) {
+            toast({
+              title: "Parsing Issues",
+              description: `Skipped ${parsingErrors} malformed row(s) in the CSV file.`
+            });
+          }
+
           if (parsedData.length === 0) {
             toast({
                 variant: "destructive",
                 title: "Empty or Invalid CSV",
-                description: "The CSV file is empty or could not be parsed correctly."
+                description: "The CSV file is empty or contains no valid data rows."
             });
             return;
           }

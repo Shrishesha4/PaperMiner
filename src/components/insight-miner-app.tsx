@@ -16,6 +16,7 @@ export function InsightMinerApp() {
   const [step, setStep] = useState<AppStep>('upload');
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [categorizedPapers, setCategorizedPapers] = useState<CategorizedPaper[]>([]);
+  const [failedPapers, setFailedPapers] = useState<ResearchPaper[]>([]);
   const [progress, setProgress] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
 
@@ -26,13 +27,16 @@ export function InsightMinerApp() {
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
+    const failed: ResearchPaper[] = [];
     let processedCount = 0;
 
     for (const paper of parsedPapers) {
       try {
         const title = paper['Document Title'];
         if (!title) {
+          failed.push(paper);
           processedCount++;
+          setProgress((processedCount / parsedPapers.length) * 100);
           continue;
         }
 
@@ -43,10 +47,11 @@ export function InsightMinerApp() {
 
       } catch (error) {
         console.error('Error categorizing title:', error);
+        failed.push(paper);
         toast({
           variant: 'destructive',
-          title: 'Processing Error',
-          description: `Failed to categorize a title. Skipping.`,
+          title: 'Categorization Error',
+          description: `Failed to categorize a title. It will be shown in the "Failed" section.`,
         });
       } finally {
         processedCount++;
@@ -55,6 +60,7 @@ export function InsightMinerApp() {
     }
 
     setCategorizedPapers(results);
+    setFailedPapers(failed);
     setProcessingMessage('Analysis complete!');
     setTimeout(() => setStep('dashboard'), 1000);
   }, [toast]);
@@ -63,6 +69,7 @@ export function InsightMinerApp() {
     setStep('upload');
     setPapers([]);
     setCategorizedPapers([]);
+    setFailedPapers([]);
     setProgress(0);
     setProcessingMessage('');
   };
@@ -73,7 +80,7 @@ export function InsightMinerApp() {
       <main className="flex-1 flex flex-col">
         {step === 'upload' && <UploaderView onProcess={handleDataProcessing} />}
         {step === 'processing' && <ProcessingView progress={progress} message={processingMessage} />}
-        {step === 'dashboard' && <DashboardView data={categorizedPapers} onReset={handleReset} />}
+        {step === 'dashboard' && <DashboardView data={categorizedPapers} failedData={failedPapers} onReset={handleReset} />}
       </main>
     </div>
   );

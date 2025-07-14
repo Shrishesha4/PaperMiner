@@ -1,21 +1,24 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import type { CategorizedPaper } from '@/types';
+import type { CategorizedPaper, ResearchPaper } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
 import { ArrowLeft } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { FailedPapersTable } from './failed-papers-table';
 
 interface DashboardViewProps {
   data: CategorizedPaper[];
+  failedData: ResearchPaper[];
   onReset: () => void;
 }
 
-export function DashboardView({ data, onReset }: DashboardViewProps) {
+export function DashboardView({ data, failedData, onReset }: DashboardViewProps) {
   const [filters, setFilters] = useState({
     year: 'all',
     category: 'all',
@@ -107,12 +110,37 @@ export function DashboardView({ data, onReset }: DashboardViewProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Research Papers ({filteredData.length} shown)</CardTitle>
+            <CardTitle>Research Papers</CardTitle>
+            <CardDescription>
+              Displaying {filteredData.length} of {data.length} categorized papers.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <PapersTable data={filteredData} />
           </CardContent>
         </Card>
+
+        {failedData.length > 0 && (
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="failed-papers">
+              <Card>
+                <AccordionTrigger className="p-6">
+                  <div className="flex flex-col items-start">
+                    <CardTitle>Failed Categorization</CardTitle>
+                    <CardDescription className="mt-1">
+                      {failedData.length} paper(s) could not be categorized.
+                    </CardDescription>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent>
+                    <FailedPapersTable data={failedData} />
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          </Accordion>
+        )}
       </div>
     </div>
   );
