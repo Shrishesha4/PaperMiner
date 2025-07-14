@@ -20,13 +20,23 @@ interface DashboardViewProps {
   onReset: () => void;
 }
 
+// Add this type definition for the autoTable plugin
+declare module 'jspdf' {
+    interface jsPDF {
+      autoTable: (options: any) => jsPDF;
+    }
+}
+
 export function DashboardView({ data, failedData, onReset }: DashboardViewProps) {
   const [filters, setFilters] = useState({
     year: 'all',
     category: 'all',
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const dashboardContentRef = useRef<HTMLDivElement>(null);
+  
+  // We need refs for the individual components we want to capture
+  const categoryChartRef = useRef<HTMLDivElement>(null);
+  const keywordsRef = useRef<HTMLDivElement>(null);
 
 
   const years = useMemo(() => {
@@ -93,61 +103,110 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
   };
   
   const handleDownloadPDF = useCallback(async () => {
-    const content = dashboardContentRef.current;
-    if (!content) return;
+    const categoryChartElement = categoryChartRef.current;
+    if (!categoryChartElement || !filteredData.length) return;
 
     setIsGeneratingPdf(true);
 
     try {
-        const canvas = await html2canvas(content, { 
-            scale: 2, // Higher scale for better quality
-            useCORS: true,
-            logging: false,
-            // Only render the visible part of the content
-            width: content.clientWidth,
-            height: content.scrollHeight,
-            windowWidth: content.clientWidth,
-            windowHeight: content.scrollHeight,
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        
-        // A4 page dimensions in mm: 210 x 297
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const canvasAspectRatio = canvasWidth / canvasHeight;
-
-        // Fit image to page width
         const pageMargin = 15;
-        const imgWidth = pdfWidth - (pageMargin * 2);
-        const imgHeight = imgWidth / canvasAspectRatio;
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const contentWidth = pageWidth - pageMargin * 2;
+        let yPos = pageMargin;
 
-        let heightLeft = imgHeight;
-        let position = pageMargin;
+        // --- TITLE PAGE ---
+        pdf.setFontSize(22);
+        pdf.text('PaperMiner Analysis Report', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
 
-        // Add the first page
-        pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidth, imgHeight);
-        heightLeft -= (pdfHeight - (pageMargin * 2));
+        pdf.setFontSize(12);
+        pdf.text(`Report generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+        
+        pdf.setFontSize(14);
+        pdf.text('Summary', pageMargin, yPos);
+        yPos += 8;
+        
+        pdf.setFontSize(11);
+        pdf.text(`- Total papers analyzed: ${data.length}`, pageMargin, yPos);
+        yPos += 7;
+        pdf.text(`- Papers in current view: ${filteredData.length}`, pageMargin, yPos);
+        yPos += 7;
+        pdf.text(`- Unique categories found: ${categories.length - 1}`, pageMargin, yPos);
+        yPos += 15;
+        
 
-        // Add new pages if the content is taller than one page
-        while (heightLeft > 0) {
-            position = -heightLeft - pageMargin;
+        // --- CHART PAGE ---
+        pdf.addPage();
+        yPos = pageMargin;
+
+        pdf.setFontSize(16);
+        pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+        
+        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: null });
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (yPos + imgHeight > pageHeight - pageMargin) {
             pdf.addPage();
-            pdf.addImage(imgData, 'PNG', pageMargin, position, imgWidth, imgHeight);
-            heightLeft -= (pdfHeight - (pageMargin * 2));
+            yPos = pageMargin;
         }
+
+        pdf.addImage(imgData, 'PNG', pageMargin, yPos, imgWidth, imgHeight);
+
+        // --- TABLE PAGE ---
+        pdf.addPage();
+
+        const tableHeaders = [['Title', 'Year', 'Category', 'Confidence']];
+        const tableBody = filteredData.map(p => [
+            p['Document Title'],
+            p['Publication Year'],
+            p.category,
+            p.confidence.toFixed(2)
+        ]);
+        
+        // Use jspdf-autotable for robust table creation
+        (pdf as any).autoTable({
+            head: tableHeaders,
+            body: tableBody,
+            startY: pageMargin,
+            margin: { left: pageMargin, right: pageMargin },
+            styles: {
+                fontSize: 8,
+                cellPadding: 2,
+            },
+            headStyles: {
+                fillColor: [59, 89, 152], // primary color
+                textColor: 255,
+                fontStyle: 'bold',
+            },
+            columnStyles: {
+                0: { cellWidth: 'auto' }, // Title
+                1: { cellWidth: 20 },   // Year
+                2: { cellWidth: 30 },   // Category
+                3: { cellWidth: 20 },   // Confidence
+            },
+            didDrawPage: (data: any) => {
+                // You can add headers/footers to each page here if needed
+            }
+        });
 
         pdf.save('dashboard-report.pdf');
     } catch (error) {
         console.error("Error generating PDF:", error);
+        toast({
+          variant: "destructive",
+          title: "PDF Generation Error",
+          description: "Could not generate the PDF report."
+        })
     } finally {
         setIsGeneratingPdf(false);
     }
-  }, []);
+  }, [filteredData, data.length, categories.length, toast]);
 
 
   return (
@@ -178,7 +237,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
           </div>
         </div>
         
-        <div ref={dashboardContentRef} className="space-y-6 bg-background">
+        <div className="space-y-6">
             <Card>
             <CardHeader>
                 <CardTitle>Filters</CardTitle>
@@ -204,22 +263,22 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             </Card>
 
             <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                <CardTitle>Category Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <CategoryChart data={filteredData} onCategorySelect={handleCategorySelect} />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                <CardTitle>Top Keywords</CardTitle>
-                </CardHeader>
-                <CardContent>
-                <KeywordDisplay data={filteredData} />
-                </CardContent>
-            </Card>
+              <Card className="lg:col-span-2">
+                  <CardHeader>
+                  <CardTitle>Category Distribution</CardTitle>
+                  </CardHeader>
+                  <CardContent ref={categoryChartRef}>
+                    <CategoryChart data={filteredData} onCategorySelect={handleCategorySelect} />
+                  </CardContent>
+              </Card>
+              <Card>
+                  <CardHeader>
+                  <CardTitle>Top Keywords</CardTitle>
+                  </CardHeader>
+                  <CardContent ref={keywordsRef}>
+                    <KeywordDisplay data={filteredData} />
+                  </CardContent>
+              </Card>
             </div>
 
             <Card>
