@@ -16,8 +16,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
+import { Separator } from './ui/separator';
 
-export function TitleGenerator() {
+interface TitleGeneratorProps {
+  availableCategories: string[];
+}
+
+export function TitleGenerator({ availableCategories }: TitleGeneratorProps) {
   const { apiKey } = useApiKey();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -27,17 +32,22 @@ export function TitleGenerator() {
   const [currentTopic, setCurrentTopic] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddTopic = () => {
-    if (currentTopic.trim() && !topics.includes(currentTopic.trim())) {
-      setTopics([...topics, currentTopic.trim()]);
-      setCurrentTopic('');
+  const handleAddTopic = (topic: string) => {
+    const trimmedTopic = topic.trim();
+    if (trimmedTopic && !topics.includes(trimmedTopic)) {
+      setTopics([...topics, trimmedTopic]);
     }
+  };
+  
+  const handleManualAdd = () => {
+    handleAddTopic(currentTopic);
+    setCurrentTopic('');
   };
   
   const handleTopicInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        handleAddTopic();
+        handleManualAdd();
     }
   }
 
@@ -112,7 +122,7 @@ Respond with only the new title.`;
           <DialogHeader>
             <DialogTitle>Generate a New Title</DialogTitle>
             <DialogDescription>
-              Add topics or categories to generate a synthesized research title. Press Enter to add a topic.
+              Add topics by typing or selecting from existing categories.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -122,26 +132,53 @@ Respond with only the new title.`;
                 value={currentTopic}
                 onChange={(e) => setCurrentTopic(e.target.value)}
                 onKeyDown={handleTopicInputKeyDown}
-                placeholder="e.g., Machine Learning, Cybersecurity"
+                placeholder="e.g., Machine Learning"
               />
-              <Button type="button" size="icon" onClick={handleAddTopic}>
+              <Button type="button" size="icon" onClick={handleManualAdd}>
                 <Plus className="h-4 w-4" />
                 <span className="sr-only">Add topic</span>
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 min-h-[40px]">
-              {topics.map(topic => (
-                <Badge key={topic} variant="secondary" className="flex items-center gap-1">
-                  {topic}
-                  <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
+            
+            <div className="space-y-4">
+                <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics</h4>
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/50 rounded-md">
+                    {topics.length > 0 ? topics.map(topic => (
+                        <Badge key={topic} variant="secondary" className="flex items-center gap-1">
+                        {topic}
+                        <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                            <X className="h-3 w-3" />
+                        </button>
+                        </Badge>
+                    )) : (
+                        <p className="text-sm text-muted-foreground p-2">No topics selected yet.</p>
+                    )}
+                    </div>
+                </div>
+
+                {availableCategories.length > 0 && (
+                    <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Click to Add Existing Categories</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {availableCategories.map(cat => (
+                                <Badge
+                                key={cat}
+                                variant="outline"
+                                onClick={() => handleAddTopic(cat)}
+                                className="cursor-pointer hover:bg-primary/10"
+                                >
+                                {cat}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {generatedTitle && (
               <div className="pt-4">
+                <Separator className="my-4" />
                 <h4 className="font-medium mb-2 text-sm text-foreground">Suggested Title:</h4>
                 <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
                   <p className="font-semibold text-primary">{generatedTitle}</p>

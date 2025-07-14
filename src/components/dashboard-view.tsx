@@ -224,7 +224,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <TitleGenerator />
+            <TitleGenerator availableCategories={categories.filter(c => c !== 'all')} />
             <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
                 {isGeneratingPdf ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
