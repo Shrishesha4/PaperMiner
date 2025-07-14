@@ -33,3 +33,7 @@ export type CategorizedPaper = ResearchPaper & {
   category: string;
   confidence: number;
 };
+
+export type FailedPaper = ResearchPaper & {
+  failureReason: string;
+};

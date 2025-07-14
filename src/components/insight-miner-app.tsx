@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { type ResearchPaper, type CategorizedPaper } from '@/types';
+import { type ResearchPaper, type CategorizedPaper, FailedPaper } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { categorizeResearchTitles } from '@/ai/flows/categorize-research-titles';
 import { AppHeader } from './header';
@@ -16,7 +16,7 @@ export function InsightMinerApp() {
   const [step, setStep] = useState<AppStep>('upload');
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [categorizedPapers, setCategorizedPapers] = useState<CategorizedPaper[]>([]);
-  const [failedPapers, setFailedPapers] = useState<ResearchPaper[]>([]);
+  const [failedPapers, setFailedPapers] = useState<FailedPaper[]>([]);
   const [progress, setProgress] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
 
@@ -27,14 +27,14 @@ export function InsightMinerApp() {
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
-    const failed: ResearchPaper[] = [];
+    const failed: FailedPaper[] = [];
     let processedCount = 0;
 
     for (const paper of parsedPapers) {
       try {
         const title = paper['Document Title'];
         if (!title) {
-          failed.push(paper);
+          failed.push({ ...paper, failureReason: 'Missing document title.' });
           processedCount++;
           setProgress((processedCount / parsedPapers.length) * 100);
           continue;
@@ -47,7 +47,13 @@ export function InsightMinerApp() {
 
       } catch (error) {
         console.error('Error categorizing title:', error);
-        failed.push(paper);
+        let failureReason = 'An unknown error occurred during categorization.';
+        if (error instanceof Error) {
+            failureReason = error.message.includes('SAFETY') 
+              ? 'Categorization failed due to safety settings.' 
+              : error.message;
+        }
+        failed.push({ ...paper, failureReason });
         toast({
           variant: 'destructive',
           title: 'Categorization Error',

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import type { CategorizedPaper, ResearchPaper } from '@/types';
+import type { CategorizedPaper, FailedPaper } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +14,7 @@ import { FailedPapersTable } from './failed-papers-table';
 
 interface DashboardViewProps {
   data: CategorizedPaper[];
-  failedData: ResearchPaper[];
+  failedData: FailedPaper[];
   onReset: () => void;
 }
 
@@ -121,7 +121,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
         </Card>
 
         {failedData.length > 0 && (
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full" defaultValue="failed-papers">
             <AccordionItem value="failed-papers">
               <Card>
                 <AccordionTrigger className="p-6">

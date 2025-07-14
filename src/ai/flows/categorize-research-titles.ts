@@ -34,11 +34,12 @@ const categorizeResearchTitlesPrompt = ai.definePrompt({
   prompt: `You are an expert in categorizing research paper titles. Given a title, you will determine the most appropriate category for the paper. You will respond with the category and a confidence level (0-1) for your categorization.
 
 Title: {{{title}}}
-`,config: {
+`,
+  config: {
     safetySettings: [
       {
         category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_ONLY_HIGH',
+        threshold: 'BLOCK_NONE',
       },
       {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
@@ -46,11 +47,11 @@ Title: {{{title}}}
       },
       {
         category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+        threshold: 'BLOCK_NONE',
       },
       {
         category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_LOW_AND_ABOVE',
+        threshold: 'BLOCK_NONE',
       },
     ],
   },

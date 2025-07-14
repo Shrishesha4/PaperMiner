@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { ResearchPaper } from '@/types';
+import type { FailedPaper } from '@/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from './ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { AlertTriangle } from 'lucide-react';
 
 interface FailedPapersTableProps {
-  data: ResearchPaper[];
+  data: FailedPaper[];
 }
 
 const ROWS_PER_PAGE = 5;
@@ -29,40 +31,56 @@ export function FailedPapersTable({ data }: FailedPapersTableProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50%]">Document Title</TableHead>
-              <TableHead>Authors</TableHead>
-              <TableHead>Year</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedData.map((paper, index) => (
-              <TableRow key={`${paper['Document Identifier']}-${index}`}>
-                <TableCell className="font-medium">{paper['Document Title'] || <span className="text-muted-foreground italic">No Title</span>}</TableCell>
-                <TableCell className="text-muted-foreground">{paper['Authors']?.split(';')[0]} et al.</TableCell>
-                <TableCell>{paper['Publication Year']}</TableCell>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[45%]">Document Title</TableHead>
+                <TableHead>Authors</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead>Reason for Failure</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.map((paper, index) => (
+                <TableRow key={`${paper['Document Identifier']}-${index}`}>
+                  <TableCell className="font-medium">{paper['Document Title'] || <span className="text-muted-foreground italic">No Title</span>}</TableCell>
+                  <TableCell className="text-muted-foreground">{paper['Authors']?.split(';')[0]} et al.</TableCell>
+                  <TableCell>{paper['Publication Year']}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                        <Tooltip delayDuration={100}>
+                            <TooltipTrigger>
+                                <AlertTriangle className="h-4 w-4 text-destructive" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{paper.failureReason}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <span className="truncate">{paper.failureReason}</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="flex items-center justify-end space-x-2">
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
+            <ChevronLeft className="h-4 w-4" />
+            <span className="sr-only">Previous</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
+            <span className="sr-only">Next</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-      <div className="flex items-center justify-end space-x-2">
-        <span className="text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button variant="outline" size="sm" onClick={goToPreviousPage} disabled={currentPage === 1}>
-          <ChevronLeft className="h-4 w-4" />
-          <span className="sr-only">Previous</span>
-        </Button>
-        <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
-          <span className="sr-only">Next</span>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }
