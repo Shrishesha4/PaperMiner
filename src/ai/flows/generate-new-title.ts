@@ -30,7 +30,7 @@ const prompt = ai.definePrompt({
   name: 'generateNewTitlePrompt',
   input: { schema: z.object({ topics: z.array(z.string()) }) },
   output: { schema: GenerateNewTitleOutputSchema },
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
   prompt: `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
   
   Based on the following list of topics, generate one new, creative, and insightful title that synthesizes these themes.
