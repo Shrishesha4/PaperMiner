@@ -27,7 +27,7 @@ export function KeywordDisplay({ data }: KeywordDisplayProps) {
     });
 
     return Object.entries(keywordCounts)
-      .sort(([, countA], [, countB]) => countB - a)
+      .sort(([, countA], [, countB]) => countB - countA)
       .slice(0, MAX_KEYWORDS);
   }, [data]);
 
