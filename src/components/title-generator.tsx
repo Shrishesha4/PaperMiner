@@ -129,7 +129,7 @@ Respond with only the new title.`;
         Generate Title
       </Button>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[525px] grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
+        <DialogContent className="sm:max-w-[555px] grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Generate a New Title</DialogTitle>
             <DialogDescription>
