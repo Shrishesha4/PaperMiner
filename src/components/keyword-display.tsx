@@ -15,10 +15,11 @@ export function KeywordDisplay({ data }: KeywordDisplayProps) {
   const topKeywords = useMemo(() => {
     const keywordCounts: { [key: string]: number } = {};
     data.forEach(paper => {
-      const authorKeywords = paper['Author Keywords']?.split(';').map(k => k.trim()) || [];
+      // The 'Author Keywords' column is no longer guaranteed.
+      // We will now only use 'IEEE Terms'
       const ieeeTerms = paper['IEEE Terms']?.split(';').map(k => k.trim()) || [];
       
-      [...authorKeywords, ...ieeeTerms].forEach(keyword => {
+      [...ieeeTerms].forEach(keyword => {
         if (keyword) {
           keywordCounts[keyword] = (keywordCounts[keyword] || 0) + 1;
         }
@@ -26,7 +27,7 @@ export function KeywordDisplay({ data }: KeywordDisplayProps) {
     });
 
     return Object.entries(keywordCounts)
-      .sort(([, countA], [, countB]) => countB - countA)
+      .sort(([, countA], [, countB]) => countB - a)
       .slice(0, MAX_KEYWORDS);
   }, [data]);
 

@@ -58,18 +58,18 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
   const handleDownloadCSV = () => {
     if (data.length === 0) return;
 
-    // Use a more complete set of headers from the first paper, plus our new ones
-    const originalHeaders = Object.keys(data[0]).filter(key => key !== 'category' && key !== 'confidence');
-    const headers = [...originalHeaders, 'category', 'confidence'];
-
+    const headers = ['Document Title', 'Publication Year', 'category', 'confidence'];
     const csvRows = [headers.join(',')]; // Header row
 
     for (const paper of data) {
         const values = headers.map(header => {
-            // @ts-ignore
-            let value = paper[header] ?? '';
+            let value: string | number = '';
+            if (header === 'Document Title') value = paper['Document Title'];
+            else if (header === 'Publication Year') value = paper['Publication Year'];
+            else if (header === 'category') value = paper.category;
+            else if (header === 'confidence') value = paper.confidence;
+            
             if (typeof value === 'string') {
-                // Escape quotes by doubling them and wrap the whole field in quotes if it contains a comma
                 const hasComma = value.includes(',');
                 const hasQuote = value.includes('"');
                 if (hasComma || hasQuote) {

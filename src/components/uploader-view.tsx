@@ -15,47 +15,50 @@ function parseCSV(text: string): { data: ResearchPaper[], errors: number } {
   const headerLine = lines[0].trim().startsWith('\uFEFF') ? lines[0].trim().substring(1) : lines[0].trim();
   const headers = headerLine.split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   
-  const requiredHeaders = ["Document Title", "Authors", "Publication Year"];
+  const requiredHeaders = ["Document Title", "Publication Year", "IEEE Terms", "Document Identifier", "Authors"];
   const hasHeaders = requiredHeaders.every(h => headers.includes(h));
 
   if (!hasHeaders) {
-    throw new Error('Invalid CSV format. Missing one of required columns: "Document Title", "Authors", "Publication Year".');
+    throw new Error('Invalid CSV format. Missing one of required columns: "Document Title", "Publication Year", "IEEE Terms", "Document Identifier", "Authors".');
   }
 
   const data: ResearchPaper[] = [];
   let errorCount = 0;
+
+  const requiredIndices: {[key: string]: number} = {};
+  requiredHeaders.forEach(h => {
+    requiredIndices[h] = headers.indexOf(h);
+  });
 
   lines.slice(1).forEach(line => {
     if (!line.trim()) return; // Skip empty lines
 
     const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
     
-    // Skip rows that don't have the same number of columns as the header
-    if (values.length !== headers.length) {
+    // Check if essential data is present
+    const title = values[requiredIndices['Document Title']]?.trim().replace(/^"|"$/g, '');
+    if (!title) {
         errorCount++;
         return;
     }
     
-    const entry: { [key: string]: string } = {};
-    headers.forEach((header, i) => {
-        if(values[i]) {
-            entry[header] = values[i].trim().replace(/^"|"$/g, '');
-        } else {
-            entry[header] = '';
-        }
-    });
+    const entry: Partial<ResearchPaper> = {};
+    entry['Document Title'] = title;
+    entry['Publication Year'] = values[requiredIndices['Publication Year']]?.trim().replace(/^"|"$/g, '') || '';
+    entry['IEEE Terms'] = values[requiredIndices['IEEE Terms']]?.trim().replace(/^"|"$/g, '') || '';
+    entry['Document Identifier'] = values[requiredIndices['Document Identifier']]?.trim().replace(/^"|"$/g, '') || `${title}-${Date.now()}`;
+    entry['Authors'] = values[requiredIndices['Authors']]?.trim().replace(/^"|"$/g, '') || '';
 
-    // Skip if essential data is missing
-    if (!entry['Document Title']) {
-        errorCount++;
-        return;
-    }
-
-    data.push(entry as unknown as ResearchPaper);
+    data.push(entry as ResearchPaper);
   });
 
   return { data, errors: errorCount };
 }
+
+interface UploaderViewProps {
+    onProcess: (data: ResearchPaper[]) => void;
+}
+
 
 export function UploaderView({ onProcess }: UploaderViewProps) {
   const { toast } = useToast();
