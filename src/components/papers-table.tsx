@@ -73,9 +73,9 @@ export function PapersTable({ data, selectedPapers, onSelectionChange }: PapersT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.map((paper) => (
+            {paginatedData.map((paper, index) => (
               <TableRow 
-                key={paper['Document Identifier']}
+                key={`${paper['Document Identifier']}-${index}`}
                 data-state={selectedPaperIds.has(paper['Document Identifier']) ? 'selected' : ''}
               >
                 <TableCell>
