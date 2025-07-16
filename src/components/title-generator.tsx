@@ -87,16 +87,15 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     }
   }, [apiKey, topics, toast]);
 
-  const handleNoveltyCheck = useCallback(async (titleToCheck?: string) => {
-    const title = titleToCheck || generatedTitle;
-    if (!apiKey || !title) {
+  const handleNoveltyCheck = useCallback(async () => {
+    if (!apiKey || !generatedTitle) {
       return;
     }
     setIsCheckingNovelty(true);
     setNoveltyResult(null);
     try {
       const result = await checkTitleNovelty({
-        generatedTitle: title,
+        generatedTitle: generatedTitle,
         existingTitles,
         apiKey,
       });
@@ -111,7 +110,7 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
 
   const handleSuggestionClick = (suggestion: string) => {
     setGeneratedTitle(suggestion);
-    handleNoveltyCheck(suggestion);
+    setNoveltyResult(null);
   };
 
   const handleChatGptClick = () => {
@@ -226,7 +225,7 @@ Respond with only the new title.`;
                 </div>
                 {!isGenerating && generatedTitle && (
                   <div className="mt-4">
-                    <Button onClick={() => handleNoveltyCheck()} disabled={isCheckingNovelty}>
+                    <Button onClick={handleNoveltyCheck} disabled={isCheckingNovelty}>
                       {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
                       Check Novelty
                     </Button>
