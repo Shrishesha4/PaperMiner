@@ -104,14 +104,15 @@ export function PaperDrafter() {
     }
     
     generateDraft();
-  }, [analysisId, generateDraft, title, isHistoryLoading]);
+  }, [analysisId, generateDraft, title, isHistoryLoading, history]);
 
 
   const handleSaveDraft = async () => {
     if (!paper || !analysisId) return;
     setIsSaving(true);
     try {
-      updateAnalysis(analysisId, { draftedPaper: paper });
+      // Pass the current title along with the paper sections
+      updateAnalysis(analysisId, { draftedPaper: { ...paper, title } });
     } catch (e) {
       toast({
         variant: 'destructive',

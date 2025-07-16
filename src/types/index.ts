@@ -17,6 +17,11 @@ export type FailedPaper = ResearchPaper & {
   failureReason: string;
 };
 
+// Add a title to the drafted paper object
+export type DraftedPaper = DraftPaperOutput & {
+  title: string;
+}
+
 export type Analysis = {
   id: string;
   name: string; // Typically the filename
@@ -24,5 +29,5 @@ export type Analysis = {
   categorizedPapers: CategorizedPaper[];
   failedPapers: FailedPaper[];
   generatedTitles?: string[]; // To store titles from scratch sessions
-  draftedPaper?: DraftPaperOutput;
+  draftedPaper?: DraftedPaper;
 };

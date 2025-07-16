@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useHistory } from '@/hooks/use-history';
 import { Button } from './ui/button';
-import { FileText, Lightbulb, Trash2 } from 'lucide-react';
+import { FileText, Lightbulb, Trash2, FileEdit } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,7 +76,7 @@ export function HistorySidebar() {
                 <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
                         onClick={() => selectAnalysis(item.id)}
-                        isActive={selectedAnalysis?.id === item.id}
+                        isActive={selectedAnalysis?.id === item.id && !item.draftedPaper}
                         className="h-auto py-2 justify-start"
                         tooltip={{children: item.name, side: 'right', align: 'center'}}
                     >
@@ -87,9 +88,24 @@ export function HistorySidebar() {
                             </span>
                         </div>
                     </SidebarMenuButton>
+                    
+                    {item.draftedPaper && (
+                      <SidebarMenuButton
+                        asChild
+                        size="sm"
+                        className="mt-1 w-[calc(100%-1rem)] mx-auto"
+                        isActive={selectedAnalysis?.id === item.id}
+                      >
+                        <Link href={`/paper-drafter?analysisId=${item.id}&title=${encodeURIComponent(item.draftedPaper.title)}`}>
+                            <FileEdit />
+                            <span>View Draft</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    )}
+
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                         <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
+                         <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
                             <Trash2 className="h-4 w-4 text-destructive"/>
                          </Button>
                       </AlertDialogTrigger>
