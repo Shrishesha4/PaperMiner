@@ -8,7 +8,7 @@ import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
 import type { CheckTitleNoveltyOutput } from '@/types/schemas';
 import { TopicSelector } from './topic-selector';
 import { Button } from './ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardFooter } from './ui/card';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { Loader2, Wand2, Copy, SearchCheck, Check } from 'lucide-react';
@@ -202,8 +202,7 @@ export function TitleStudioBatch({ analysis }: TitleStudioBatchProps) {
                 <AlertTitle>Ready to Generate!</AlertTitle>
                 <AlertDescription>
                     Select your topics and click the "Generate" button to create a batch of new titles.
-                </Aler
-tDescription>
+                </AlertDescription>
             </Alert>
           </div>
         )}
