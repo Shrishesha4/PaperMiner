@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
@@ -8,14 +8,19 @@ import { Plus, Wand2, X, Loader2 } from 'lucide-react';
 
 interface TopicSelectorProps {
   availableCategories: string[];
-  onGenerate: (topics: string[]) => void;
+  onGenerate?: (topics: string[]) => void;
+  onTopicsChange: (topics: string[]) => void;
   isLoading: boolean;
 }
 
-export function TopicSelector({ availableCategories, onGenerate, isLoading }: TopicSelectorProps) {
+export function TopicSelector({ availableCategories, onGenerate, onTopicsChange, isLoading }: TopicSelectorProps) {
   const [topics, setTopics] = useState<string[]>([]);
   const [currentTopic, setCurrentTopic] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    onTopicsChange(topics);
+  }, [topics, onTopicsChange]);
 
   const handleAddTopic = (topic: string) => {
     const trimmedTopic = topic.trim();
@@ -41,7 +46,7 @@ export function TopicSelector({ availableCategories, onGenerate, isLoading }: To
   };
   
   const handleGenerateClick = () => {
-    if (topics.length > 0) {
+    if (topics.length > 0 && onGenerate) {
         onGenerate(topics);
     }
   }
@@ -106,14 +111,16 @@ export function TopicSelector({ availableCategories, onGenerate, isLoading }: To
         )}
       </div>
 
-      <Button onClick={handleGenerateClick} disabled={isLoading || topics.length === 0}>
-        {isLoading ? (
-          <Loader2 className="mr-2 animate-spin" />
-        ) : (
-          <Wand2 className="mr-2" />
-        )}
-        Generate Title with Gemini
-      </Button>
+      {onGenerate && (
+        <Button onClick={handleGenerateClick} disabled={isLoading || topics.length === 0}>
+            {isLoading ? (
+            <Loader2 className="mr-2 animate-spin" />
+            ) : (
+            <Wand2 className="mr-2" />
+            )}
+            Generate Title with Gemini
+        </Button>
+      )}
     </div>
   );
 }

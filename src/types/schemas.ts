@@ -47,3 +47,17 @@ export const RefineTitleOutputSchema = z.object({
     refinedTitle: z.string().describe('The refined title.'),
 });
 export type RefineTitleOutput = z.infer<typeof RefineTitleOutputSchema>;
+
+
+// Schemas for batch title generation
+export const GenerateBatchTitlesInputSchema = z.object({
+    topics: z.array(z.string()).describe('A list of topics or categories to base the new titles on.'),
+    count: z.number().min(1).max(5).describe('The number of titles to generate.'),
+    apiKey: z.string().describe('The user-provided Gemini API key.'),
+});
+export type GenerateBatchTitlesInput = z.infer<typeof GenerateBatchTitlesInputSchema>;
+
+export const GenerateBatchTitlesOutputSchema = z.object({
+    titles: z.array(z.string()).describe('A list of newly generated research paper titles.'),
+});
+export type GenerateBatchTitlesOutput = z.infer<typeof GenerateBatchTitlesOutputSchema>;
