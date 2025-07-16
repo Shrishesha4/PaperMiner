@@ -1,18 +1,5 @@
 import { z } from 'zod';
 
-// Schema for generating a new title
-export const GenerateNewTitleInputSchema = z.object({
-  topics: z.array(z.string()).describe('A list of topics or categories to base the new title on.'),
-  apiKey: z.string().describe('The user-provided Gemini API key.'),
-});
-export type GenerateNewTitleInput = z.infer<typeof GenerateNewTitleInputSchema>;
-
-export const GenerateNewTitleOutputSchema = z.object({
-  newTitle: z.string().describe('A new, creative, and relevant research paper title.'),
-});
-export type GenerateNewTitleOutput = z.infer<typeof GenerateNewTitleOutputSchema>;
-
-
 // Schemas for checking title novelty
 export const CheckTitleNoveltyInputSchema = z.object({
   generatedTitle: z.string().describe('The newly generated title to check for novelty.'),
@@ -34,20 +21,6 @@ export const CheckTitleNoveltyOutputSchema = z.object({
   suggestionsForImprovement: z.array(z.string()).optional().describe('A list of suggestions to improve the title if novelty is low.'),
 });
 export type CheckTitleNoveltyOutput = z.infer<typeof CheckTitleNoveltyOutputSchema>;
-
-// Schemas for refining a title
-export const RefineTitleInputSchema = z.object({
-    originalTitle: z.string().describe('The title to be refined.'),
-    suggestion: z.string().describe('The suggestion to apply to the title.'),
-    apiKey: z.string().describe('The user-provided Gemini API key.'),
-});
-export type RefineTitleInput = z.infer<typeof RefineTitleInputSchema>;
-
-export const RefineTitleOutputSchema = z.object({
-    refinedTitle: z.string().describe('The refined title.'),
-});
-export type RefineTitleOutput = z.infer<typeof RefineTitleOutputSchema>;
-
 
 // Schemas for batch title generation
 export const GenerateBatchTitlesInputSchema = z.object({
