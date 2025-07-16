@@ -9,7 +9,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
 import { GenerateBatchTitlesInputSchema, GenerateBatchTitlesOutputSchema } from '@/types/schemas';
 import type { GenerateBatchTitlesInput, GenerateBatchTitlesOutput } from '@/types/schemas';
 
