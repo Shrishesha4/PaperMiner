@@ -1,0 +1,225 @@
+'use client';
+
+import React, 'useCallback, useEffect, useState, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useHistory } from '@/hooks/use-history';
+import { useApiKey } from '@/hooks/use-api-key';
+import { useToast } from '@/hooks/use-toast';
+import { generateNewTitle } from '@/ai/flows/generate-new-title';
+import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
+import { refineTitle } from '@/ai/flows/refine-title';
+import { Button } from './ui/button';
+import { ArrowLeft, Loader2, SearchCheck, Sparkles, Wand2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { ScrollArea } from './ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { cn } from '@/lib/utils';
+import { TopicSelector } from './topic-selector';
+import { NoveltyResultCard } from './novelty-result-card';
+import type { CheckTitleNoveltyOutput } from '@/types/schemas';
+
+type Message = {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  type: 'topics' | 'title' | 'novelty' | 'refinement' | 'error';
+  content: string | CheckTitleNoveltyOutput;
+  actions?: 'check-novelty'[] | { type: 'refine'; suggestions: string[] };
+};
+
+export function TitleStudio() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { history, isLoading: isHistoryLoading } = useHistory();
+  const { apiKey } = useApiKey();
+  const { toast } = useToast();
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const [analysisId] = useState(() => searchParams.get('analysisId'));
+  const [analysis, setAnalysis] = useState<{ name: string, categories: string[], titles: string[] } | null>(null);
+  
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTitle, setActiveTitle] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!analysisId || isHistoryLoading) return;
+    const found = history.find(h => h.id === analysisId);
+    if (found) {
+      const categories = Array.from(new Set(found.categorizedPapers.map(p => p.category).filter(Boolean)));
+      const titles = found.categorizedPapers.map(p => p['Document Title']);
+      setAnalysis({ name: found.name, categories, titles });
+    } else {
+      toast({ variant: 'destructive', title: 'Analysis not found' });
+      router.push('/');
+    }
+  }, [analysisId, history, isHistoryLoading, router, toast]);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages])
+
+  const handleGenerateTitle = useCallback(async (topics: string[]) => {
+    if (!apiKey) return;
+    setIsLoading(true);
+    setActiveTitle(null);
+    setMessages(prev => [
+        ...prev,
+        { id: `msg-${Date.now()}`, role: 'user', type: 'topics', content: `Generate a title based on: ${topics.join(', ')}` },
+        { id: `msg-${Date.now()}-loading`, role: 'assistant', type: 'title', content: '' } // Placeholder
+    ]);
+
+    try {
+        const result = await generateNewTitle({ topics, apiKey });
+        setActiveTitle(result.newTitle);
+        setMessages(prev => prev.slice(0, -1).concat({ // Replace placeholder
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            type: 'title',
+            content: result.newTitle,
+            actions: ['check-novelty']
+        }));
+    } catch (e) {
+        setMessages(prev => prev.slice(0, -1).concat({
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            type: 'error',
+            content: 'Sorry, I failed to generate a title. Please try again.'
+        }));
+    } finally {
+        setIsLoading(false);
+    }
+  }, [apiKey]);
+  
+  const handleCheckNovelty = useCallback(async () => {
+    if (!apiKey || !activeTitle || !analysis) return;
+    setIsLoading(true);
+    setMessages(prev => [
+        ...prev,
+        { id: `msg-${Date.now()}`, role: 'user', type: 'novelty', content: `Check the novelty of "${activeTitle}"` },
+        { id: `msg-${Date.now()}-loading`, role: 'assistant', type: 'novelty', content: '' } // Placeholder
+    ]);
+
+    try {
+        const result = await checkTitleNovelty({ generatedTitle: activeTitle, existingTitles: analysis.titles, apiKey });
+        setMessages(prev => prev.slice(0, -1).concat({
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            type: 'novelty',
+            content: result,
+            actions: result.suggestionsForImprovement ? { type: 'refine', suggestions: result.suggestionsForImprovement } : undefined
+        }));
+    } catch (e) {
+        setMessages(prev => prev.slice(0, -1).concat({
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            type: 'error',
+            content: 'Sorry, I failed to check the novelty. Please try again.'
+        }));
+    } finally {
+        setIsLoading(false);
+    }
+  }, [apiKey, activeTitle, analysis]);
+
+  const handleRefineTitle = useCallback(async (suggestion: string) => {
+    if (!apiKey || !activeTitle) return;
+    setIsLoading(true);
+    setMessages(prev => [
+        ...prev,
+        { id: `msg-${Date.now()}`, role: 'user', type: 'refinement', content: `Refine the title using the suggestion: "${suggestion}"`},
+        { id: `msg-${Date.now()}-loading`, role: 'assistant', type: 'title', content: '' }
+    ]);
+    
+    try {
+        const result = await refineTitle({ originalTitle: activeTitle, suggestion, apiKey });
+        setActiveTitle(result.refinedTitle);
+        setMessages(prev => prev.slice(0, -1).concat({
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            type: 'title',
+            content: result.refinedTitle,
+            actions: ['check-novelty']
+        }));
+    } catch (e) {
+        setMessages(prev => prev.slice(0, -1).concat({
+            id: `msg-${Date.now()}`,
+            role: 'assistant',
+            type: 'error',
+            content: 'Sorry, I failed to refine the title. Please try again.'
+        }));
+    } finally {
+        setIsLoading(false);
+    }
+  }, [apiKey, activeTitle]);
+
+  if (isHistoryLoading || !analysis) {
+    return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-theme(height.16))] flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" onClick={() => router.push('/')}>
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                    <h1 className="text-xl font-bold">Title Studio</h1>
+                    <p className="text-sm text-muted-foreground">Generating titles based on: <span className="font-semibold">{analysis.name}</span></p>
+                </div>
+            </div>
+        </div>
+        <div className="flex-1 overflow-hidden flex flex-col-reverse">
+             <ScrollArea className="h-full" ref={scrollAreaRef}>
+                <div className="p-4 space-y-6">
+                    {messages.map((message) => (
+                        <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                            {message.role === 'assistant' && (
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback><Sparkles /></AvatarFallback>
+                                </Avatar>
+                            )}
+                            <div className={cn("max-w-xl rounded-lg p-3 text-sm", message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                {message.type === 'novelty' && typeof message.content === 'object' ? (
+                                    <NoveltyResultCard result={message.content} />
+                                ) : message.content === '' ? (
+                                    <Loader2 className="animate-spin" />
+                                ) : (
+                                    <p>{message.content as string}</p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    {messages.length > 0 && messages[messages.length - 1].actions && !isLoading && (
+                        <div className="flex justify-start gap-2 ml-12">
+                             {messages[messages.length - 1].actions === 'check-novelty' && (
+                                <Button size="sm" onClick={handleCheckNovelty}>
+                                    <SearchCheck className="mr-2 h-4 w-4" /> Check Novelty
+                                </Button>
+                             )}
+                             {typeof messages[messages.length - 1].actions === 'object' && messages[messages.length - 1].actions?.type === 'refine' && (
+                                <div className="flex flex-col gap-2 items-start">
+                                    <p className="text-sm font-medium">Suggestions to improve:</p>
+                                    {(messages[messages.length - 1].actions as any).suggestions.map((s: string, i: number) => (
+                                        <Button key={i} size="sm" variant="outline" onClick={() => handleRefineTitle(s)}>
+                                            {s}
+                                        </Button>
+                                    ))}
+                                </div>
+                             )}
+                        </div>
+                    )}
+                </div>
+             </ScrollArea>
+        </div>
+        <div className="p-4 border-t">
+            {messages.length === 0 ? (
+                <TopicSelector availableCategories={analysis.categories} onGenerate={handleGenerateTitle} isLoading={isLoading} />
+            ) : (
+                <p className="text-center text-sm text-muted-foreground">Interact with the suggestions above or start a new session.</p>
+            )}
+        </div>
+    </div>
+  );
+}

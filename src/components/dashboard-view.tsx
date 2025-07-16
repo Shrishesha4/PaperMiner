@@ -8,14 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { ArrowLeft, Download, FileDown, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, FileDown, Loader2, Wand2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
-import { TitleGenerator } from './title-generator';
+import Link from 'next/link';
 
 interface DashboardViewProps {
   analysisId: string;
@@ -231,10 +231,11 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <TitleGenerator 
-              availableCategories={categories.filter(c => c !== 'all')} 
-              existingTitles={allTitles}
-            />
+            <Button asChild>
+                <Link href={`/title-studio?analysisId=${analysisId}`}>
+                    <Wand2 className="mr-2 h-4 w-4" /> Go to Title Studio
+                </Link>
+            </Button>
             <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
                 {isGeneratingPdf ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
