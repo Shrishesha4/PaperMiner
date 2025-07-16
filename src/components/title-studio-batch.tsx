@@ -22,6 +22,8 @@ interface TitleStudioBatchProps {
     categories: string[];
     titles: string[];
   };
+  generatedTitles: string[];
+  onTitlesGenerated: (titles: string[]) => void;
 }
 
 type NoveltyState = {
@@ -30,13 +32,12 @@ type NoveltyState = {
   error: string | null;
 };
 
-export function TitleStudioBatch({ analysis }: TitleStudioBatchProps) {
+export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated }: TitleStudioBatchProps) {
   const { apiKey } = useApiKey();
   const { toast } = useToast();
   const [topics, setTopics] = useState<string[]>([]);
   const [numTitles, setNumTitles] = useState(3);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
   const [noveltyChecks, setNoveltyChecks] = useState<Record<number, NoveltyState>>({});
 
@@ -44,7 +45,7 @@ export function TitleStudioBatch({ analysis }: TitleStudioBatchProps) {
     if (!apiKey || topics.length === 0) return;
 
     setIsGenerating(true);
-    setGeneratedTitles([]);
+    onTitlesGenerated([]);
     setCopiedStates([]);
     setNoveltyChecks({});
 
@@ -54,7 +55,7 @@ export function TitleStudioBatch({ analysis }: TitleStudioBatchProps) {
         count: numTitles,
         apiKey,
       });
-      setGeneratedTitles(result.titles);
+      onTitlesGenerated(result.titles);
       setCopiedStates(new Array(result.titles.length).fill(false));
     } catch (e) {
       toast({
@@ -73,9 +74,11 @@ export function TitleStudioBatch({ analysis }: TitleStudioBatchProps) {
     newCopiedStates[index] = true;
     setCopiedStates(newCopiedStates);
     setTimeout(() => {
-      const resetCopiedStates = [...copiedStates];
-      resetCopiedStates[index] = false;
-      setCopiedStates(resetCopiedStates);
+      setCopiedStates(prev => {
+          const resetCopiedStates = [...prev];
+          resetCopiedStates[index] = false;
+          return resetCopiedStates;
+      });
     }, 2000);
   };
   

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { TitleStudioBatch } from './title-studio-batch';
+import { continueInChatGPT } from '@/lib/chatgpt';
 
 export function TitleStudio() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function TitleStudio() {
   
   const [analysisId] = useState(() => searchParams.get('analysisId'));
   const [analysis, setAnalysis] = useState<{ name: string; categories: string[]; titles: string[] } | null>(null);
+  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
 
   useEffect(() => {
     if (!analysisId || isHistoryLoading) return;
@@ -29,6 +31,20 @@ export function TitleStudio() {
       router.push('/');
     }
   }, [analysisId, history, isHistoryLoading, router, toast]);
+  
+  const handleContinueInChatGPT = () => {
+    if (generatedTitles.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Titles to Export',
+        description: 'Please generate some titles before exporting to ChatGPT.',
+      });
+      return;
+    }
+
+    const textToCopy = `Here is a list of research paper titles I've generated. Please help me refine them:\n\n${generatedTitles.map(t => `- ${t}`).join('\n')}`;
+    continueInChatGPT(textToCopy);
+  };
 
   if (isHistoryLoading || !analysis) {
     return (
@@ -52,8 +68,15 @@ export function TitleStudio() {
             </p>
           </div>
         </div>
+        <Button onClick={handleContinueInChatGPT} variant="outline" disabled={generatedTitles.length === 0}>
+            Continue in ChatGPT
+        </Button>
       </div>
-      <TitleStudioBatch analysis={analysis} />
+      <TitleStudioBatch 
+        analysis={analysis}
+        generatedTitles={generatedTitles}
+        onTitlesGenerated={setGeneratedTitles}
+      />
     </div>
   );
 }
