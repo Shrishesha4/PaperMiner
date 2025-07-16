@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -62,7 +63,7 @@ export function NoveltyResultCard({ result }: NoveltyResultCardProps) {
         <div className="space-y-2">
           <h5 className="text-sm font-medium">Potentially Similar Titles Found:</h5>
           <TooltipProvider>
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+            <div className="space-y-2">
               {result.similarTitles.map((item, index) => (
                 <div key={index} className="text-sm text-muted-foreground p-2 border rounded-md bg-background/50">
                   <div className="flex justify-between items-start gap-2">
