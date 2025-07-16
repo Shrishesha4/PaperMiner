@@ -31,5 +31,6 @@ export const CheckTitleNoveltyOutputSchema = z.object({
   noveltyScore: z.number().min(0).max(1).describe('A score from 0 (not novel) to 1 (highly novel) representing the uniqueness of the generated title.'),
   similarTitles: z.array(SimilarTitleSchema).describe('A list of the top 3-5 most similar titles from the existing dataset.'),
   overallReasoning: z.string().describe('A summary of the novelty assessment.'),
+  suggestionsForImprovement: z.array(z.string()).optional().describe('A list of suggestions to improve the title if novelty is low.'),
 });
 export type CheckTitleNoveltyOutput = z.infer<typeof CheckTitleNoveltyOutputSchema>;

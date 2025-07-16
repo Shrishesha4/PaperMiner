@@ -6,7 +6,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { generateNewTitle } from '@/ai/flows/generate-new-title';
 import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
-import { Loader2, Wand2, MessageSquareText, Plus, X, SearchCheck, Info } from 'lucide-react';
+import { Loader2, Wand2, MessageSquareText, Plus, X, SearchCheck, Info, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -87,14 +87,15 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     }
   }, [apiKey, topics, toast]);
 
-  const handleNoveltyCheck = useCallback(async () => {
-    if (!apiKey || !generatedTitle) {
+  const handleNoveltyCheck = useCallback(async (titleToCheck?: string) => {
+    const title = titleToCheck || generatedTitle;
+    if (!apiKey || !title) {
       return;
     }
     setIsCheckingNovelty(true);
     try {
       const result = await checkTitleNovelty({
-        generatedTitle,
+        generatedTitle: title,
         existingTitles,
         apiKey,
       });
@@ -106,6 +107,12 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
       setIsCheckingNovelty(false);
     }
   }, [apiKey, generatedTitle, existingTitles, toast]);
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setGeneratedTitle(suggestion);
+    // Automatically re-run novelty check on the new suggestion
+    handleNoveltyCheck(suggestion);
+  }
 
 
   const handleChatGptClick = () => {
@@ -221,8 +228,8 @@ Respond with only the new title.`;
                   </div>
                   {!isGenerating && generatedTitle && (
                     <div className="mt-4">
-                      <Button onClick={handleNoveltyCheck} disabled={isCheckingNovelty}>
-                        {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
+                      <Button onClick={() => handleNoveltyCheck()} disabled={isCheckingNovelty}>
+                        {isCheckingNovelty && !noveltyResult ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
                         Check Novelty
                       </Button>
                     </div>
@@ -243,6 +250,19 @@ Respond with only the new title.`;
                                 {noveltyResult.overallReasoning}
                             </AlertDescription>
                         </Alert>
+                    )}
+
+                    {noveltyResult && noveltyResult.suggestionsForImprovement && noveltyResult.suggestionsForImprovement.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                            <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement:</h5>
+                            <div className="flex flex-wrap gap-2">
+                                {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
+                                    <Button key={index} variant="outline" size="sm" onClick={() => handleSuggestionClick(suggestion)}>
+                                        {suggestion}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
                     {noveltyResult && noveltyResult.similarTitles.length > 0 && (

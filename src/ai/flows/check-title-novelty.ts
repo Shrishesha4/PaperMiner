@@ -36,6 +36,7 @@ Your task is to evaluate the novelty of a "Generated Title" by comparing it agai
 3.  **Identify Top Similarities:** Identify the top 3-5 most similar titles. For each, provide a similarity score (0.0 to 1.0) and a brief reasoning for the similarity.
 4.  **Calculate Overall Novelty Score:** Based on your analysis, provide an overall novelty score from 0.0 (highly derivative) to 1.0 (highly novel). A score below 0.5 indicates significant overlap. A score above 0.8 suggests a high degree of novelty.
 5.  **Provide Summary Reasoning:** Write a brief summary explaining your overall novelty score, highlighting the unique aspects of the generated title or its overlap with existing work.
+6.  **Suggest Improvements:** If the novelty score is below 0.8, provide 2-3 specific, actionable suggestions for improving the title. These suggestions should aim to increase the title's specificity, highlight a unique contribution, or use more distinct terminology to differentiate it from existing work. These suggestions should be returned in the 'suggestionsForImprovement' field.
 
 **Existing Titles for Comparison:**
 {{#each existingTitles}}
@@ -43,7 +44,7 @@ Your task is to evaluate the novelty of a "Generated Title" by comparing it agai
 {{/each}}
 `,
   config: {
-    temperature: 0.2, // Lower temperature for more deterministic analysis
+    temperature: 0.3, // Lower temperature for more deterministic and focused analysis
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
