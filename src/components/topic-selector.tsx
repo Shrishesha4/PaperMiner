@@ -76,16 +76,20 @@ export function TopicSelector({ availableCategories, onGenerate, onTopicsChange,
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
         <div className="flex flex-wrap gap-1">
-          {availableCategories.filter(cat => !topics.includes(cat)).map(cat => (
-            <Badge
-              key={cat}
-              variant="outline"
-              onClick={() => handleAddTopic(cat)}
-              className={`cursor-pointer hover:bg-primary/10 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-            >
-              {cat}
-            </Badge>
-          ))}
+          {availableCategories
+            .filter((cat) => !topics.includes(cat))
+            .map((cat) => (
+              <Badge
+                key={cat}
+                variant="outline"
+                onClick={() => handleAddTopic(cat)}
+                className={`cursor-pointer hover:bg-primary/10 ${
+                  isLoading ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                {cat}
+              </Badge>
+            ))}
         </div>
       </div>
       
