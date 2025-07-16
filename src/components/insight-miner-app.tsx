@@ -10,6 +10,7 @@ import { ProcessingView } from './processing-view';
 import { DashboardView } from './dashboard-view';
 import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
+import { Loader2 } from 'lucide-react';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
