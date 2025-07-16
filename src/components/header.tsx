@@ -1,10 +1,11 @@
+
 'use client';
 import { BrainCircuit, KeyRound } from 'lucide-react';
 import React from 'react';
 import { Button } from './ui/button';
-import { useSidebar } from './ui/sidebar';
+import { useSidebar, SidebarTrigger } from './ui/sidebar';
 import { ApiKeyDialog } from './api-key-dialog';
-import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogTrigger } from './ui/dialog';
 
 export function AppHeader() {
   const { isMobile, open, state } = useSidebar();
