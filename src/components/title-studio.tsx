@@ -1,6 +1,6 @@
 'use client';
 
-import React, 'useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useHistory } from '@/hooks/use-history';
 import { useApiKey } from '@/hooks/use-api-key';
@@ -12,7 +12,7 @@ import { Button } from './ui/button';
 import { ArrowLeft, Loader2, SearchCheck, Sparkles, Wand2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { ScrollArea } from './ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { cn } from '@/lib/utils';
 import { TopicSelector } from './topic-selector';
 import { NoveltyResultCard } from './novelty-result-card';
