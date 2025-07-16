@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { ArrowLeft, Download, FileDown, Loader2, Wand2 } from 'lucide-react';
+import { ArrowLeft, Download, FileDown, Loader2, Plus, Wand2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
@@ -16,6 +16,7 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useHistory } from '@/hooks/use-history';
 
 interface DashboardViewProps {
   analysisId: string;
@@ -34,6 +35,7 @@ declare module 'jspdf' {
 
 export function DashboardView({ analysisId, analysisName, data, failedData, onReset }: DashboardViewProps) {
   const { toast } = useToast();
+  const { selectAnalysis } = useHistory();
   const [filters, setFilters] = useState({
     year: 'all',
     category: 'all',
@@ -231,9 +233,12 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild>
+            <Button onClick={() => selectAnalysis(null)}>
+                <Plus className="mr-2 h-4 w-4" /> New Analysis
+            </Button>
+            <Button asChild variant="outline">
                 <Link href={`/title-studio?analysisId=${analysisId}`}>
-                    <Wand2 className="mr-2 h-4 w-4" /> Go to Title Studio
+                    <Wand2 className="mr-2 h-4 w-4" /> Title Studio
                 </Link>
             </Button>
             <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
@@ -242,10 +247,10 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
                 ) : (
                     <FileDown className="mr-2 h-4 w-4" />
                 )}
-                Download PDF
+                PDF
             </Button>
             <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
-                <Download className="mr-2 h-4 w-4" /> Download CSV
+                <Download className="mr-2 h-4 w-4" /> CSV
             </Button>
             <Button onClick={() => onReset(analysisId)} variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Re-analyze

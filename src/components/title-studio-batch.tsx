@@ -96,11 +96,17 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
       setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: false, result, error: null } }));
     } catch (error) {
       console.error('Novelty check failed:', error);
+      let errorMessage = 'An error occurred during the novelty check.';
+      if (error instanceof Error) {
+        errorMessage = error.message.includes('VALIDATION_ERROR') 
+            ? 'The data sent for novelty check was invalid. Please try again.' 
+            : 'Could not connect to the novelty check service.';
+      }
       setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: false, result: null, error: 'Failed to check novelty.' } }));
        toast({
         variant: 'destructive',
         title: 'Novelty Check Failed',
-        description: 'An error occurred during the novelty check.',
+        description: errorMessage,
       });
     }
   }
