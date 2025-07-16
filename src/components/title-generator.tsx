@@ -35,7 +35,10 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCheckingNovelty, setIsCheckingNovelty] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
-  const [generatedTitle, setGeneratedTitle] = useState('');
+  
+  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [activeTitle, setActiveTitle] = useState<string | null>(null);
+
   const [noveltyResult, setNoveltyResult] = useState<CheckTitleNoveltyOutput | null>(null);
   const [topics, setTopics] = useState<string[]>([]);
   const [currentTopic, setCurrentTopic] = useState('');
@@ -75,11 +78,13 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     }
 
     setIsGenerating(true);
-    setGeneratedTitle('');
+    setGeneratedTitles([]);
+    setActiveTitle(null);
     setNoveltyResult(null);
     try {
       const result = await generateNewTitle({ topics, apiKey });
-      setGeneratedTitle(result.newTitle);
+      setGeneratedTitles([result.newTitle]);
+      setActiveTitle(result.newTitle);
     } catch (error) {
       console.error('Error generating new title:', error);
       toast({ variant: 'destructive', title: 'Generation Failed', description: 'Could not generate a new title.' });
@@ -89,14 +94,14 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
   }, [apiKey, topics, toast]);
 
   const handleNoveltyCheck = useCallback(async () => {
-    if (!apiKey || !generatedTitle) {
+    if (!apiKey || !activeTitle) {
       return;
     }
     setIsCheckingNovelty(true);
     setNoveltyResult(null);
     try {
       const result = await checkTitleNovelty({
-        generatedTitle: generatedTitle,
+        generatedTitle: activeTitle,
         existingTitles,
         apiKey,
       });
@@ -107,23 +112,28 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     } finally {
       setIsCheckingNovelty(false);
     }
-  }, [apiKey, generatedTitle, existingTitles, toast]);
+  }, [apiKey, activeTitle, existingTitles, toast]);
 
   const handleSuggestionClick = useCallback(async (suggestion: string) => {
-    if (!apiKey || !generatedTitle) return;
+    if (!apiKey || !activeTitle) return;
 
     setIsRefining(true);
     try {
         const result = await refineTitle({
-            originalTitle: generatedTitle,
+            originalTitle: activeTitle,
             suggestion: suggestion,
             apiKey,
         });
-        setGeneratedTitle(result.refinedTitle);
+        
+        // Add the new title to the list and set it as active
+        const newTitles = [...generatedTitles, result.refinedTitle];
+        setGeneratedTitles(newTitles);
+        setActiveTitle(result.refinedTitle);
+
         setNoveltyResult(null); // Clear old novelty results
         toast({
             title: "Title Refined",
-            description: "The title has been updated. You can now check its novelty again."
+            description: "A new version of the title has been generated. You can now check its novelty."
         });
     } catch (error) {
         console.error("Error refining title:", error);
@@ -135,7 +145,7 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     } finally {
         setIsRefining(false);
     }
-  }, [apiKey, generatedTitle, toast]);
+  }, [apiKey, activeTitle, generatedTitles, toast]);
 
 
   const handleChatGptClick = () => {
@@ -164,7 +174,8 @@ Respond with only the new title.`;
     setIsOpen(open);
     if (!open) {
         setTopics([]);
-        setGeneratedTitle('');
+        setGeneratedTitles([]);
+        setActiveTitle(null);
         setCurrentTopic('');
         setNoveltyResult(null);
     }
@@ -189,7 +200,7 @@ Respond with only the new title.`;
           <DialogHeader>
             <DialogTitle>Generate a New Research Title</DialogTitle>
             <DialogDescription>
-              Add topics, generate a title, and then check its novelty against your dataset.
+              Add topics, generate a title, check its novelty, and refine it with AI suggestions.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 overflow-y-auto pr-6 -mr-6 break-words">
@@ -244,18 +255,30 @@ Respond with only the new title.`;
                 )}
             </div>
 
-            {(generatedTitle || isGenerating) && (
+            {(generatedTitles.length > 0 || isGenerating) && (
               <div className="pt-4">
                 <Separator className="my-4" />
-                <h4 className="font-medium mb-2 text-sm text-foreground">Suggested Title:</h4>
-                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 min-h-[60px] flex items-center">
-                  {isGenerating || isRefining ? <Loader2 className="animate-spin" /> : <p className="font-semibold text-primary">{generatedTitle}</p>}
+                <h4 className="font-medium mb-2 text-sm text-foreground">Generated Titles:</h4>
+                <div className="space-y-2">
+                   {isGenerating && <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 min-h-[60px] flex items-center"><Loader2 className="animate-spin" /></div>}
+                   {generatedTitles.map((title, index) => (
+                        <div key={index} 
+                             onClick={() => {
+                                 if (anyLoading) return;
+                                 setActiveTitle(title);
+                                 setNoveltyResult(null);
+                             }}
+                             className={`p-4 rounded-lg border transition-all ${activeTitle === title ? 'bg-primary/10 border-primary/20' : 'bg-muted/50 border-border'} ${anyLoading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-primary/5'}`}>
+                            <p className={`font-semibold ${activeTitle === title ? 'text-primary' : ''}`}>{title}</p>
+                        </div>
+                   ))}
                 </div>
-                {!isGenerating && generatedTitle && (
+                {isRefining && <div className="p-4 mt-2 bg-primary/10 rounded-lg border border-primary/20 min-h-[60px] flex items-center"><Loader2 className="animate-spin" /><span className="ml-2">Refining...</span></div>}
+                {activeTitle && !isGenerating && (
                   <div className="mt-4">
-                    <Button onClick={handleNoveltyCheck} disabled={isCheckingNovelty || isRefining}>
+                    <Button onClick={handleNoveltyCheck} disabled={anyLoading}>
                       {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
-                      Check Novelty
+                      Check Novelty of Selected Title
                     </Button>
                   </div>
                 )}
