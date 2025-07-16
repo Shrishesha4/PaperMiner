@@ -150,7 +150,7 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
       <div className="max-w-2xl w-full">
         <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights for Your Research</h2>
         <p className="mt-4 text-lg text-muted-foreground">
-          Upload a CSV from IEEE Xplore to automatically categorize titles, visualize trends, and uncover key themes in your data.
+          Upload a CSV from IEEE Xplore to automatically categorize titles, visualize trends, and uncover key themes for your research.
         </p>
         <form className="mt-10" onDragEnter={handleDrag} onSubmit={(e) => e.preventDefault()}>
             <label
