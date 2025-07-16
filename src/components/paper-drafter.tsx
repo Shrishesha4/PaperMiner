@@ -8,13 +8,12 @@ import { Button } from './ui/button';
 import { ArrowLeft, Edit, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { Textarea } from './ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
-import { draftPaper, type DraftPaperOutput, type PaperSectionSchema } from '@/ai/flows/draft-paper-flow';
+import { draftPaper, type DraftPaperOutput, type PaperSection } from '@/ai/flows/draft-paper-flow';
 import { refineSection } from '@/ai/flows/refine-section-flow';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import ReactMarkdown from 'react-markdown';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-type PaperSection = z.infer<typeof PaperSectionSchema>;
 
 export function PaperDrafter() {
   const router = useRouter();

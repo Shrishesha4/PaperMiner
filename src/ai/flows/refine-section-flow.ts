@@ -10,7 +10,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const RefineSectionInputSchema = z.object({
+const RefineSectionInputSchema = z.object({
   sectionTitle: z.string().describe('The title of the section being refined (e.g., "Abstract").'),
   currentText: z.string().describe('The current text content of the section.'),
   userPrompt: z.string().describe('The user\'s instruction for how to refine the text.'),
@@ -18,7 +18,7 @@ export const RefineSectionInputSchema = z.object({
 });
 export type RefineSectionInput = z.infer<typeof RefineSectionInputSchema>;
 
-export const RefineSectionOutputSchema = z.object({
+const RefineSectionOutputSchema = z.object({
   refinedText: z.string().describe('The newly refined text for the section.'),
 });
 export type RefineSectionOutput = z.infer<typeof RefineSectionOutputSchema>;

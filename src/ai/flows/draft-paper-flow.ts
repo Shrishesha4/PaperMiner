@@ -10,18 +10,20 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const DraftPaperInputSchema = z.object({
+const DraftPaperInputSchema = z.object({
   title: z.string().describe('The title of the research paper.'),
   apiKey: z.string().describe('The user-provided Gemini API key.'),
 });
 export type DraftPaperInput = z.infer<typeof DraftPaperInputSchema>;
 
-export const PaperSectionSchema = z.object({
+const PaperSectionSchema = z.object({
   title: z.string().describe('The title of the section (e.g., "Abstract").'),
   content: z.string().describe('The generated content for this section.'),
 });
+export type PaperSection = z.infer<typeof PaperSectionSchema>;
 
-export const DraftPaperOutputSchema = z.object({
+
+const DraftPaperOutputSchema = z.object({
   sections: z.array(PaperSectionSchema).describe('The drafted sections of the research paper.'),
 });
 export type DraftPaperOutput = z.infer<typeof DraftPaperOutputSchema>;
