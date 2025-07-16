@@ -420,7 +420,7 @@ export function PaperDrafter() {
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
                     <FileUp className="mr-2 h-4 w-4" />
-                    Export
+                    G Docs
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
