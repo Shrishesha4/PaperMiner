@@ -69,7 +69,7 @@ export function PaperDrafter() {
       return;
     }
 
-    if (!isFullRegen) {
+    if (!isFullRegen && analysisId) {
       const analysis = history.find(h => h.id === analysisId);
       if (analysis && analysis.draftedPaper) {
           setPaper(analysis.draftedPaper);
@@ -104,7 +104,7 @@ export function PaperDrafter() {
     }
     
     generateDraft();
-  }, [analysisId, generateDraft, title, isHistoryLoading, history]);
+  }, [analysisId, generateDraft, title, isHistoryLoading]);
 
 
   const handleSaveDraft = async () => {
@@ -257,7 +257,7 @@ export function PaperDrafter() {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Generating initial draft...</p>
+          <p className="text-muted-foreground">Loading draft...</p>
         </div>
       );
     }

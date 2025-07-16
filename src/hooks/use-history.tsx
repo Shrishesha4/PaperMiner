@@ -9,7 +9,7 @@ interface HistoryContextType {
   history: Analysis[];
   selectedAnalysis: Analysis | null;
   addAnalysis: (newAnalysisData: Omit<Analysis, 'id' | 'date'>) => Analysis;
-  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date' | 'name'>>) => void;
+  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
   clearHistory: () => void;
@@ -35,10 +35,6 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         // Sort by date descending to be sure
         parsedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setHistory(parsedHistory);
-        if (parsedHistory.length > 0) {
-            // By default, nothing is selected unless a URL param dictates it.
-            // This simplifies logic in the app.
-        }
       }
     } catch (error) {
       console.error("Could not load history from localStorage", error);
@@ -88,31 +84,30 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   }, [history, toast]);
 
   const updateAnalysis = useCallback((id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => {
-    let updatedAnalysis: Analysis | null = null;
-    const newHistory = history.map(item => {
-        if (item.id === id) {
-            // The name should not be changed on updates like saving a draft.
-            const { name, ...restOfUpdates } = updates;
-            updatedAnalysis = { ...item, ...restOfUpdates };
-            return updatedAnalysis;
+    setHistory(currentHistory => {
+        const newHistory = currentHistory.map(item => {
+            if (item.id === id) {
+                return { ...item, ...updates };
+            }
+            return item;
+        });
+
+        // Also update the selected analysis if it's the one being changed
+        if (selectedAnalysis?.id === id) {
+            setSelectedAnalysis(prev => prev ? { ...prev, ...updates } : null);
         }
-        return item;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    setHistory(newHistory);
-
-    if (selectedAnalysis?.id === id && updatedAnalysis) {
-        setSelectedAnalysis(updatedAnalysis);
-    }
-    
-    // Only show toast for draft saving, not for other background updates.
-    if (updates.draftedPaper) {
-      toast({
-        title: "Draft Saved",
-        description: "Your paper draft has been saved to your history.",
-      });
-    }
-  }, [history, selectedAnalysis, toast]);
+        // Only show toast for draft saving, not for other background updates.
+        if (updates.draftedPaper) {
+            toast({
+                title: "Draft Saved",
+                description: "Your paper draft has been saved to your history.",
+            });
+        }
+        
+        return newHistory;
+    });
+  }, [selectedAnalysis, toast]);
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
