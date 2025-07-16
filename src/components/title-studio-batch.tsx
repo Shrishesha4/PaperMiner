@@ -196,7 +196,7 @@ export function TitleStudioBatch({ analysis }: TitleStudioBatchProps) {
             })}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full w-full items-center justify-center">
              <Alert className="max-w-md mx-auto">
                 <Wand2 className="h-4 w-4" />
                 <AlertTitle>Ready to Generate!</AlertTitle>
