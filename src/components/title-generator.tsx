@@ -109,13 +109,6 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     }
   }, [apiKey, generatedTitle, existingTitles, toast]);
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setGeneratedTitle(suggestion);
-    // Automatically re-run novelty check on the new suggestion
-    handleNoveltyCheck(suggestion);
-  }
-
-
   const handleChatGptClick = () => {
     const prompt = `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
   
@@ -161,149 +154,144 @@ Respond with only the new title.`;
         Generate Title
       </Button>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh]">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Generate a New Research Title</DialogTitle>
             <DialogDescription>
               Add topics, generate a title, and then check its novelty against your dataset.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="pr-6 -mr-6">
-            <div className="grid gap-4 py-4 break-words">
-              <div className="flex items-center gap-2">
-                <Input
-                  ref={inputRef}
-                  value={currentTopic}
-                  onChange={(e) => setCurrentTopic(e.target.value)}
-                  onKeyDown={handleTopicInputKeyDown}
-                  placeholder="e.g., Machine Learning"
-                />
-                <Button type="button" size="icon" onClick={handleManualAdd}>
-                  <Plus className="h-4 w-4" />
-                  <span className="sr-only">Add topic</span>
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                  <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics</h4>
-                      <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/50 rounded-md">
-                      {topics.length > 0 ? topics.map(topic => (
-                          <Badge key={topic} variant="secondary" className="flex items-center gap-1">
-                          {topic}
-                          <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
-                              <X className="h-3 w-3" />
-                          </button>
-                          </Badge>
-                      )) : (
-                          <p className="text-sm text-muted-foreground p-2">No topics selected yet.</p>
-                      )}
-                      </div>
-                  </div>
+          <div className="grid gap-4 py-4 overflow-y-auto pr-6 -mr-6 break-words">
+            <div className="flex items-center gap-2">
+              <Input
+                ref={inputRef}
+                value={currentTopic}
+                onChange={(e) => setCurrentTopic(e.target.value)}
+                onKeyDown={handleTopicInputKeyDown}
+                placeholder="e.g., Machine Learning"
+              />
+              <Button type="button" size="icon" onClick={handleManualAdd}>
+                <Plus className="h-4 w-4" />
+                <span className="sr-only">Add topic</span>
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+                <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics</h4>
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-muted/50 rounded-md">
+                    {topics.length > 0 ? topics.map(topic => (
+                        <Badge key={topic} variant="secondary" className="flex items-center gap-1">
+                        {topic}
+                        <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                            <X className="h-3 w-3" />
+                        </button>
+                        </Badge>
+                    )) : (
+                        <p className="text-sm text-muted-foreground p-2">No topics selected yet.</p>
+                    )}
+                    </div>
+                </div>
 
-                  {availableCategories.length > 0 && (
-                      <div>
-                          <h4 className="text-sm font-medium text-muted-foreground mb-2">Click to Add Existing Categories</h4>
-                          <div className="flex flex-wrap gap-2">
-                              {availableCategories.map(cat => (
-                                  <Badge
-                                  key={cat}
-                                  variant="outline"
-                                  onClick={() => handleAddTopic(cat)}
-                                  className="cursor-pointer hover:bg-primary/10"
+                {availableCategories.length > 0 && (
+                    <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Click to Add Existing Categories</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {availableCategories.map(cat => (
+                                <Badge
+                                key={cat}
+                                variant="outline"
+                                onClick={() => handleAddTopic(cat)}
+                                className="cursor-pointer hover:bg-primary/10"
+                                >
+                                {cat}
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {(generatedTitle || isGenerating) && (
+              <div className="pt-4">
+                <Separator className="my-4" />
+                <h4 className="font-medium mb-2 text-sm text-foreground">Suggested Title:</h4>
+                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                  {isGenerating ? <Loader2 className="animate-spin" /> : <p className="font-semibold text-primary">{generatedTitle}</p>}
+                </div>
+                {!isGenerating && generatedTitle && (
+                  <div className="mt-4">
+                    <Button onClick={() => handleNoveltyCheck()} disabled={isCheckingNovelty}>
+                      {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
+                      Check Novelty
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(noveltyResult || isCheckingNovelty) && (
+                <div className="pt-4">
+                  <Separator className="my-4" />
+                  <h4 className="font-medium mb-2 text-sm text-foreground">Novelty Analysis</h4>
+                  {isCheckingNovelty && !noveltyResult ? <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="animate-spin" /> <p>Analyzing...</p></div> : noveltyResult && (
+                      <Alert variant={getNoveltyAlertVariant(noveltyResult.noveltyScore)}>
+                          <AlertTitle className="flex items-center gap-2">
+                              Novelty Score: {noveltyResult.noveltyScore.toFixed(2)} / 1.0
+                          </AlertTitle>
+                          <AlertDescription>
+                              {noveltyResult.overallReasoning}
+                          </AlertDescription>
+                      </Alert>
+                  )}
+
+                  {noveltyResult && noveltyResult.suggestionsForImprovement && noveltyResult.suggestionsForImprovement.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                          <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement:</h5>
+                          <div className="flex flex-col items-start gap-2">
+                              {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
+                                  <div
+                                    key={index}
+                                    className="h-auto whitespace-normal text-left p-2 border rounded-md text-sm bg-background w-full"
                                   >
-                                  {cat}
-                                  </Badge>
+                                      {suggestion}
+                                  </div>
                               ))}
                           </div>
                       </div>
                   )}
-              </div>
 
-              {(generatedTitle || isGenerating) && (
-                <div className="pt-4">
-                  <Separator className="my-4" />
-                  <h4 className="font-medium mb-2 text-sm text-foreground">Suggested Title:</h4>
-                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                    {isGenerating ? <Loader2 className="animate-spin" /> : <p className="font-semibold text-primary">{generatedTitle}</p>}
-                  </div>
-                  {!isGenerating && generatedTitle && (
-                    <div className="mt-4">
-                      <Button onClick={() => handleNoveltyCheck()} disabled={isCheckingNovelty}>
-                        {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
-                        Check Novelty
-                      </Button>
-                    </div>
+                  {noveltyResult && noveltyResult.similarTitles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                            <h5 className="text-sm font-medium">Potentially Similar Titles Found:</h5>
+                            <TooltipProvider>
+                              <ul className="space-y-2">
+                                  {noveltyResult.similarTitles.map((item, index) => (
+                                      <li key={index} className="text-sm text-muted-foreground p-2 border rounded-md">
+                                          <div className="flex justify-between items-start gap-2">
+                                              <p className="flex-1 pr-2 break-words">{item.title}</p>
+                                              <div className="flex items-center gap-2">
+                                                  <Badge variant="secondary">{item.similarityScore.toFixed(2)}</Badge>
+                                                  <Tooltip delayDuration={100}>
+                                                      <TooltipTrigger>
+                                                          <Info className="h-4 w-4" />
+                                                      </TooltipTrigger>
+                                                      <TooltipContent className="max-w-xs">
+                                                          <p>{item.reasoning}</p>
+                                                      </TooltipContent>
+                                                  </Tooltip>
+                                              </div>
+                                          </div>
+                                      </li>
+                                  ))}
+                              </ul>
+                            </TooltipProvider>
+                      </div>
                   )}
-                </div>
-              )}
-
-              {(noveltyResult || isCheckingNovelty) && (
-                 <div className="pt-4">
-                    <Separator className="my-4" />
-                    <h4 className="font-medium mb-2 text-sm text-foreground">Novelty Analysis</h4>
-                    {isCheckingNovelty && !noveltyResult ? <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="animate-spin" /> <p>Analyzing...</p></div> : noveltyResult && (
-                        <Alert variant={getNoveltyAlertVariant(noveltyResult.noveltyScore)}>
-                            <AlertTitle className="flex items-center gap-2">
-                                Novelty Score: {noveltyResult.noveltyScore.toFixed(2)} / 1.0
-                            </AlertTitle>
-                            <AlertDescription>
-                                {noveltyResult.overallReasoning}
-                            </AlertDescription>
-                        </Alert>
-                    )}
-
-                    {noveltyResult && noveltyResult.suggestionsForImprovement && noveltyResult.suggestionsForImprovement.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                            <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement:</h5>
-                            <div className="flex flex-wrap gap-2">
-                                {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
-                                    <Button
-                                      key={index}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleSuggestionClick(suggestion)}
-                                      className="h-auto whitespace-normal text-left"
-                                    >
-                                        {suggestion}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {noveltyResult && noveltyResult.similarTitles.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                             <h5 className="text-sm font-medium">Potentially Similar Titles Found:</h5>
-                             <TooltipProvider>
-                                <ul className="space-y-2">
-                                    {noveltyResult.similarTitles.map((item, index) => (
-                                        <li key={index} className="text-sm text-muted-foreground p-2 border rounded-md">
-                                            <div className="flex justify-between items-start gap-2">
-                                                <p className="flex-1 pr-2">{item.title}</p>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant="secondary">{item.similarityScore.toFixed(2)}</Badge>
-                                                    <Tooltip delayDuration={100}>
-                                                        <TooltipTrigger>
-                                                            <Info className="h-4 w-4" />
-                                                        </TooltipTrigger>
-                                                        <TooltipContent className="max-w-xs">
-                                                            <p>{item.reasoning}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                </div>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                             </TooltipProvider>
-                        </div>
-                    )}
-                 </div> 
-              )}
-            </div>
-          </ScrollArea>
-          <DialogFooter>
+                </div> 
+            )}
+          </div>
+          <DialogFooter className="mt-auto pt-4">
             <div className="flex flex-wrap gap-2 w-full justify-end">
                 <Button onClick={handleGenerateClick} disabled={isGenerating || topics.length === 0}>
                 {isGenerating ? (
