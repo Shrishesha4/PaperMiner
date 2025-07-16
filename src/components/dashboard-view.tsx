@@ -53,6 +53,8 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     return ['all', ...Array.from(categorySet).sort()];
   }, [data]);
 
+  const allTitles = useMemo(() => data.map(p => p['Document Title']), [data]);
+
   const filteredData = useMemo(() => {
     return data.filter(paper => {
       const yearMatch = filters.year === 'all' || paper['Publication Year'] === filters.year;
@@ -224,7 +226,10 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <TitleGenerator availableCategories={categories.filter(c => c !== 'all')} />
+            <TitleGenerator 
+              availableCategories={categories.filter(c => c !== 'all')} 
+              existingTitles={allTitles}
+            />
             <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
                 {isGeneratingPdf ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

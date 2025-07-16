@@ -10,17 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-
-const GenerateNewTitleInputSchema = z.object({
-  topics: z.array(z.string()).describe('A list of topics or categories to base the new title on.'),
-  apiKey: z.string().describe('The user-provided Gemini API key.'),
-});
-export type GenerateNewTitleInput = z.infer<typeof GenerateNewTitleInputSchema>;
-
-const GenerateNewTitleOutputSchema = z.object({
-  newTitle: z.string().describe('A new, creative, and relevant research paper title.'),
-});
-export type GenerateNewTitleOutput = z.infer<typeof GenerateNewTitleOutputSchema>;
+import type { GenerateNewTitleInput, GenerateNewTitleOutput } from '@/types/schemas';
+import { GenerateNewTitleInputSchema, GenerateNewTitleOutputSchema } from '@/types/schemas';
 
 export async function generateNewTitle(input: GenerateNewTitleInput): Promise<GenerateNewTitleOutput> {
   return generateNewTitleFlow(input);
@@ -28,9 +19,9 @@ export async function generateNewTitle(input: GenerateNewTitleInput): Promise<Ge
 
 const prompt = ai.definePrompt({
   name: 'generateNewTitlePrompt',
-  input: { schema: z.object({ topics: z.array(z.string()) }) },
+  input: { schema: GenerateNewTitleInputSchema.omit({apiKey: true}) },
   output: { schema: GenerateNewTitleOutputSchema },
-  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
+  model: 'googleai/gemini-1.5-flash',
   prompt: `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
   
   Based on the following list of topics, generate one new, creative, and insightful title that synthesizes these themes.
