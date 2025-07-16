@@ -79,17 +79,16 @@ export function PaperDrafter() {
     }
   }, [generateDraft, title]);
 
-  const handleSelectionChange = () => {
-    if (regenerationState.isRegenerating) return;
+  const handleMouseUp = () => {
+    if (isRefining || regenerationState.isRegenerating) return;
 
     const currentSelection = window.getSelection();
-    if (currentSelection && currentSelection.rangeCount > 0) {
+    if (currentSelection && !currentSelection.isCollapsed && currentSelection.rangeCount > 0) {
       const range = currentSelection.getRangeAt(0);
       const selectedText = range.toString().trim();
 
-      if (selectedText.length > 0 && paperContentRef.current?.contains(range.commonAncestorContainer)) {
+      if (selectedText.length > 5 && paperContentRef.current?.contains(range.commonAncestorContainer)) {
         let sectionIndex = -1;
-        
         let node: Node | null = range.startContainer;
         let sectionElement: HTMLElement | null = null;
         
@@ -101,39 +100,34 @@ export function PaperDrafter() {
             node = node.parentElement;
         }
 
-        if (sectionElement && sectionElement.dataset.sectionIndex) {
+        if (sectionElement && sectionElement.dataset.sectionIndex && paper) {
             sectionIndex = parseInt(sectionElement.dataset.sectionIndex, 10);
             
-            const sectionContent = paper?.sections[sectionIndex].content || '';
+            // This logic is simplified; for complex markdown it might be fragile.
+            // It relies on finding the first occurrence.
+            const sectionContent = paper.sections[sectionIndex].content;
             const startOffset = sectionContent.indexOf(selectedText);
-            const endOffset = startOffset + selectedText.length;
-
-            if (startOffset > -1) {
-                setSelection({
-                    text: selectedText,
-                    sectionIndex,
-                    startOffset,
-                    endOffset,
-                    range
-                });
-                setPopoverOpen(true);
-                return;
+            
+            if (startOffset !== -1) {
+              const endOffset = startOffset + selectedText.length;
+              setSelection({ text: selectedText, sectionIndex, startOffset, endOffset, range });
+              setPopoverOpen(true);
+              return; // Exit to prevent clearing selection
             }
         }
       }
     }
     
-    if(!isRefining) {
-        setPopoverOpen(false);
-        setSelection(null);
-    }
+    // If no valid selection was made, close the popover.
+    // This part is tricky because clicking inside the popover also triggers mouseUp.
+    // The popover's `onInteractOutside` will handle closing it more reliably.
   };
 
   const handleRefine = async (prompt: string) => {
     if (!selection || !isApiKeySet) return;
 
     setIsRefining(true);
-    setPopoverOpen(false);
+    setPopoverOpen(false); // Close popover before starting
     
     try {
         const apiKey = getNextApiKey();
@@ -149,12 +143,17 @@ export function PaperDrafter() {
             const currentSection = paper.sections[selection.sectionIndex];
             const originalContent = currentSection.content;
             
+            // Re-create the content with the refined text
             const newContent = originalContent.substring(0, selection.startOffset) + 
                                result.refinedText + 
                                originalContent.substring(selection.endOffset);
 
             const newSections = [...paper.sections];
             newSections[selection.sectionIndex] = { ...currentSection, content: newContent };
+            
+            // Clear selection from the window
+            window.getSelection()?.removeAllRanges();
+
             setPaper({ sections: newSections });
         }
         
@@ -238,7 +237,7 @@ export function PaperDrafter() {
     }
 
     return (
-        <div ref={paperContentRef} onMouseUp={handleSelectionChange} className="bg-background p-8 rounded-lg shadow-md">
+        <div ref={paperContentRef} onMouseUp={handleMouseUp} className="bg-background p-8 rounded-lg shadow-md">
              <SelectRefinePopover 
                 range={selection?.range} 
                 isOpen={popoverOpen} 

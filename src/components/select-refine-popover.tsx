@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
@@ -22,27 +22,56 @@ export function SelectRefinePopover({ range, isOpen, onOpenChange, onRefine, isR
   const handleRefineClick = () => {
     if (prompt.trim()) {
       onRefine(prompt);
+    }
+  };
+  
+  // Clear prompt when popover closes
+  useEffect(() => {
+    if (!isOpen) {
       setPrompt('');
+    }
+  }, [isOpen]);
+
+  const handleOpenChange = (open: boolean) => {
+    // This allows clicking inside the popover without it closing
+    if (open) {
+      onOpenChange(true);
+    } else {
+      // Only close if not in the middle of refining
+      if (!isRefining) {
+        onOpenChange(false);
+        window.getSelection()?.removeAllRanges();
+      }
     }
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={onOpenChange}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         {range ? (
-            <span
-              style={{
-                position: 'absolute',
-                left: `${range.getBoundingClientRect().left + window.scrollX}px`,
-                top: `${range.getBoundingClientRect().top + window.scrollY}px`,
-                width: `${range.getBoundingClientRect().width}px`,
-                height: `${range.getBoundingClientRect().height}px`,
-              }}
-              className="pointer-events-none"
-            />
+          <span
+            style={{
+              position: 'absolute',
+              left: `${range.getBoundingClientRect().left + window.scrollX}px`,
+              top: `${range.getBoundingClientRect().top + window.scrollY - 4}px`, // position slightly above
+              width: '1px',
+              height: '1px',
+            }}
+            className="pointer-events-none"
+          />
         ) : children}
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="start" side="top">
+      <PopoverContent 
+        className="w-80" 
+        align="start" 
+        side="top"
+        onInteractOutside={(e) => {
+          // Prevent closing if we are in the middle of an operation
+          if (isRefining) {
+            e.preventDefault();
+          }
+        }}
+      >
         <div className="grid gap-4">
           <div className="space-y-2">
             <h4 className="font-medium leading-none">Refine Selection</h4>
@@ -55,6 +84,12 @@ export function SelectRefinePopover({ range, isOpen, onOpenChange, onRefine, isR
             onChange={(e) => setPrompt(e.target.value)}
             placeholder='e.g., "Make this more formal" or "Explain this in simpler terms"'
             disabled={isRefining}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleRefineClick();
+              }
+            }}
           />
           <Button onClick={handleRefineClick} disabled={!prompt.trim() || isRefining}>
             {isRefining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Edit className="mr-2 h-4 w-4" />}
@@ -65,4 +100,3 @@ export function SelectRefinePopover({ range, isOpen, onOpenChange, onRefine, isR
     </Popover>
   );
 }
-
