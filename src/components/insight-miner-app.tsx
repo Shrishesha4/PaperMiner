@@ -20,7 +20,7 @@ const BATCH_SIZE = 40;
 
 export function InsightMinerApp() {
   const { toast } = useToast();
-  const { apiKey, isApiKeySet } = useApiKey();
+  const { isApiKeySet, getNextApiKey } = useApiKey();
   const { selectedAnalysis, addAnalysis, removeAnalysis, isLoading: isHistoryLoading } = useHistory();
 
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
@@ -34,7 +34,7 @@ export function InsightMinerApp() {
   }, [selectedAnalysis, isHistoryLoading]);
 
   const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[], fileName: string) => {
-    if (!apiKey) {
+    if (!isApiKeySet) {
         toast({
             variant: 'destructive',
             title: 'API Key Not Set',
@@ -68,6 +68,9 @@ export function InsightMinerApp() {
       setProcessingMessage(`Categorizing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(totalToProcess / BATCH_SIZE)}...`);
 
       try {
+        const apiKey = getNextApiKey();
+        if (!apiKey) throw new Error("No API key available.");
+
         const batchResults = await categorizeResearchTitles({ titles, apiKey });
 
         batch.forEach(paper => {
@@ -86,7 +89,7 @@ export function InsightMinerApp() {
             failureReason = error.message.includes('SAFETY') 
               ? 'Categorization failed due to safety settings.' 
               : error.message.includes('429') 
-              ? 'API rate limit exceeded.'
+              ? 'API rate limit exceeded. Try adding more keys or waiting.'
               : error.message;
         }
 
@@ -115,7 +118,7 @@ export function InsightMinerApp() {
 
     setProcessingMessage('Analysis complete!');
     setTimeout(() => setCurrentStep('dashboard'), 1000);
-  }, [toast, apiKey, addAnalysis]);
+  }, [toast, isApiKeySet, addAnalysis, getNextApiKey]);
 
   const handleReset = (analysisId: string) => {
     removeAnalysis(analysisId);

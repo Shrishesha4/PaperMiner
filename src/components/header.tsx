@@ -5,9 +5,10 @@ import { Button } from './ui/button';
 import { useApiKey } from '@/hooks/use-api-key';
 import { SidebarTrigger } from './ui/sidebar';
 import { useSidebar } from './ui/sidebar';
+import { ApiKeyDialog } from './api-key-dialog';
+import { Dialog, DialogTrigger } from './ui/dialog';
 
 export function AppHeader() {
-  const { setApiKey } = useApiKey();
   const { isMobile, open, state } = useSidebar();
 
   return (
@@ -21,10 +22,15 @@ export function AppHeader() {
             </div>
         )}
       </div>
-      <Button variant="outline" size="sm" onClick={() => setApiKey(null)}>
-        <KeyRound className="mr-2 h-4 w-4" />
-        Change API Key
-      </Button>
+      <Dialog>
+        <DialogTrigger asChild>
+            <Button variant="outline" size="sm">
+                <KeyRound className="mr-2 h-4 w-4" />
+                Manage API Keys
+            </Button>
+        </DialogTrigger>
+        <ApiKeyDialog />
+      </Dialog>
     </header>
   );
 }

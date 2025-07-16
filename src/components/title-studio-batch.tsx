@@ -33,7 +33,7 @@ type NoveltyState = {
 };
 
 export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated }: TitleStudioBatchProps) {
-  const { apiKey } = useApiKey();
+  const { getNextApiKey, isApiKeySet } = useApiKey();
   const { toast } = useToast();
   const [topics, setTopics] = useState<string[]>([]);
   const [numTitles, setNumTitles] = useState(3);
@@ -42,7 +42,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const [noveltyChecks, setNoveltyChecks] = useState<Record<number, NoveltyState>>({});
 
   const handleGenerate = async () => {
-    if (!apiKey || topics.length === 0) return;
+    if (!isApiKeySet || topics.length === 0) return;
 
     setIsGenerating(true);
     onTitlesGenerated([]);
@@ -50,6 +50,9 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
     setNoveltyChecks({});
 
     try {
+      const apiKey = getNextApiKey();
+      if (!apiKey) throw new Error("No API key available.");
+      
       const result = await generateBatchTitles({
         topics,
         count: numTitles,
@@ -59,10 +62,16 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
       setCopiedStates(new Array(result.titles.length).fill(false));
     } catch (e) {
       console.error(e);
+      let errorMessage = 'An error occurred while generating titles. Please try again.';
+      if (e instanceof Error) {
+        errorMessage = e.message.includes('429') 
+            ? 'API rate limit exceeded. Try adding more keys or waiting.'
+            : e.message;
+      }
       toast({
         variant: 'destructive',
         title: 'Batch Generation Failed',
-        description: 'An error occurred while generating titles. Please try again.',
+        description: errorMessage,
       });
     } finally {
       setIsGenerating(false);
@@ -84,11 +93,14 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   };
   
   const handleCheckNovelty = async (title: string, index: number) => {
-    if (!apiKey) return;
+    if (!isApiKeySet) return;
 
     setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: true, result: null, error: null } }));
 
     try {
+      const apiKey = getNextApiKey();
+      if (!apiKey) throw new Error("No API key available.");
+
       const result = await checkTitleNovelty({
         generatedTitle: title,
         existingTitles: analysis.titles,
@@ -103,6 +115,8 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             ? 'Your Gemini API Key is invalid. Please check it and try again.'
             : error.message.includes('SAFETY')
             ? 'The novelty check was blocked by safety settings.'
+            : error.message.includes('429')
+            ? 'API rate limit exceeded. Try adding more keys or waiting.'
             : 'Could not connect to the novelty check service. Please try again later.';
       }
       setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: false, result: null, error: errorMessage } }));
@@ -154,7 +168,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         </div>
       </div>
       
-      <div className="p-4 sm:p-6 bg-muted/40">
+      <div className="p-4 sm:p-6 bg-muted/40 flex-1">
         {isGenerating ? (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -184,12 +198,13 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                                 size="sm"
                                 onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
                                 disabled={noveltyState?.isLoading}
-                                className={noveltyState?.result ? getNoveltyScoreColor(noveltyState.result.noveltyScore) : ''}
                             >
                                 {noveltyState?.isLoading ? (
                                     <Loader2 className="animate-spin" />
                                 ) : noveltyState?.result ? (
-                                    `Score: ${noveltyState.result.noveltyScore.toFixed(2)}`
+                                    <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
+                                        Score: {noveltyState.result.noveltyScore.toFixed(2)}
+                                    </span>
                                 ) : (
                                     <SearchCheck />
                                 )}
