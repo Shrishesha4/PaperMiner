@@ -11,11 +11,12 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
-import { Loader2, Wand2, Copy, SearchCheck, Check, Info } from 'lucide-react';
+import { Loader2, Wand2, Copy, SearchCheck, Check, Info, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { NoveltyResultCard } from './novelty-result-card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import Link from 'next/link';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -155,7 +156,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                   <CardContent className="p-4 flex-1">
                     <p className="font-medium">{title}</p>
                   </CardContent>
-                  <CardFooter className="p-4 bg-background border-t flex justify-between items-center gap-2">
+                  <CardFooter className="p-2 bg-background border-t flex justify-end items-center gap-1 flex-wrap">
                      <Button variant="ghost" size="sm" onClick={() => handleCopy(title, index)}>
                       {copiedStates[index] ? <Check className="text-green-500" /> : <Copy />}
                       <span className="ml-2">{copiedStates[index] ? 'Copied!' : 'Copy'}</span>
@@ -195,7 +196,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                         </Button>
                       </DialogTrigger>
                       {noveltyState?.result && (
-                        <DialogContent className="sm:max-w-lg">
+                         <DialogContent className="sm:max-w-lg">
                           <DialogHeader>
                             <DialogTitle>Novelty Analysis</DialogTitle>
                           </DialogHeader>
@@ -204,6 +205,14 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                         </DialogContent>
                       )}
                     </Dialog>
+
+                    <Button asChild size="sm" variant="default">
+                        <Link href={`/paper-drafter?title=${encodeURIComponent(title)}`}>
+                            <FileText />
+                            <span className="ml-2">Draft Paper</span>
+                        </Link>
+                    </Button>
+
                   </CardFooter>
                 </Card>
               )
