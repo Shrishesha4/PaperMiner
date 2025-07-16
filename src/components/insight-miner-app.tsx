@@ -11,8 +11,9 @@ import { DashboardView } from './dashboard-view';
 import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
 import { useHistory } from '@/hooks/use-history';
-import { SidebarProvider, Sidebar, SidebarInset } from './ui/sidebar';
+import { SidebarProvider, SidebarInset } from './ui/sidebar';
 import { HistorySidebar } from './history-sidebar';
+import { Loader2 } from 'lucide-react';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
@@ -122,7 +123,12 @@ export function InsightMinerApp() {
 
   const renderContent = () => {
     if (isHistoryLoading) {
-        return <ProcessingView progress={0} message="Loading history..." />;
+      return (
+          <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+              <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+              <p className="mt-4 text-muted-foreground">Loading analysis history...</p>
+          </div>
+      );
     }
     
     switch (currentStep) {
@@ -143,6 +149,7 @@ export function InsightMinerApp() {
                     />
                 );
             }
+            // If no analysis is selected (e.g., history is cleared), go to uploader
             return <UploaderView onProcess={handleDataProcessing} />;
         default:
             return <UploaderView onProcess={handleDataProcessing} />;
@@ -152,10 +159,12 @@ export function InsightMinerApp() {
   return (
     <SidebarProvider>
         <HistorySidebar />
-        <SidebarInset>
+        <SidebarInset className="flex flex-col">
             <AppHeader />
             {!isApiKeySet && <ApiKeyDialog />}
-            {renderContent()}
+            <div className="flex-1 flex flex-col">
+              {renderContent()}
+            </div>
         </SidebarInset>
     </SidebarProvider>
   );

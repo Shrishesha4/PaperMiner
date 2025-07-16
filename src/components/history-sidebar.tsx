@@ -9,12 +9,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarTrigger,
-  SidebarMenuSkeleton
+  SidebarMenuSkeleton,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { useHistory } from '@/hooks/use-history';
 import { Button } from './ui/button';
-import { FileText, Trash2, Loader2, BrainCircuit } from 'lucide-react';
+import { FileText, Trash2, BrainCircuit } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,15 +29,16 @@ import {
 
 export function HistorySidebar() {
   const { history, selectAnalysis, selectedAnalysis, clearHistory, removeAnalysis, isLoading } = useHistory();
+  const { state } = useSidebar();
 
   return (
     <Sidebar>
         <SidebarHeader>
-            <div className="flex items-center gap-2">
-                <BrainCircuit className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold tracking-tight">PaperMiner</h1>
-            </div>
-            <p className="text-xs text-muted-foreground">Your recent analyses</p>
+            { state === 'expanded' && (
+                <div className="flex flex-col gap-1">
+                    <p className="text-xs text-muted-foreground">Your recent analyses</p>
+                </div>
+            )}
         </SidebarHeader>
       <SidebarContent className="p-2">
         {isLoading ? (
@@ -47,7 +48,7 @@ export function HistorySidebar() {
                 <SidebarMenuSkeleton showIcon />
             </div>
         ) : history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4 group-data-[collapsible=icon]:hidden">
                 <p>No analysis history found.</p>
                 <p className="text-xs mt-2">Upload a CSV to get started.</p>
             </div>
@@ -58,21 +59,20 @@ export function HistorySidebar() {
                         <SidebarMenuButton
                             onClick={() => selectAnalysis(item.id)}
                             isActive={selectedAnalysis?.id === item.id}
-                            className="h-auto py-2"
+                            className="h-auto py-2 justify-start"
+                            tooltip={{children: item.name, side: 'right', align: 'center'}}
                         >
-                            <div className="flex items-start gap-3">
-                                <FileText className="mt-1"/>
-                                <div className="flex flex-col text-left">
-                                    <span className="font-medium">{item.name}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                        {new Date(item.date).toLocaleDateString()} - {item.categorizedPapers.length} papers
-                                    </span>
-                                </div>
+                            <FileText className="flex-shrink-0"/>
+                            <div className="flex flex-col text-left overflow-hidden">
+                                <span className="font-medium truncate">{item.name}</span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                    {new Date(item.date).toLocaleDateString()} - {item.categorizedPapers.length} papers
+                                </span>
                             </div>
                         </SidebarMenuButton>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100">
+                             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
                                 <Trash2 className="h-4 w-4 text-destructive"/>
                              </Button>
                           </AlertDialogTrigger>
@@ -94,7 +94,7 @@ export function HistorySidebar() {
             </SidebarMenu>
         )}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="group-data-[collapsible=icon]:hidden">
         {history.length > 0 && (
             <AlertDialog>
             <AlertDialogTrigger asChild>
