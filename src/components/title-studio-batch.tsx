@@ -177,31 +177,33 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                       <span className="ml-2">{copiedStates[index] ? 'Copied!' : 'Copy'}</span>
                     </Button>
                     
-                    {noveltyState?.result ? (
-                       <Dialog>
+                    <Dialog>
                         <DialogTrigger asChild>
-                           <Button variant="outline" size="sm" className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
-                              Score: {noveltyState.result.noveltyScore.toFixed(2)}
-                           </Button>
+                            {noveltyState?.result ? (
+                                <Button variant="outline" size="sm" className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
+                                    Score: {noveltyState.result.noveltyScore.toFixed(2)}
+                                </Button>
+                            ) : (
+                                <Button variant="outline" size="sm" onClick={() => handleCheckNovelty(title, index)} disabled={noveltyState?.isLoading}>
+                                    {noveltyState?.isLoading ? (
+                                        <Loader2 className="animate-spin" />
+                                    ) : (
+                                        <SearchCheck />
+                                    )}
+                                    <span className="ml-2">Check Novelty</span>
+                                </Button>
+                            )}
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-lg">
-                           <DialogHeader>
-                              <DialogTitle>Novelty Analysis</DialogTitle>
-                           </DialogHeader>
-                           <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
-                           <NoveltyResultCard result={noveltyState.result} />
-                        </DialogContent>
-                      </Dialog>
-                    ) : (
-                      <Button variant="outline" size="sm" onClick={() => handleCheckNovelty(title, index)} disabled={noveltyState?.isLoading}>
-                        {noveltyState?.isLoading ? (
-                            <Loader2 className="animate-spin" />
-                        ) : (
-                            <SearchCheck />
+                        {noveltyState?.result && (
+                            <DialogContent className="sm:max-w-lg">
+                               <DialogHeader>
+                                  <DialogTitle>Novelty Analysis</DialogTitle>
+                               </DialogHeader>
+                               <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
+                               <NoveltyResultCard result={noveltyState.result} />
+                            </DialogContent>
                         )}
-                         <span className="ml-2">Check Novelty</span>
-                      </Button>
-                    )}
+                    </Dialog>
                   </CardFooter>
                 </Card>
               )
