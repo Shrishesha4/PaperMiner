@@ -88,12 +88,22 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   }, [history, toast]);
 
   const updateAnalysis = useCallback((id: string, updates: Partial<Omit<Analysis, 'id'>>) => {
-    setHistory(prevHistory => 
-      prevHistory.map(item => 
-        item.id === id ? { ...item, ...updates, date: new Date().toISOString() } : item
-      ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    );
-  }, []);
+    let updatedAnalysis: Analysis | null = null;
+    const newHistory = history.map(item => {
+        if (item.id === id) {
+            updatedAnalysis = { ...item, ...updates, date: new Date().toISOString() };
+            return updatedAnalysis;
+        }
+        return item;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    setHistory(newHistory);
+
+    // If the updated analysis is the currently selected one, update that state too
+    if (selectedAnalysis?.id === id && updatedAnalysis) {
+        setSelectedAnalysis(updatedAnalysis);
+    }
+  }, [history, selectedAnalysis]);
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
