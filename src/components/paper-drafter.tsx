@@ -197,7 +197,7 @@ export function PaperDrafter() {
     }
   };
 
-  const handleExportToGoogleDocs = () => {
+  const handleCopyToClipboard = () => {
     if (!paper) return;
     
     const plainText = [
@@ -207,11 +207,7 @@ export function PaperDrafter() {
     ].join('');
     
     navigator.clipboard.writeText(plainText).then(() => {
-        toast({
-            title: "Copied to Clipboard",
-            description: "Paper content copied. Paste it into your new Google Doc.",
-        });
-        window.open('https://docs.new', '_blank');
+        // Success handled by the dialog opening
     }, () => {
         toast({
             variant: "destructive",
@@ -347,10 +343,28 @@ export function PaperDrafter() {
                 {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                 Download .docx
             </Button>
-            <Button onClick={handleExportToGoogleDocs} variant="outline" disabled={isLoading || !!error}>
-                <FileUp className="mr-2 h-4 w-4" />
-                Export to Google Docs
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" disabled={isLoading || !!error} onClick={handleCopyToClipboard}>
+                    <FileUp className="mr-2 h-4 w-4" />
+                    Export to Google Docs
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Ready to Export</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    The paper content has been copied to your clipboard. Click the button below to open a new Google Doc, where you can paste the content.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => window.open('https://docs.new', '_blank')}>
+                    Open Google Docs
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </header>
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
