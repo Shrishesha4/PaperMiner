@@ -22,7 +22,7 @@ const prompt = ai.definePrompt({
   name: 'checkTitleNoveltyPrompt',
   input: { schema: CheckTitleNoveltyInputSchema.omit({apiKey: true}) },
   output: { schema: CheckTitleNoveltyOutputSchema },
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-2.5-flash',
   prompt: `You are an expert research analyst specializing in identifying topic overlap and novelty in academic literature.
   
 Your task is to evaluate the novelty of a "Generated Title" by comparing it against a list of "Existing Titles".

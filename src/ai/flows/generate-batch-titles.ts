@@ -20,7 +20,7 @@ const prompt = ai.definePrompt({
   name: 'generateBatchTitlesPrompt',
   input: { schema: GenerateBatchTitlesInputSchema.omit({ apiKey: true }) },
   output: { schema: GenerateBatchTitlesOutputSchema },
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-2.5-flash',
   prompt: `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
   
 Based on the following list of topics, generate {{{count}}} new, creative, and insightful titles that synthesize these themes.
