@@ -87,14 +87,14 @@ export function TitleStudio() {
                 <TabsTrigger value="batch">Batch Generate</TabsTrigger>
             </TabsList>
         </div>
+        <TabsContent value="batch" className="flex-1 overflow-hidden m-0">
+            <TitleStudioBatch analysis={analysis} />
+        </TabsContent>
         <TabsContent value="chat" className="flex-1 flex flex-col overflow-hidden m-0">
             <TitleStudioChat 
                 analysis={analysis} 
                 onMessagesChange={setChatMessages}
             />
-        </TabsContent>
-        <TabsContent value="batch" className="flex-1 overflow-hidden m-0">
-            <TitleStudioBatch analysis={analysis} />
         </TabsContent>
       </Tabs>
     </div>
