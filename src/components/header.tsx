@@ -2,14 +2,13 @@
 import { BrainCircuit, KeyRound } from 'lucide-react';
 import React from 'react';
 import { Button } from './ui/button';
-import { useApiKey } from '@/hooks/use-api-key';
-import { SidebarTrigger } from './ui/sidebar';
 import { useSidebar } from './ui/sidebar';
 import { ApiKeyDialog } from './api-key-dialog';
-import { Dialog, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
 
 export function AppHeader() {
   const { isMobile, open, state } = useSidebar();
+  const [isKeyDialogOpen, setIsKeyDialogOpen] = React.useState(false);
 
   return (
     <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0">
@@ -22,14 +21,14 @@ export function AppHeader() {
             </div>
         )}
       </div>
-      <Dialog>
+      <Dialog open={isKeyDialogOpen} onOpenChange={setIsKeyDialogOpen}>
         <DialogTrigger asChild>
             <Button variant="outline" size="sm">
                 <KeyRound className="mr-2 h-4 w-4" />
                 Manage API Keys
             </Button>
         </DialogTrigger>
-        <ApiKeyDialog />
+        <ApiKeyDialog onOpenChange={setIsKeyDialogOpen} />
       </Dialog>
     </header>
   );

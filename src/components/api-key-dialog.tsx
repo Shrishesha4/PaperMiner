@@ -1,8 +1,8 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -15,14 +15,21 @@ import { Label } from '@/components/ui/label';
 import { useApiKey } from '@/hooks/use-api-key';
 import { KeyRound, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from './ui/badge';
 
-export function ApiKeyDialog() {
+interface ApiKeyDialogProps {
+    onOpenChange?: (open: boolean) => void;
+}
+
+export function ApiKeyDialog({ onOpenChange }: ApiKeyDialogProps) {
   const { apiKeys, setApiKeys, isApiKeySet } = useApiKey();
   const [localKeys, setLocalKeys] = useState<string[]>(apiKeys);
   const [newKey, setNewKey] = useState('');
   const { toast } = useToast();
 
+  useEffect(() => {
+    setLocalKeys(apiKeys);
+  }, [apiKeys]);
+  
   const handleAddKey = () => {
     const keyToAdd = newKey.trim();
     if (keyToAdd && !localKeys.includes(keyToAdd)) {
@@ -48,6 +55,7 @@ export function ApiKeyDialog() {
         title: 'API Keys Saved',
         description: 'Your Gemini API keys have been saved locally.',
       });
+      onOpenChange?.(false); // Close dialog on save
     } else {
         toast({
             variant: 'destructive',
@@ -63,8 +71,7 @@ export function ApiKeyDialog() {
   }
 
   return (
-    <Dialog open={!isApiKeySet}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-md" onInteractOutside={isApiKeySet ? undefined : (e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <KeyRound className="w-6 h-6 text-primary"/>
@@ -118,6 +125,5 @@ export function ApiKeyDialog() {
           <Button onClick={handleSaveKeys}>Save Keys</Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
   );
 }

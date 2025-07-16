@@ -15,6 +15,7 @@ import { SidebarProvider, SidebarInset } from './ui/sidebar';
 import { HistorySidebar } from './history-sidebar';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Dialog } from './ui/dialog';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
@@ -194,7 +195,9 @@ export function InsightMinerApp() {
         <HistorySidebar />
         <SidebarInset className="flex flex-col">
             <AppHeader />
-            {!isApiKeySet && <ApiKeyDialog />}
+            <Dialog open={!isApiKeySet}>
+              <ApiKeyDialog />
+            </Dialog>
             <div className="flex-1 flex flex-col">
               {renderContent()}
             </div>
