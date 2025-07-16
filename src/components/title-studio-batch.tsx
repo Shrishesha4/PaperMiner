@@ -58,6 +58,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
       onTitlesGenerated(result.titles);
       setCopiedStates(new Array(result.titles.length).fill(false));
     } catch (e) {
+      console.error(e);
       toast({
         variant: 'destructive',
         title: 'Batch Generation Failed',
@@ -98,11 +99,13 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
       console.error('Novelty check failed:', error);
       let errorMessage = 'An error occurred during the novelty check.';
       if (error instanceof Error) {
-        errorMessage = error.message.includes('VALIDATION_ERROR') 
-            ? 'The data sent for novelty check was invalid. Please try again.' 
-            : 'Could not connect to the novelty check service.';
+        errorMessage = error.message.includes('API key not valid')
+            ? 'Your Gemini API Key is invalid. Please check it and try again.'
+            : error.message.includes('SAFETY')
+            ? 'The novelty check was blocked by safety settings.'
+            : 'Could not connect to the novelty check service. Please try again later.';
       }
-      setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: false, result: null, error: 'Failed to check novelty.' } }));
+      setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: false, result: null, error: errorMessage } }));
        toast({
         variant: 'destructive',
         title: 'Novelty Check Failed',
