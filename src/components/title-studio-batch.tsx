@@ -121,7 +121,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       <div className="p-4 sm:p-6 border-b">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TopicSelector
@@ -154,7 +154,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-muted/40">
+      <div className="p-4 sm:p-6 bg-muted/40">
         {isGenerating ? (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -179,20 +179,22 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     
                     <Dialog>
                         <DialogTrigger asChild>
-                            {noveltyState?.result ? (
-                                <Button variant="outline" size="sm" className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
-                                    Score: {noveltyState.result.noveltyScore.toFixed(2)}
-                                </Button>
-                            ) : (
-                                <Button variant="outline" size="sm" onClick={() => handleCheckNovelty(title, index)} disabled={noveltyState?.isLoading}>
-                                    {noveltyState?.isLoading ? (
-                                        <Loader2 className="animate-spin" />
-                                    ) : (
-                                        <SearchCheck />
-                                    )}
-                                    <span className="ml-2">Check Novelty</span>
-                                </Button>
-                            )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
+                                disabled={noveltyState?.isLoading}
+                                className={noveltyState?.result ? getNoveltyScoreColor(noveltyState.result.noveltyScore) : ''}
+                            >
+                                {noveltyState?.isLoading ? (
+                                    <Loader2 className="animate-spin" />
+                                ) : noveltyState?.result ? (
+                                    `Score: ${noveltyState.result.noveltyScore.toFixed(2)}`
+                                ) : (
+                                    <SearchCheck />
+                                )}
+                                <span className="ml-2">{noveltyState?.result ? 'View Details' : 'Check Novelty'}</span>
+                            </Button>
                         </DialogTrigger>
                         {noveltyState?.result && (
                             <DialogContent className="sm:max-w-lg">

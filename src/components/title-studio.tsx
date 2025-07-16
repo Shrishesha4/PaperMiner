@@ -56,7 +56,7 @@ export function TitleStudio() {
 
   return (
     <div className="flex h-[calc(100vh-theme(height.16))] flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push('/')}>
             <ArrowLeft className="h-4 w-4" />
@@ -72,11 +72,13 @@ export function TitleStudio() {
             Continue in ChatGPT
         </Button>
       </div>
-      <TitleStudioBatch 
-        analysis={analysis}
-        generatedTitles={generatedTitles}
-        onTitlesGenerated={setGeneratedTitles}
-      />
+      <div className="flex-1 overflow-y-auto">
+        <TitleStudioBatch 
+          analysis={analysis}
+          generatedTitles={generatedTitles}
+          onTitlesGenerated={setGeneratedTitles}
+        />
+      </div>
     </div>
   );
 }
