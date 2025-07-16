@@ -9,21 +9,20 @@ import { generateNewTitle } from '@/ai/flows/generate-new-title';
 import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
 import { refineTitle } from '@/ai/flows/refine-title';
 import { Button } from './ui/button';
-import { ArrowLeft, Loader2, SearchCheck, Sparkles, Wand2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { ScrollArea } from './ui/scroll-area';
+import { ArrowLeft, Loader2, SearchCheck, Sparkles } from 'lucide-react';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { cn } from '@/lib/utils';
 import { TopicSelector } from './topic-selector';
 import { NoveltyResultCard } from './novelty-result-card';
 import type { CheckTitleNoveltyOutput } from '@/types/schemas';
+import { ScrollArea } from './ui/scroll-area';
 
 type Message = {
   id: string;
   role: 'user' | 'assistant' | 'system';
   type: 'topics' | 'title' | 'novelty' | 'refinement' | 'error';
   content: string | CheckTitleNoveltyOutput;
-  actions?: 'check-novelty'[] | { type: 'refine'; suggestions: string[] };
+  actions?: { type: 'check-novelty' } | { type: 'refine'; suggestions: string[] };
 };
 
 export function TitleStudio() {
@@ -56,9 +55,12 @@ export function TitleStudio() {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        const viewport = scrollAreaRef.current.querySelector('div');
+        if (viewport) {
+            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        }
     }
-  }, [messages])
+  }, [messages]);
 
   const handleGenerateTitle = useCallback(async (topics: string[]) => {
     if (!apiKey) return;
@@ -78,7 +80,7 @@ export function TitleStudio() {
             role: 'assistant',
             type: 'title',
             content: result.newTitle,
-            actions: ['check-novelty']
+            actions: { type: 'check-novelty' }
         }));
     } catch (e) {
         setMessages(prev => prev.slice(0, -1).concat({
@@ -95,6 +97,9 @@ export function TitleStudio() {
   const handleCheckNovelty = useCallback(async () => {
     if (!apiKey || !activeTitle || !analysis) return;
     setIsLoading(true);
+    // Disable actions on the previous message
+    setMessages(prev => prev.map(m => ({...m, actions: undefined})));
+
     setMessages(prev => [
         ...prev,
         { id: `msg-${Date.now()}`, role: 'user', type: 'novelty', content: `Check the novelty of "${activeTitle}"` },
@@ -125,6 +130,9 @@ export function TitleStudio() {
   const handleRefineTitle = useCallback(async (suggestion: string) => {
     if (!apiKey || !activeTitle) return;
     setIsLoading(true);
+    // Disable actions on the previous message
+    setMessages(prev => prev.map(m => ({...m, actions: undefined})));
+
     setMessages(prev => [
         ...prev,
         { id: `msg-${Date.now()}`, role: 'user', type: 'refinement', content: `Refine the title using the suggestion: "${suggestion}"`},
@@ -139,7 +147,7 @@ export function TitleStudio() {
             role: 'assistant',
             type: 'title',
             content: result.refinedTitle,
-            actions: ['check-novelty']
+            actions: { type: 'check-novelty' }
         }));
     } catch (e) {
         setMessages(prev => prev.slice(0, -1).concat({
@@ -170,54 +178,58 @@ export function TitleStudio() {
                 </div>
             </div>
         </div>
-        <div className="flex-1 overflow-hidden flex flex-col-reverse">
+        <div className="flex-1 overflow-hidden">
              <ScrollArea className="h-full" ref={scrollAreaRef}>
                 <div className="p-4 space-y-6">
                     {messages.map((message) => (
-                        <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : 'justify-start')}>
-                            {message.role === 'assistant' && (
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback><Sparkles /></AvatarFallback>
-                                </Avatar>
-                            )}
-                            <div className={cn("max-w-xl rounded-lg p-3 text-sm", message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                {message.type === 'novelty' && typeof message.content === 'object' ? (
-                                    <NoveltyResultCard result={message.content} />
-                                ) : message.content === '' ? (
-                                    <Loader2 className="animate-spin" />
-                                ) : (
-                                    <p>{message.content as string}</p>
+                        <div key={message.id}>
+                            <div className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+                                {message.role === 'assistant' && (
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarFallback><Sparkles /></AvatarFallback>
+                                    </Avatar>
                                 )}
+                                <div className={cn("max-w-xl rounded-lg p-3 text-sm", message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                                    {message.type === 'novelty' && typeof message.content === 'object' ? (
+                                        <NoveltyResultCard result={message.content} />
+                                    ) : message.content === '' ? (
+                                        <Loader2 className="animate-spin" />
+                                    ) : (
+                                        <p>{message.content as string}</p>
+                                    )}
+                                </div>
                             </div>
+                            {message.actions && !isLoading && (
+                                <div className="flex justify-start gap-2 ml-12 mt-2 flex-wrap">
+                                    {message.actions.type === 'check-novelty' && (
+                                        <Button size="sm" onClick={handleCheckNovelty}>
+                                            <SearchCheck className="mr-2 h-4 w-4" /> Check Novelty
+                                        </Button>
+                                    )}
+                                    {message.actions.type === 'refine' && (
+                                        <div className="flex flex-col gap-2 items-start">
+                                            <p className="text-sm font-medium">Suggestions to improve:</p>
+                                            {message.actions.suggestions.map((s, i) => (
+                                                <Button key={i} size="sm" variant="outline" onClick={() => handleRefineTitle(s)} className="h-auto text-left py-1.5 whitespace-normal">
+                                                    {s}
+                                                </Button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
-                    {messages.length > 0 && messages[messages.length - 1].actions && !isLoading && (
-                        <div className="flex justify-start gap-2 ml-12">
-                             {messages[messages.length - 1].actions === 'check-novelty' && (
-                                <Button size="sm" onClick={handleCheckNovelty}>
-                                    <SearchCheck className="mr-2 h-4 w-4" /> Check Novelty
-                                </Button>
-                             )}
-                             {typeof messages[messages.length - 1].actions === 'object' && messages[messages.length - 1].actions?.type === 'refine' && (
-                                <div className="flex flex-col gap-2 items-start">
-                                    <p className="text-sm font-medium">Suggestions to improve:</p>
-                                    {(messages[messages.length - 1].actions as any).suggestions.map((s: string, i: number) => (
-                                        <Button key={i} size="sm" variant="outline" onClick={() => handleRefineTitle(s)}>
-                                            {s}
-                                        </Button>
-                                    ))}
-                                </div>
-                             )}
-                        </div>
-                    )}
                 </div>
              </ScrollArea>
         </div>
-        <div className="p-4 border-t">
+        <div className="p-4 border-t bg-background">
             {messages.length === 0 ? (
                 <TopicSelector availableCategories={analysis.categories} onGenerate={handleGenerateTitle} isLoading={isLoading} />
             ) : (
-                <p className="text-center text-sm text-muted-foreground">Interact with the suggestions above or start a new session.</p>
+                 <p className="text-center text-sm text-muted-foreground">
+                    {isLoading ? 'Thinking...' : 'Interact with the suggestions above or restart the conversation.'}
+                </p>
             )}
         </div>
     </div>
