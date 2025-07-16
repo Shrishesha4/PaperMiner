@@ -93,6 +93,7 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
       return;
     }
     setIsCheckingNovelty(true);
+    setNoveltyResult(null);
     try {
       const result = await checkTitleNovelty({
         generatedTitle: title,
@@ -168,7 +169,7 @@ Respond with only the new title.`;
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="pr-6 -mr-6">
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 break-words">
               <div className="flex items-center gap-2">
                 <Input
                   ref={inputRef}
@@ -229,7 +230,7 @@ Respond with only the new title.`;
                   {!isGenerating && generatedTitle && (
                     <div className="mt-4">
                       <Button onClick={() => handleNoveltyCheck()} disabled={isCheckingNovelty}>
-                        {isCheckingNovelty && !noveltyResult ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
+                        {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
                         Check Novelty
                       </Button>
                     </div>
@@ -241,7 +242,7 @@ Respond with only the new title.`;
                  <div className="pt-4">
                     <Separator className="my-4" />
                     <h4 className="font-medium mb-2 text-sm text-foreground">Novelty Analysis</h4>
-                    {isCheckingNovelty ? <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="animate-spin" /> <p>Analyzing...</p></div> : noveltyResult && (
+                    {isCheckingNovelty && !noveltyResult ? <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="animate-spin" /> <p>Analyzing...</p></div> : noveltyResult && (
                         <Alert variant={getNoveltyAlertVariant(noveltyResult.noveltyScore)}>
                             <AlertTitle className="flex items-center gap-2">
                                 Novelty Score: {noveltyResult.noveltyScore.toFixed(2)} / 1.0
@@ -257,7 +258,13 @@ Respond with only the new title.`;
                             <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement:</h5>
                             <div className="flex flex-wrap gap-2">
                                 {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
-                                    <Button key={index} variant="outline" size="sm" onClick={() => handleSuggestionClick(suggestion)}>
+                                    <Button
+                                      key={index}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleSuggestionClick(suggestion)}
+                                      className="h-auto whitespace-normal text-left"
+                                    >
                                         {suggestion}
                                     </Button>
                                 ))}
@@ -272,7 +279,7 @@ Respond with only the new title.`;
                                 <ul className="space-y-2">
                                     {noveltyResult.similarTitles.map((item, index) => (
                                         <li key={index} className="text-sm text-muted-foreground p-2 border rounded-md">
-                                            <div className="flex justify-between items-start">
+                                            <div className="flex justify-between items-start gap-2">
                                                 <p className="flex-1 pr-2">{item.title}</p>
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant="secondary">{item.similarityScore.toFixed(2)}</Badge>
