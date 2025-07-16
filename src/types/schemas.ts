@@ -34,3 +34,16 @@ export const CheckTitleNoveltyOutputSchema = z.object({
   suggestionsForImprovement: z.array(z.string()).optional().describe('A list of suggestions to improve the title if novelty is low.'),
 });
 export type CheckTitleNoveltyOutput = z.infer<typeof CheckTitleNoveltyOutputSchema>;
+
+// Schemas for refining a title
+export const RefineTitleInputSchema = z.object({
+    originalTitle: z.string().describe('The title to be refined.'),
+    suggestion: z.string().describe('The suggestion to apply to the title.'),
+    apiKey: z.string().describe('The user-provided Gemini API key.'),
+});
+export type RefineTitleInput = z.infer<typeof RefineTitleInputSchema>;
+
+export const RefineTitleOutputSchema = z.object({
+    refinedTitle: z.string().describe('The refined title.'),
+});
+export type RefineTitleOutput = z.infer<typeof RefineTitleOutputSchema>;

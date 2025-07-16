@@ -6,6 +6,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { generateNewTitle } from '@/ai/flows/generate-new-title';
 import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
+import { refineTitle } from '@/ai/flows/refine-title';
 import { Loader2, Wand2, MessageSquareText, Plus, X, SearchCheck, Info, Sparkles } from 'lucide-react';
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCheckingNovelty, setIsCheckingNovelty] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const [generatedTitle, setGeneratedTitle] = useState('');
   const [noveltyResult, setNoveltyResult] = useState<CheckTitleNoveltyOutput | null>(null);
   const [topics, setTopics] = useState<string[]>([]);
@@ -107,13 +109,34 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     }
   }, [apiKey, generatedTitle, existingTitles, toast]);
 
-  const handleSuggestionClick = (suggestion: string) => {
-    handleAddTopic(suggestion);
-    toast({
-        title: "Topic Added",
-        description: `"${suggestion}" was added to your topics. You can now generate a new title.`
-    })
-  };
+  const handleSuggestionClick = useCallback(async (suggestion: string) => {
+    if (!apiKey || !generatedTitle) return;
+
+    setIsRefining(true);
+    try {
+        const result = await refineTitle({
+            originalTitle: generatedTitle,
+            suggestion: suggestion,
+            apiKey,
+        });
+        setGeneratedTitle(result.refinedTitle);
+        setNoveltyResult(null); // Clear old novelty results
+        toast({
+            title: "Title Refined",
+            description: "The title has been updated. You can now check its novelty again."
+        });
+    } catch (error) {
+        console.error("Error refining title:", error);
+        toast({
+            variant: "destructive",
+            title: "Refinement Failed",
+            description: "Could not refine the title based on the suggestion."
+        });
+    } finally {
+        setIsRefining(false);
+    }
+  }, [apiKey, generatedTitle, toast]);
+
 
   const handleChatGptClick = () => {
     const prompt = `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
@@ -152,6 +175,8 @@ Respond with only the new title.`;
     if (score < 0.8) return 'default';
     return 'default'; // Success variant would be nice here
   }
+  
+  const anyLoading = isGenerating || isCheckingNovelty || isRefining;
 
   return (
     <>
@@ -175,8 +200,9 @@ Respond with only the new title.`;
                 onChange={(e) => setCurrentTopic(e.target.value)}
                 onKeyDown={handleTopicInputKeyDown}
                 placeholder="e.g., Machine Learning"
+                disabled={anyLoading}
               />
-              <Button type="button" size="icon" onClick={handleManualAdd}>
+              <Button type="button" size="icon" onClick={handleManualAdd} disabled={anyLoading}>
                 <Plus className="h-4 w-4" />
                 <span className="sr-only">Add topic</span>
               </Button>
@@ -189,7 +215,7 @@ Respond with only the new title.`;
                     {topics.length > 0 ? topics.map(topic => (
                         <Badge key={topic} variant="secondary" className="flex items-center gap-1">
                         {topic}
-                        <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5">
+                        <button onClick={() => handleRemoveTopic(topic)} className="rounded-full hover:bg-muted-foreground/20 p-0.5" disabled={anyLoading}>
                             <X className="h-3 w-3" />
                         </button>
                         </Badge>
@@ -208,7 +234,7 @@ Respond with only the new title.`;
                                 key={cat}
                                 variant="outline"
                                 onClick={() => handleAddTopic(cat)}
-                                className="cursor-pointer hover:bg-primary/10"
+                                className={`cursor-pointer hover:bg-primary/10 ${anyLoading ? 'opacity-50 pointer-events-none' : ''}`}
                                 >
                                 {cat}
                                 </Badge>
@@ -222,12 +248,12 @@ Respond with only the new title.`;
               <div className="pt-4">
                 <Separator className="my-4" />
                 <h4 className="font-medium mb-2 text-sm text-foreground">Suggested Title:</h4>
-                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  {isGenerating ? <Loader2 className="animate-spin" /> : <p className="font-semibold text-primary">{generatedTitle}</p>}
+                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 min-h-[60px] flex items-center">
+                  {isGenerating || isRefining ? <Loader2 className="animate-spin" /> : <p className="font-semibold text-primary">{generatedTitle}</p>}
                 </div>
                 {!isGenerating && generatedTitle && (
                   <div className="mt-4">
-                    <Button onClick={handleNoveltyCheck} disabled={isCheckingNovelty}>
+                    <Button onClick={handleNoveltyCheck} disabled={isCheckingNovelty || isRefining}>
                       {isCheckingNovelty ? <Loader2 className="mr-2 animate-spin" /> : <SearchCheck className="mr-2" />}
                       Check Novelty
                     </Button>
@@ -253,7 +279,7 @@ Respond with only the new title.`;
 
                   {noveltyResult && noveltyResult.suggestionsForImprovement && noveltyResult.suggestionsForImprovement.length > 0 && (
                       <div className="mt-4 space-y-2">
-                          <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement (Click to add as topic):</h5>
+                          <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement (Click to apply):</h5>
                           <div className="flex flex-col items-start gap-2">
                               {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
                                   <Button
@@ -261,6 +287,7 @@ Respond with only the new title.`;
                                     variant="outline"
                                     className="h-auto whitespace-normal text-left p-2 w-full"
                                     onClick={() => handleSuggestionClick(suggestion)}
+                                    disabled={anyLoading}
                                   >
                                       {suggestion}
                                   </Button>
@@ -301,7 +328,7 @@ Respond with only the new title.`;
           </div>
           <DialogFooter className="mt-auto pt-4">
             <div className="flex flex-wrap gap-2 w-full justify-end">
-                <Button onClick={handleGenerateClick} disabled={isGenerating || topics.length === 0}>
+                <Button onClick={handleGenerateClick} disabled={isGenerating || topics.length === 0 || isCheckingNovelty || isRefining}>
                 {isGenerating ? (
                     <Loader2 className="mr-2 animate-spin" />
                 ) : (
