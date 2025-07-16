@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useHistory } from '@/hooks/use-history';
 import { Button } from './ui/button';
-import { FileText, Trash2, BrainCircuit } from 'lucide-react';
+import { FileText, Lightbulb, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,11 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import Link from 'next/link';
 
 export function HistorySidebar() {
   const { history, selectAnalysis, selectedAnalysis, clearHistory, removeAnalysis, isLoading } = useHistory();
   const { state } = useSidebar();
+
+  const isScratchSelected = selectedAnalysis?.name === 'From Scratch';
 
   return (
     <Sidebar>
@@ -47,51 +50,65 @@ export function HistorySidebar() {
                 <SidebarMenuSkeleton showIcon />
                 <SidebarMenuSkeleton showIcon />
             </div>
-        ) : history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4 group-data-[collapsible=icon]:hidden">
-                <p>No analysis history found.</p>
-                <p className="text-xs mt-2">Upload a CSV to get started.</p>
-            </div>
         ) : (
-            <SidebarMenu>
-                {history.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                        <SidebarMenuButton
-                            onClick={() => selectAnalysis(item.id)}
-                            isActive={selectedAnalysis?.id === item.id}
-                            className="h-auto py-2 justify-start"
-                            tooltip={{children: item.name, side: 'right', align: 'center'}}
-                        >
-                            <FileText className="flex-shrink-0"/>
-                            <div className="flex flex-col text-left overflow-hidden">
-                                <span className="font-medium truncate">{item.name}</span>
-                                <span className="text-xs text-muted-foreground truncate">
-                                    {new Date(item.date).toLocaleDateString()} - {item.categorizedPapers.length} papers
-                                </span>
-                            </div>
-                        </SidebarMenuButton>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                             <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
-                                <Trash2 className="h-4 w-4 text-destructive"/>
-                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the analysis for <span className="font-bold">{item.name}</span>.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => removeAnalysis(item.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={isScratchSelected}
+                tooltip={{children: "Start From Scratch", side: 'right', align: 'center'}}
+                className="h-auto py-2 justify-start"
+              >
+                <Link href="/title-studio">
+                  <Lightbulb className="flex-shrink-0"/>
+                  <div className="flex flex-col text-left overflow-hidden">
+                    <span className="font-medium truncate">Start From Scratch</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      Generate new title ideas
+                    </span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          
+            {history.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                        onClick={() => selectAnalysis(item.id)}
+                        isActive={selectedAnalysis?.id === item.id}
+                        className="h-auto py-2 justify-start"
+                        tooltip={{children: item.name, side: 'right', align: 'center'}}
+                    >
+                        <FileText className="flex-shrink-0"/>
+                        <div className="flex flex-col text-left overflow-hidden">
+                            <span className="font-medium truncate">{item.name}</span>
+                            <span className="text-xs text-muted-foreground truncate">
+                                {new Date(item.date).toLocaleDateString()} - {item.categorizedPapers.length} papers
+                            </span>
+                        </div>
+                    </SidebarMenuButton>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                         <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
+                            <Trash2 className="h-4 w-4 text-destructive"/>
+                         </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the analysis for <span className="font-bold">{item.name}</span>.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => removeAnalysis(item.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
         )}
       </SidebarContent>
       <SidebarFooter className="group-data-[collapsible=icon]:hidden">

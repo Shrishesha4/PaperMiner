@@ -21,4 +21,5 @@ export type Analysis = {
   date: string; // ISO date string
   categorizedPapers: CategorizedPaper[];
   failedPapers: FailedPaper[];
+  generatedTitles?: string[]; // To store titles from scratch sessions
 };

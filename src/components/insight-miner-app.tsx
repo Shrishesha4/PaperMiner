@@ -14,24 +14,54 @@ import { useHistory } from '@/hooks/use-history';
 import { SidebarProvider, SidebarInset } from './ui/sidebar';
 import { HistorySidebar } from './history-sidebar';
 import { Loader2 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
 
 export function InsightMinerApp() {
   const { toast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { isApiKeySet, getNextApiKey } = useApiKey();
-  const { selectedAnalysis, addAnalysis, removeAnalysis, isLoading: isHistoryLoading } = useHistory();
+  const { selectedAnalysis, selectAnalysis, addAnalysis, removeAnalysis, isLoading: isHistoryLoading } = useHistory();
 
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
   
+  // Effect to sync URL search param with history selection
   useEffect(() => {
     if (!isHistoryLoading) {
-        setCurrentStep(selectedAnalysis ? 'dashboard' : 'upload');
+        const analysisIdFromUrl = searchParams.get('analysisId');
+        if (analysisIdFromUrl) {
+            selectAnalysis(analysisIdFromUrl);
+        } else {
+            selectAnalysis(null);
+        }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isHistoryLoading]);
+
+  useEffect(() => {
+    if (!isHistoryLoading) {
+        if (selectedAnalysis) {
+            setCurrentStep('dashboard');
+            // Ensure URL reflects the selected analysis
+            if (searchParams.get('analysisId') !== selectedAnalysis.id) {
+                router.replace(`/?analysisId=${selectedAnalysis.id}`, { scroll: false });
+            }
+        } else {
+            setCurrentStep('upload');
+            // Clear analysisId from URL if no analysis is selected
+            if (searchParams.has('analysisId')) {
+                 router.replace(`/`, { scroll: false });
+            }
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAnalysis, isHistoryLoading]);
+
 
   const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[], fileName: string) => {
     if (!isApiKeySet) {

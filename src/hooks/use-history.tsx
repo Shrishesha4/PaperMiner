@@ -7,7 +7,8 @@ import { useToast } from './use-toast';
 interface HistoryContextType {
   history: Analysis[];
   selectedAnalysis: Analysis | null;
-  addAnalysis: (newAnalysisData: Omit<Analysis, 'id' | 'date'>) => void;
+  addAnalysis: (newAnalysisData: Omit<Analysis, 'id' | 'date'>) => Analysis;
+  updateAnalysis: (id: string, updates: Partial<Analysis>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
   clearHistory: () => void;
@@ -30,10 +31,12 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
       const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
       if (storedHistory) {
         const parsedHistory = JSON.parse(storedHistory) as Analysis[];
+        // Sort by date descending to be sure
+        parsedHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setHistory(parsedHistory);
-        // Automatically select the most recent analysis
         if (parsedHistory.length > 0) {
-            setSelectedAnalysis(parsedHistory[0]);
+            // By default, nothing is selected unless a URL param dictates it.
+            // This simplifies logic in the app.
         }
       }
     } catch (error) {
@@ -78,7 +81,16 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         title: "Analysis Saved",
         description: `"${newAnalysis.name}" has been added to your history.`,
     })
+    return newAnalysis;
   }, [history, toast]);
+
+  const updateAnalysis = useCallback((id: string, updates: Partial<Analysis>) => {
+    setHistory(prevHistory => 
+      prevHistory.map(item => 
+        item.id === id ? { ...item, ...updates, date: new Date().toISOString() } : item
+      ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    );
+  }, []);
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
@@ -90,30 +102,38 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   }, [history]);
   
   const removeAnalysis = useCallback((id: string) => {
-    setHistory(prev => prev.filter(item => item.id !== id));
+    const analysisToRemove = history.find(item => item.id === id);
+    const updatedHistory = history.filter(item => item.id !== id);
+    setHistory(updatedHistory);
+    
     // If the removed analysis was the selected one, clear selection
     if (selectedAnalysis?.id === id) {
-        // Select the next available analysis, or null if history is empty
-        const currentHistory = history.filter(item => item.id !== id);
-        setSelectedAnalysis(currentHistory.length > 0 ? currentHistory[0] : null);
+        setSelectedAnalysis(updatedHistory.length > 0 ? updatedHistory[0] : null);
     }
-    toast({
-        title: "Analysis Removed",
-        description: `The selected analysis has been removed from your history.`,
-    })
+    if (analysisToRemove) {
+      toast({
+          title: "Analysis Removed",
+          description: `"${analysisToRemove.name}" has been removed from your history.`,
+      });
+    }
   }, [selectedAnalysis, history, toast]);
 
   const clearHistory = useCallback(() => {
     setHistory([]);
     setSelectedAnalysis(null);
-    toast({
-        title: "History Cleared",
-        description: "All analysis history has been removed.",
-    })
+    try {
+        localStorage.removeItem(HISTORY_STORAGE_KEY);
+        toast({
+            title: "History Cleared",
+            description: "All analysis history has been removed.",
+        })
+    } catch (error) {
+        console.error("Could not clear history from localStorage", error);
+    }
   }, [toast]);
 
   return (
-    <HistoryContext.Provider value={{ history, selectedAnalysis, addAnalysis, selectAnalysis, removeAnalysis, clearHistory, isLoading }}>
+    <HistoryContext.Provider value={{ history, selectedAnalysis, addAnalysis, updateAnalysis, selectAnalysis, removeAnalysis, clearHistory, isLoading }}>
       {children}
     </HistoryContext.Provider>
   );
