@@ -71,7 +71,7 @@ export function TopicSelector({ availableCategories, onGenerate, isLoading }: To
       <div className="space-y-2">
         <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
         <div className="flex flex-wrap gap-1">
-          {availableCategories.map(cat => (
+          {availableCategories.filter(cat => !topics.includes(cat)).map(cat => (
             <Badge
               key={cat}
               variant="outline"
