@@ -56,7 +56,7 @@ function parseCSV(text: string): { data: ResearchPaper[], errors: number } {
 }
 
 interface UploaderViewProps {
-    onProcess: (data: ResearchPaper[]) => void;
+    onProcess: (data: ResearchPaper[], fileName: string) => void;
 }
 
 
@@ -89,7 +89,7 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
             });
             return;
           }
-          onProcess(parsedData);
+          onProcess(parsedData, file.name);
         } catch (error: any) {
           toast({
             variant: "destructive",

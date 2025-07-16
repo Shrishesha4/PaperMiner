@@ -18,9 +18,11 @@ import { useToast } from '@/hooks/use-toast';
 import { TitleGenerator } from './title-generator';
 
 interface DashboardViewProps {
+  analysisId: string;
+  analysisName: string;
   data: CategorizedPaper[];
   failedData: FailedPaper[];
-  onReset: () => void;
+  onReset: (analysisId: string) => void;
 }
 
 // Add this type definition for the autoTable plugin
@@ -30,7 +32,7 @@ declare module 'jspdf' {
     }
 }
 
-export function DashboardView({ data, failedData, onReset }: DashboardViewProps) {
+export function DashboardView({ analysisId, analysisName, data, failedData, onReset }: DashboardViewProps) {
   const { toast } = useToast();
   const [filters, setFilters] = useState({
     year: 'all',
@@ -64,7 +66,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
   }, [data, filters]);
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
-    setFilters(prev => ({ ...prev, [filterName]: value }));
+    setFilters(prev => ({ ...prev, [filterName]: value, }));
   };
 
   const handleCategorySelect = (category: string) => {
@@ -101,7 +103,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'categorized-research-papers.csv');
+    link.setAttribute('download', `${analysisName}-categorized.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -125,6 +127,9 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
         // --- TITLE PAGE ---
         pdf.setFontSize(22);
         pdf.text('PaperMiner Analysis Report', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+        pdf.setFontSize(16);
+        pdf.text(analysisName, pageWidth / 2, yPos, { align: 'center' });
         yPos += 15;
 
         pdf.setFontSize(12);
@@ -201,7 +206,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             }
         });
 
-        pdf.save('dashboard-report.pdf');
+        pdf.save(`${analysisName}-report.pdf`);
     } catch (error) {
         console.error("Error generating PDF:", error);
         toast({
@@ -212,7 +217,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
     } finally {
         setIsGeneratingPdf(false);
     }
-  }, [filteredData, data.length, categories.length, toast]);
+  }, [filteredData, data.length, categories.length, toast, analysisName]);
 
 
   return (
@@ -220,7 +225,7 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+            <h2 className="text-3xl font-bold tracking-tight">{analysisName}</h2>
             <p className="text-muted-foreground">
               {data.length} papers analyzed. Found {categories.length - 1} unique categories.
             </p>
@@ -241,8 +246,8 @@ export function DashboardView({ data, failedData, onReset }: DashboardViewProps)
             <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
                 <Download className="mr-2 h-4 w-4" /> Download CSV
             </Button>
-            <Button onClick={onReset} variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Start Over
+            <Button onClick={() => onReset(analysisId)} variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Re-analyze
             </Button>
           </div>
         </div>

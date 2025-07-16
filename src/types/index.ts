@@ -14,3 +14,11 @@ export type CategorizedPaper = ResearchPaper & {
 export type FailedPaper = ResearchPaper & {
   failureReason: string;
 };
+
+export type Analysis = {
+  id: string;
+  name: string; // Typically the filename
+  date: string; // ISO date string
+  categorizedPapers: CategorizedPaper[];
+  failedPapers: FailedPaper[];
+};

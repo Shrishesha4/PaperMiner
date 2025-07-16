@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { type ResearchPaper, type CategorizedPaper, FailedPaper } from '@/types';
+import { type ResearchPaper, type CategorizedPaper, FailedPaper, Analysis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { categorizeResearchTitles } from '@/ai/flows/categorize-research-titles';
 import { AppHeader } from './header';
@@ -10,70 +10,29 @@ import { ProcessingView } from './processing-view';
 import { DashboardView } from './dashboard-view';
 import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
-import { Loader2 } from 'lucide-react';
+import { useHistory } from '@/hooks/use-history';
+import { SidebarProvider } from './ui/sidebar';
+import { HistorySidebar } from './history-sidebar';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
-const CATEGORIZED_PAPERS_STORAGE_KEY = 'categorized_papers';
-const FAILED_PAPERS_STORAGE_KEY = 'failed_papers';
 
 export function InsightMinerApp() {
   const { toast } = useToast();
   const { apiKey, isApiKeySet } = useApiKey();
-  const [step, setStep] = useState<AppStep>('upload');
-  const [papers, setPapers] = useState<ResearchPaper[]>([]);
-  const [categorizedPapers, setCategorizedPapers] = useState<CategorizedPaper[]>([]);
-  const [failedPapers, setFailedPapers] = useState<FailedPaper[]>([]);
-  const [progress, setProgress] = useState(0);
+  const { selectedAnalysis, addAnalysis, removeAnalysis, isLoading: isHistoryLoading } = useHistory();
+
+  const [currentStep, setCurrentStep] = useState<AppStep>('upload');
+  const [processingProgress, setProcessingProgress] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
-  const [isLoaded, setIsLoaded] = useState(false);
-
+  
   useEffect(() => {
-    try {
-      const storedCategorized = localStorage.getItem(CATEGORIZED_PAPERS_STORAGE_KEY);
-      const storedFailed = localStorage.getItem(FAILED_PAPERS_STORAGE_KEY);
-      if (storedCategorized) {
-        setCategorizedPapers(JSON.parse(storedCategorized));
-        if (storedFailed) {
-            setFailedPapers(JSON.parse(storedFailed));
-        }
-        setStep('dashboard');
-      }
-    } catch (error) {
-      console.error("Could not load data from localStorage", error);
-    } finally {
-        setIsLoaded(true);
+    if (!isHistoryLoading) {
+        setCurrentStep(selectedAnalysis ? 'dashboard' : 'upload');
     }
-  }, []);
+  }, [selectedAnalysis, isHistoryLoading]);
 
-  useEffect(() => {
-    if(!isLoaded) return;
-    try {
-        if (categorizedPapers.length > 0) {
-            localStorage.setItem(CATEGORIZED_PAPERS_STORAGE_KEY, JSON.stringify(categorizedPapers));
-        } else {
-            localStorage.removeItem(CATEGORIZED_PAPERS_STORAGE_KEY);
-        }
-    } catch (error) {
-        console.error("Could not save categorized papers to localStorage", error);
-    }
-  }, [categorizedPapers, isLoaded]);
-
-  useEffect(() => {
-    if(!isLoaded) return;
-    try {
-        if (failedPapers.length > 0) {
-            localStorage.setItem(FAILED_PAPERS_STORAGE_KEY, JSON.stringify(failedPapers));
-        } else {
-            localStorage.removeItem(FAILED_PAPERS_STORAGE_KEY);
-        }
-    } catch (error) {
-        console.error("Could not save failed papers to localStorage", error);
-    }
-  }, [failedPapers, isLoaded]);
-
-
-  const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[]) => {
+  const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[], fileName: string) => {
     if (!apiKey) {
         toast({
             variant: 'destructive',
@@ -83,18 +42,14 @@ export function InsightMinerApp() {
         return;
     }
     
-    setPapers(parsedPapers);
-    setStep('processing');
-    setProgress(0);
-    setCategorizedPapers([]);
-    setFailedPapers([]);
+    setCurrentStep('processing');
+    setProcessingProgress(0);
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
     const failed: FailedPaper[] = [];
     let processedCount = 0;
 
-    // Filter out papers without titles first
     const papersToProcess = parsedPapers.filter(paper => {
       if (!paper['Document Title']) {
         failed.push({ ...paper, failureReason: 'Missing document title.' });
@@ -109,7 +64,7 @@ export function InsightMinerApp() {
       const batch = papersToProcess.slice(i, i + BATCH_SIZE);
       const titles = batch.map(p => p['Document Title']);
       
-      setProcessingMessage(`Categorizing batch ${i / BATCH_SIZE + 1}...`);
+      setProcessingMessage(`Categorizing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(totalToProcess / BATCH_SIZE)}...`);
 
       try {
         const batchResults = await categorizeResearchTitles({ titles, apiKey });
@@ -134,7 +89,6 @@ export function InsightMinerApp() {
               : error.message;
         }
 
-        // Mark all papers in the failed batch
         batch.forEach(paper => {
             failed.push({ ...paper, failureReason });
         });
@@ -146,49 +100,67 @@ export function InsightMinerApp() {
         });
       } finally {
         processedCount += batch.length;
-        setProgress((processedCount / parsedPapers.length) * 100);
+        setProcessingProgress((processedCount / parsedPapers.length) * 100);
       }
     }
 
-    setCategorizedPapers(results);
-    // Combine papers that failed before processing with papers that failed during processing
-    setFailedPapers(prev => [...prev, ...failed]);
-    setProcessingMessage('Analysis complete!');
-    setTimeout(() => setStep('dashboard'), 1000);
-  }, [toast, apiKey]);
+    const finalFailedPapers = [...failed];
+    
+    // Add new analysis to history
+    addAnalysis({
+        name: fileName,
+        categorizedPapers: results,
+        failedPapers: finalFailedPapers,
+    });
 
-  const handleReset = () => {
-    setStep('upload');
-    setPapers([]);
-    setCategorizedPapers([]);
-    setFailedPapers([]);
-    setProgress(0);
-    setProcessingMessage('');
-    try {
-        localStorage.removeItem(CATEGORIZED_PAPERS_STORAGE_KEY);
-        localStorage.removeItem(FAILED_PAPERS_STORAGE_KEY);
-    } catch (error) {
-        console.error("Could not clear localStorage", error);
-    }
+    setProcessingMessage('Analysis complete!');
+    setTimeout(() => setCurrentStep('dashboard'), 1000);
+  }, [toast, apiKey, addAnalysis]);
+
+  const handleReset = (analysisId: string) => {
+    removeAnalysis(analysisId);
   };
 
-  if (!isLoaded) {
-    return (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
-            <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
-        </div>
-    );
+  const renderContent = () => {
+    if (isHistoryLoading) {
+        return <ProcessingView progress={0} message="Loading history..." />;
+    }
+    
+    switch (currentStep) {
+        case 'upload':
+            return <UploaderView onProcess={handleDataProcessing} />;
+        case 'processing':
+            return <ProcessingView progress={processingProgress} message={processingMessage} />;
+        case 'dashboard':
+            if (selectedAnalysis) {
+                return (
+                    <DashboardView
+                        key={selectedAnalysis.id}
+                        analysisId={selectedAnalysis.id}
+                        analysisName={selectedAnalysis.name}
+                        data={selectedAnalysis.categorizedPapers}
+                        failedData={selectedAnalysis.failedPapers}
+                        onReset={handleReset}
+                    />
+                );
+            }
+            // Fallback to upload if no analysis is selected
+            return <UploaderView onProcess={handleDataProcessing} />;
+        default:
+            return <UploaderView onProcess={handleDataProcessing} />;
+    }
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <AppHeader />
-      <main className="flex-1 flex flex-col">
-        {!isApiKeySet && <ApiKeyDialog />}
-        {step === 'upload' && <UploaderView onProcess={handleDataProcessing} />}
-        {step === 'processing' && <ProcessingView progress={progress} message={processingMessage} />}
-        {step === 'dashboard' && <DashboardView data={categorizedPapers} failedData={failedPapers} onReset={handleReset} />}
-      </main>
-    </div>
+    <SidebarProvider>
+        <div className="flex min-h-screen bg-background">
+        <HistorySidebar />
+        <main className="flex-1 flex flex-col">
+            <AppHeader />
+            {!isApiKeySet && <ApiKeyDialog />}
+            {renderContent()}
+        </main>
+        </div>
+    </SidebarProvider>
   );
 }
