@@ -34,3 +34,16 @@ export const GenerateBatchTitlesOutputSchema = z.object({
     titles: z.array(z.string()).describe('A list of newly generated research paper titles.'),
 });
 export type GenerateBatchTitlesOutput = z.infer<typeof GenerateBatchTitlesOutputSchema>;
+
+// Schemas for drafting a paper
+const PaperSectionSchema = z.object({
+  title: z.string().describe('The title of the section (e.g., "Abstract").'),
+  content: z.string().describe('The generated content for this section.'),
+});
+export type PaperSection = z.infer<typeof PaperSectionSchema>;
+
+
+export const DraftPaperOutputSchema = z.object({
+  sections: z.array(PaperSectionSchema).describe('The drafted sections of the research paper.'),
+});
+export type DraftPaperOutput = z.infer<typeof DraftPaperOutputSchema>;

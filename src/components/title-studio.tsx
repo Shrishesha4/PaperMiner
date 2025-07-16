@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -10,6 +11,7 @@ import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
 
 type AnalysisData = {
+  id: string;
   name: string;
   categories: string[];
   titles: string[];
@@ -26,7 +28,6 @@ export function TitleStudio() {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const isFromScratch = !analysisId || history.find(h => h.id === analysisId)?.categorizedPapers.length === 0;
   
   // Use a ref to track the ID of a newly created scratch analysis
   // so we can update it instead of creating new ones on subsequent generations.
@@ -41,7 +42,7 @@ export function TitleStudio() {
       if (found) {
         const categories = Array.from(new Set(found.categorizedPapers.map((p) => p.category).filter(Boolean)));
         const titles = found.categorizedPapers.map((p) => p['Document Title']);
-        setAnalysis({ name: found.name, categories, titles });
+        setAnalysis({ id: found.id, name: found.name, categories, titles });
         if (found.generatedTitles) {
             setGeneratedTitles(found.generatedTitles);
         }
@@ -50,39 +51,39 @@ export function TitleStudio() {
         router.push('/');
       }
     } else {
-      // Handle the "from scratch" case
-      setAnalysis({ name: 'From Scratch', categories: [], titles: [] });
-      scratchAnalysisId.current = null; // Reset for a new scratch session
+      // Handle the "from scratch" case. Create a temporary one if needed.
+      const scratch = history.find(h => h.name === 'From Scratch' && h.categorizedPapers.length === 0);
+      if (scratch) {
+        setAnalysis({ id: scratch.id, name: scratch.name, categories: [], titles: [] });
+        setGeneratedTitles(scratch.generatedTitles || []);
+        scratchAnalysisId.current = scratch.id;
+      } else {
+         const newScratch = addAnalysis({
+            name: 'From Scratch',
+            categorizedPapers: [],
+            failedPapers: [],
+            generatedTitles: [],
+          });
+          setAnalysis({ id: newScratch.id, name: newScratch.name, categories: [], titles: [] });
+          scratchAnalysisId.current = newScratch.id;
+          router.replace(`/title-studio?analysisId=${newScratch.id}`, { scroll: false });
+      }
     }
     setIsLoading(false);
-  }, [analysisId, history, isHistoryLoading, router, toast]);
+  }, [analysisId, history, isHistoryLoading, router, toast, addAnalysis]);
 
   const handleTitlesGenerated = useCallback((newTitles: string[], topics: string[]) => {
     setGeneratedTitles(newTitles);
     
-    if (isFromScratch && newTitles.length > 0) {
-      const name = `Scratchpad: ${topics.join(', ')}`;
-
-      if (scratchAnalysisId.current) {
-        // Update existing scratch analysis
-        updateAnalysis(scratchAnalysisId.current, { generatedTitles: newTitles, name });
-      } else {
-        // Add new scratch analysis
-        const newAnalysis = addAnalysis({
-          name,
-          categorizedPapers: [],
-          failedPapers: [],
-          generatedTitles: newTitles,
-        });
-        scratchAnalysisId.current = newAnalysis.id;
-        // Update URL without reloading page, to persist this session
-        router.replace(`/title-studio?analysisId=${newAnalysis.id}`, { scroll: false });
-      }
-    } else if (analysisId && newTitles.length > 0) {
-        // This is an existing analysis based on a CSV
-        updateAnalysis(analysisId, { generatedTitles: newTitles });
+    if (analysisId) {
+       const isFromScratch = history.find(h => h.id === analysisId)?.name === 'From Scratch';
+       const updates: { generatedTitles: string[], name?: string } = { generatedTitles: newTitles };
+       if (isFromScratch && topics.length > 0) {
+         updates.name = `Scratchpad: ${topics.join(', ')}`;
+       }
+       updateAnalysis(analysisId, updates);
     }
-  }, [isFromScratch, addAnalysis, updateAnalysis, analysisId, router]);
+  }, [updateAnalysis, analysisId, history]);
   
   const handleContinueInChatGPT = () => {
     if (generatedTitles.length === 0) {
@@ -116,7 +117,7 @@ export function TitleStudio() {
           <div>
             <h1 className="text-xl font-bold">Title Studio</h1>
             <p className="text-sm text-muted-foreground">
-              {analysis.name === 'From Scratch' 
+              {analysis.name === 'From Scratch' || analysis.name.startsWith('Scratchpad:')
                 ? 'Generating new title ideas' 
                 : <>Using dataset: <span className="font-semibold">{analysis.name}</span></>
               }

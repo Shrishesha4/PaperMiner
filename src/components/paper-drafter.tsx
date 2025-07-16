@@ -1,13 +1,14 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Wand2 } from 'lucide-react';
-import { draftPaper, type DraftPaperOutput } from '@/ai/flows/draft-paper-flow';
+import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save, Wand2 } from 'lucide-react';
+import { draftPaper } from '@/ai/flows/draft-paper-flow';
+import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
 import { refineSection } from '@/ai/flows/refine-section-flow';
 import ReactMarkdown from 'react-markdown';
@@ -27,7 +28,8 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Packer } from 'docx';
 import { saveAs } from 'file-saver';
-import { Document, Packer as DocxPacker, Paragraph, HeadingLevel, TextRun } from 'docx';
+import { Document, Packer as DocxPacker, Paragraph, HeadingLevel } from 'docx';
+import { useHistory } from '@/hooks/use-history';
 
 
 type RegenerationState = {
@@ -45,10 +47,13 @@ export function PaperDrafter() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { getNextApiKey, isApiKeySet } = useApiKey();
+  const { history, updateAnalysis, isLoading: isHistoryLoading } = useHistory();
   
   const title = searchParams.get('title') || 'Untitled Document';
+  const analysisId = searchParams.get('analysisId');
   
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paper, setPaper] = useState<DraftPaperOutput | null>(null);
@@ -82,13 +87,42 @@ export function PaperDrafter() {
   }, [title, isApiKeySet, getNextApiKey, toast]);
 
   useEffect(() => {
-    if (title !== 'Untitled Document') {
-      generateDraft();
-    } else {
+    if (isHistoryLoading) return; // Wait for history to load
+    
+    if (title === 'Untitled Document') {
       setIsLoading(false);
       setError("No title provided to draft a paper.");
+      return;
     }
-  }, [generateDraft, title]);
+
+    const analysis = history.find(h => h.id === analysisId);
+    if (analysis && analysis.draftedPaper) {
+        setPaper(analysis.draftedPaper);
+        setIsLoading(false);
+    } else {
+        generateDraft();
+    }
+  }, [analysisId, generateDraft, title, history, isHistoryLoading]);
+
+  const handleSaveDraft = async () => {
+    if (!paper || !analysisId) return;
+    setIsSaving(true);
+    try {
+      updateAnalysis(analysisId, { draftedPaper: paper });
+      toast({
+        title: "Draft Saved",
+        description: "Your paper draft has been saved to your history.",
+      });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: 'Could not save your draft.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleRefineSection = async (sectionIndex: number) => {
     if (!paper || !isApiKeySet || !refinePrompt) return;
@@ -223,7 +257,7 @@ export function PaperDrafter() {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Generating initial paper draft...</p>
+          <p className="text-muted-foreground">Loading paper draft...</p>
         </div>
       );
     }
@@ -339,6 +373,10 @@ export function PaperDrafter() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+            <Button onClick={handleSaveDraft} variant="default" disabled={isLoading || !!error || isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Draft
+            </Button>
             <Button onClick={handleDownloadDocx} variant="outline" disabled={isLoading || !!error || isDownloading}>
                 {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                 Download .docx

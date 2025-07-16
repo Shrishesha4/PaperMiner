@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -20,6 +21,7 @@ import Link from 'next/link';
 
 interface TitleStudioBatchProps {
   analysis: {
+    id?: string;
     name: string;
     categories: string[];
     titles: string[];
@@ -207,7 +209,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     </Dialog>
 
                     <Button asChild size="sm" variant="default">
-                        <Link href={`/paper-drafter?title=${encodeURIComponent(title)}`}>
+                        <Link href={`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${analysis.id}`}>
                             <FileText />
                             <span className="ml-2">Draft Paper</span>
                         </Link>

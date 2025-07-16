@@ -1,3 +1,5 @@
+import type { DraftPaperOutput } from "./schemas";
+
 export type ResearchPaper = {
   'Document Title': string;
   'Publication Year': string;
@@ -22,4 +24,5 @@ export type Analysis = {
   categorizedPapers: CategorizedPaper[];
   failedPapers: FailedPaper[];
   generatedTitles?: string[]; // To store titles from scratch sessions
+  draftedPaper?: DraftPaperOutput;
 };
