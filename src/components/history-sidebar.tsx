@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { Separator } from './ui/separator';
 
 export function HistorySidebar() {
-  const { history, selectAnalysis, selectedAnalysis, clearHistory, removeAnalysis, isLoading } = useHistory();
+  const { history, selectAnalysis, selectedAnalysis, clearHistory, removeAnalysis, removeDraft, isLoading } = useHistory();
   const { state } = useSidebar();
 
   const isScratchSelected = selectedAnalysis?.name === 'From Scratch';
@@ -110,12 +110,12 @@ export function HistorySidebar() {
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the analysis for <span className="font-bold">{item.name}</span> and its associated draft.
+                                        This action cannot be undone. This will permanently delete the draft for <span className="font-bold">{item.draftedPaper?.title}</span>, but the original analysis data will be kept.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => removeAnalysis(item.id)}>Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => removeDraft(item.id)}>Delete Draft</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                                 </AlertDialog>
@@ -157,12 +157,12 @@ export function HistorySidebar() {
                                 <AlertDialogHeader>
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the analysis for <span className="font-bold">{item.name}</span>.
+                                    This action cannot be undone. This will permanently delete the analysis for <span className="font-bold">{item.name}</span> and any associated draft.
                                 </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => removeAnalysis(item.id)}>Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={() => removeAnalysis(item.id)}>Delete Analysis</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                             </AlertDialog>

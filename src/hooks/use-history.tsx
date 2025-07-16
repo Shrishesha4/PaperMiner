@@ -12,6 +12,7 @@ interface HistoryContextType {
   updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
+  removeDraft: (analysisId: string) => void;
   clearHistory: () => void;
   isLoading: boolean;
 }
@@ -61,7 +62,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     };
     
     // Prepend new analysis to keep history sorted by most recent
-    setHistory(prevHistory => [newAnalysis, ...prevHistory]);
+    const newHistory = [newAnalysis, ...history];
+    setHistory(newHistory);
     setSelectedAnalysis(newAnalysis); // Automatically select the new analysis
     
     // Only show toast for actual analysis, not scratchpads
@@ -72,24 +74,22 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         });
     }
     return newAnalysis;
-  }, [toast]);
+  }, [history, toast]);
 
   const updateAnalysis = useCallback((id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => {
-    let newHistory: Analysis[] = [];
-    
-    setHistory(currentHistory => {
-        newHistory = currentHistory.map(item => {
-            if (item.id === id) {
-                return { ...item, ...updates };
-            }
-            return item;
-        });
-        return newHistory;
+    let updatedAnalysis: Analysis | undefined;
+    const newHistory = history.map(item => {
+        if (item.id === id) {
+            updatedAnalysis = { ...item, ...updates };
+            return updatedAnalysis;
+        }
+        return item;
     });
 
-    const updatedItem = newHistory.find(item => item.id === id);
-    if (selectedAnalysis?.id === id && updatedItem) {
-        setSelectedAnalysis(updatedItem);
+    setHistory(newHistory);
+    
+    if (selectedAnalysis?.id === id && updatedAnalysis) {
+        setSelectedAnalysis(updatedAnalysis);
     }
     
     // Only show toast for draft saving, not for other background updates.
@@ -99,7 +99,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
             description: "Your paper draft has been saved to your history.",
         });
     }
-  }, [selectedAnalysis, toast]);
+  }, [history, selectedAnalysis, toast]);
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
@@ -126,6 +126,25 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     }
   }, [selectedAnalysis, history, toast]);
 
+  const removeDraft = useCallback((analysisId: string) => {
+    let draftTitle = '';
+    const newHistory = history.map(item => {
+      if (item.id === analysisId) {
+        draftTitle = item.draftedPaper?.title || '';
+        const { draftedPaper, ...rest } = item;
+        return rest;
+      }
+      return item;
+    });
+
+    setHistory(newHistory as Analysis[]); // Cast because we are removing an optional property
+
+    toast({
+      title: "Draft Removed",
+      description: `The draft for "${draftTitle}" has been removed.`,
+    });
+  }, [history, toast]);
+
   const clearHistory = useCallback(() => {
     setHistory([]);
     setSelectedAnalysis(null);
@@ -141,7 +160,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   }, [toast]);
 
   return (
-    <HistoryContext.Provider value={{ history, selectedAnalysis, addAnalysis, updateAnalysis, selectAnalysis, removeAnalysis, clearHistory, isLoading }}>
+    <HistoryContext.Provider value={{ history, selectedAnalysis, addAnalysis, updateAnalysis, selectAnalysis, removeAnalysis, removeDraft, clearHistory, isLoading }}>
       {children}
     </HistoryContext.Provider>
   );
