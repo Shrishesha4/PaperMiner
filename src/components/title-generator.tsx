@@ -126,8 +126,10 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
         });
         
         // Add the new title to the list and set it as active
-        const newTitles = [...generatedTitles, result.refinedTitle];
-        setGeneratedTitles(newTitles);
+        if (!generatedTitles.includes(result.refinedTitle)) {
+            const newTitles = [...generatedTitles, result.refinedTitle];
+            setGeneratedTitles(newTitles);
+        }
         setActiveTitle(result.refinedTitle);
 
         setNoveltyResult(null); // Clear old novelty results
