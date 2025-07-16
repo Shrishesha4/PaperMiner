@@ -392,7 +392,7 @@ export function PaperDrafter() {
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
             <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save
+                Save Draft
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
