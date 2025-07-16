@@ -11,7 +11,7 @@ import { DashboardView } from './dashboard-view';
 import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
 import { useHistory } from '@/hooks/use-history';
-import { SidebarProvider } from './ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset } from './ui/sidebar';
 import { HistorySidebar } from './history-sidebar';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
@@ -106,7 +106,6 @@ export function InsightMinerApp() {
 
     const finalFailedPapers = [...failed];
     
-    // Add new analysis to history
     addAnalysis({
         name: fileName,
         categorizedPapers: results,
@@ -144,7 +143,6 @@ export function InsightMinerApp() {
                     />
                 );
             }
-            // Fallback to upload if no analysis is selected
             return <UploaderView onProcess={handleDataProcessing} />;
         default:
             return <UploaderView onProcess={handleDataProcessing} />;
@@ -153,14 +151,12 @@ export function InsightMinerApp() {
 
   return (
     <SidebarProvider>
-        <div className="flex min-h-screen bg-background">
         <HistorySidebar />
-        <main className="flex-1 flex flex-col">
+        <SidebarInset>
             <AppHeader />
             {!isApiKeySet && <ApiKeyDialog />}
             {renderContent()}
-        </main>
-        </div>
+        </SidebarInset>
     </SidebarProvider>
   );
 }
