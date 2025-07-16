@@ -6,9 +6,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Loader2, Sparkles, Wand2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from './ui/card';
-import { draftPaper, type DraftPaperOutput, type PaperSection } from '@/ai/flows/draft-paper-flow';
+import { ArrowLeft, Loader2, RefreshCw, Wand2 } from 'lucide-react';
+import { draftPaper, type DraftPaperOutput } from '@/ai/flows/draft-paper-flow';
+import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
 import { refineText } from '@/ai/flows/refine-text-flow';
 import ReactMarkdown from 'react-markdown';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -21,6 +21,11 @@ type SelectionState = {
   endOffset: number;
   range: Range | null;
 } | null;
+
+type RegenerationState = {
+    isRegenerating: boolean;
+    sectionIndex: number | null;
+};
 
 export function PaperDrafter() {
   const router = useRouter();
@@ -35,6 +40,7 @@ export function PaperDrafter() {
   const [error, setError] = useState<string | null>(null);
   const [paper, setPaper] = useState<DraftPaperOutput | null>(null);
   const [isRefining, setIsRefining] = useState(false);
+  const [regenerationState, setRegenerationState] = useState<RegenerationState>({ isRegenerating: false, sectionIndex: null });
 
   const [selection, setSelection] = useState<SelectionState>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -74,6 +80,8 @@ export function PaperDrafter() {
   }, [generateDraft, title]);
 
   const handleSelectionChange = () => {
+    if (regenerationState.isRegenerating) return;
+
     const currentSelection = window.getSelection();
     if (currentSelection && currentSelection.rangeCount > 0) {
       const range = currentSelection.getRangeAt(0);
@@ -81,8 +89,6 @@ export function PaperDrafter() {
 
       if (selectedText.length > 0 && paperContentRef.current?.contains(range.commonAncestorContainer)) {
         let sectionIndex = -1;
-        let startOffset = -1;
-        let endOffset = -1;
         
         let node: Node | null = range.startContainer;
         let sectionElement: HTMLElement | null = null;
@@ -98,12 +104,9 @@ export function PaperDrafter() {
         if (sectionElement && sectionElement.dataset.sectionIndex) {
             sectionIndex = parseInt(sectionElement.dataset.sectionIndex, 10);
             
-            // This is a simplified offset calculation. A more robust solution might
-            // need to traverse the DOM tree to get precise offsets within the raw markdown.
-            // For now, we'll use string search which is good enough for most cases.
             const sectionContent = paper?.sections[sectionIndex].content || '';
-            startOffset = sectionContent.indexOf(selectedText);
-            endOffset = startOffset + selectedText.length;
+            const startOffset = sectionContent.indexOf(selectedText);
+            const endOffset = startOffset + selectedText.length;
 
             if (startOffset > -1) {
                 setSelection({
@@ -120,7 +123,6 @@ export function PaperDrafter() {
       }
     }
     
-    // If no valid selection, close the popover
     if(!isRefining) {
         setPopoverOpen(false);
         setSelection(null);
@@ -147,7 +149,6 @@ export function PaperDrafter() {
             const currentSection = paper.sections[selection.sectionIndex];
             const originalContent = currentSection.content;
             
-            // Reconstruct the content with the refined text
             const newContent = originalContent.substring(0, selection.startOffset) + 
                                result.refinedText + 
                                originalContent.substring(selection.endOffset);
@@ -168,6 +169,39 @@ export function PaperDrafter() {
         setSelection(null);
     }
   };
+
+  const handleRegenerateSection = async (sectionIndex: number) => {
+    if (!paper || !isApiKeySet) return;
+
+    const sectionToRegen = paper.sections[sectionIndex];
+    setRegenerationState({ isRegenerating: true, sectionIndex });
+    setPopoverOpen(false); // Close refine popover if open
+    setSelection(null);
+
+    try {
+        const apiKey = getNextApiKey();
+        if(!apiKey) throw new Error("No API key available.");
+
+        const { newContent } = await regenerateSection({
+            paperTitle: title,
+            sectionTitle: sectionToRegen.title,
+            apiKey,
+        });
+
+        const newSections = [...paper.sections];
+        newSections[sectionIndex] = { ...sectionToRegen, content: newContent };
+        setPaper({ sections: newSections });
+
+    } catch (e: any) {
+         toast({
+            variant: 'destructive',
+            title: 'Regeneration Failed',
+            description: e.message || `Could not regenerate the ${sectionToRegen.title} section.`
+        });
+    } finally {
+        setRegenerationState({ isRegenerating: false, sectionIndex: null });
+    }
+  }
 
 
   const renderContent = () => {
@@ -215,11 +249,26 @@ export function PaperDrafter() {
                 {/* The child is a dummy element for positioning, the actual content is in the popover */}
                 <span/>
               </SelectRefinePopover>
-              {isRefining && <div className="fixed inset-0 bg-background/50 z-40 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}
+              {(isRefining || regenerationState.isRegenerating) && <div className="fixed inset-0 bg-background/50 z-40 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}
 
              {paper.sections.map((section, index) => (
                 <div key={index} className="mb-8" data-section-index={index}>
-                    <h2 className="text-2xl font-bold border-b pb-2 mb-4">{section.title}</h2>
+                    <div className="flex justify-between items-center border-b pb-2 mb-4">
+                        <h2 className="text-2xl font-bold">{section.title}</h2>
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleRegenerateSection(index)}
+                            disabled={regenerationState.isRegenerating || isRefining}
+                        >
+                            {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                            )}
+                            Regenerate
+                        </Button>
+                    </div>
                     <article className="prose prose-lg dark:prose-invert max-w-none">
                         <ReactMarkdown>{section.content}</ReactMarkdown>
                     </article>
