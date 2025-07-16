@@ -72,26 +72,6 @@ export function TopicSelector({ availableCategories, onGenerate, onTopicsChange,
           </Button>
         </div>
       </div>
-
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
-        <div className="flex flex-wrap gap-1">
-          {availableCategories
-            .filter((cat) => !topics.includes(cat))
-            .map((cat) => (
-              <Badge
-                key={cat}
-                variant="outline"
-                onClick={() => handleAddTopic(cat)}
-                className={`cursor-pointer hover:bg-primary/10 ${
-                  isLoading ? 'opacity-50 pointer-events-none' : ''
-                }`}
-              >
-                {cat}
-              </Badge>
-            ))}
-        </div>
-      </div>
       
       <div className="min-h-[60px] p-2 bg-muted/50 rounded-md">
         <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics:</h4>
@@ -113,6 +93,26 @@ export function TopicSelector({ availableCategories, onGenerate, onTopicsChange,
         ) : (
           <p className="text-sm text-muted-foreground italic">No topics selected yet.</p>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
+        <div className="flex flex-wrap gap-1">
+          {availableCategories
+            .filter((cat) => !topics.includes(cat))
+            .map((cat) => (
+              <Badge
+                key={cat}
+                variant="outline"
+                onClick={() => handleAddTopic(cat)}
+                className={`cursor-pointer hover:bg-primary/10 ${
+                  isLoading ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                {cat}
+              </Badge>
+            ))}
+        </div>
       </div>
 
       {onGenerate && (
