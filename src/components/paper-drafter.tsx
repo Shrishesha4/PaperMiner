@@ -95,16 +95,17 @@ export function PaperDrafter() {
   }, [title, isApiKeySet, getNextApiKey, toast, history, analysisId]);
 
   useEffect(() => {
-    if (isHistoryLoading) return; // Wait for history to load
-    
-    if (title === 'Untitled Document') {
-      setIsLoading(false);
-      setError("No title provided to draft a paper.");
-      return;
-    }
+    if (isHistoryLoading) return;
 
+    if (title === 'Untitled Document') {
+        setIsLoading(false);
+        setError("No title provided to draft a paper.");
+        return;
+    }
+    
     generateDraft();
-  }, [analysisId, generateDraft, title, isHistoryLoading]);
+  }, [analysisId, generateDraft, title, isHistoryLoading, history]);
+
 
   const handleSaveDraft = async () => {
     if (!paper || !analysisId) return;
@@ -451,5 +452,3 @@ export function PaperDrafter() {
     </div>
   );
 }
-
-    
