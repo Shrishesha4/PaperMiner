@@ -26,8 +26,12 @@ export function TitleStudio() {
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const isFromScratch = !analysisId;
-  const scratchAnalysisId = useRef<string | null>(null);
+  const isFromScratch = !analysisId || history.find(h => h.id === analysisId)?.categorizedPapers.length === 0;
+  
+  // Use a ref to track the ID of a newly created scratch analysis
+  // so we can update it instead of creating new ones on subsequent generations.
+  const scratchAnalysisId = useRef<string | null>(analysisId);
+
 
   useEffect(() => {
     if (isHistoryLoading) return;
@@ -48,21 +52,24 @@ export function TitleStudio() {
     } else {
       // Handle the "from scratch" case
       setAnalysis({ name: 'From Scratch', categories: [], titles: [] });
+      scratchAnalysisId.current = null; // Reset for a new scratch session
     }
     setIsLoading(false);
   }, [analysisId, history, isHistoryLoading, router, toast]);
 
-  const handleTitlesGenerated = useCallback((newTitles: string[]) => {
+  const handleTitlesGenerated = useCallback((newTitles: string[], topics: string[]) => {
     setGeneratedTitles(newTitles);
     
     if (isFromScratch && newTitles.length > 0) {
+      const name = `Scratchpad: ${topics.join(', ')}`;
+
       if (scratchAnalysisId.current) {
         // Update existing scratch analysis
-        updateAnalysis(scratchAnalysisId.current, { generatedTitles: newTitles });
+        updateAnalysis(scratchAnalysisId.current, { generatedTitles: newTitles, name });
       } else {
         // Add new scratch analysis
         const newAnalysis = addAnalysis({
-          name: "Scratchpad",
+          name,
           categorizedPapers: [],
           failedPapers: [],
           generatedTitles: newTitles,
@@ -110,7 +117,7 @@ export function TitleStudio() {
             <h1 className="text-xl font-bold">Title Studio</h1>
             <p className="text-sm text-muted-foreground">
               {analysis.name === 'From Scratch' 
-                ? 'Generating titles from scratch' 
+                ? 'Generating new title ideas' 
                 : <>Using dataset: <span className="font-semibold">{analysis.name}</span></>
               }
             </p>

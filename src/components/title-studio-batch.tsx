@@ -24,7 +24,7 @@ interface TitleStudioBatchProps {
     titles: string[];
   };
   generatedTitles: string[];
-  onTitlesGenerated: (titles: string[]) => void;
+  onTitlesGenerated: (titles: string[], topics: string[]) => void;
 }
 
 type NoveltyState = {
@@ -47,7 +47,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
     if (!isApiKeySet || topics.length === 0) return;
 
     setIsGenerating(true);
-    onTitlesGenerated([]);
+    onTitlesGenerated([], []);
     setCopiedStates([]);
     setNoveltyChecks({});
 
@@ -60,7 +60,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         count: numTitles,
         apiKey,
       });
-      onTitlesGenerated(result.titles);
+      onTitlesGenerated(result.titles, topics);
       setCopiedStates(new Array(result.titles.length).fill(false));
     } catch (e) {
       console.error(e);
@@ -170,7 +170,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         </div>
       </div>
       
-      <div className="p-4 sm:p-6 bg-muted/40 flex-1 min-h-[400px]">
+      <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px]">
         {isGenerating ? (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -204,7 +204,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                           {noveltyState?.isLoading ? (
                             <Loader2 className="animate-spin" />
                           ) : noveltyState?.result ? (
-                            <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
+                             <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
                               Score: {noveltyState.result.noveltyScore.toFixed(2)}
                             </span>
                           ) : (
@@ -223,7 +223,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                                 <SearchCheck />
                             )
                           )}
-                          <span className="ml-2">{noveltyState?.result ? 'View Details' : (isFromScratch ? 'Novelty Check' : 'Check Novelty')}</span>
+                           <span className="ml-2">{noveltyState?.result ? 'View Details' : (isFromScratch ? 'Novelty Check' : 'Check Novelty')}</span>
                         </Button>
                       </DialogTrigger>
                       {noveltyState?.result && (
