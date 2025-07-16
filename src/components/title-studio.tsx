@@ -18,18 +18,26 @@ export function TitleStudio() {
   const [analysisId] = useState(() => searchParams.get('analysisId'));
   const [analysis, setAnalysis] = useState<{ name: string; categories: string[]; titles: string[] } | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!analysisId || isHistoryLoading) return;
-    const found = history.find((h) => h.id === analysisId);
-    if (found) {
-      const categories = Array.from(new Set(found.categorizedPapers.map((p) => p.category).filter(Boolean)));
-      const titles = found.categorizedPapers.map((p) => p['Document Title']);
-      setAnalysis({ name: found.name, categories, titles });
+    if (isHistoryLoading) return;
+
+    if (analysisId) {
+      const found = history.find((h) => h.id === analysisId);
+      if (found) {
+        const categories = Array.from(new Set(found.categorizedPapers.map((p) => p.category).filter(Boolean)));
+        const titles = found.categorizedPapers.map((p) => p['Document Title']);
+        setAnalysis({ name: found.name, categories, titles });
+      } else {
+        toast({ variant: 'destructive', title: 'Analysis not found' });
+        router.push('/');
+      }
     } else {
-      toast({ variant: 'destructive', title: 'Analysis not found' });
-      router.push('/');
+      // Handle the "from scratch" case
+      setAnalysis({ name: 'From Scratch', categories: [], titles: [] });
     }
+    setIsLoading(false);
   }, [analysisId, history, isHistoryLoading, router, toast]);
   
   const handleContinueInChatGPT = () => {
@@ -46,7 +54,7 @@ export function TitleStudio() {
     continueInChatGPT(textToCopy);
   };
 
-  if (isHistoryLoading || !analysis) {
+  if (isLoading || !analysis) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -55,7 +63,7 @@ export function TitleStudio() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-theme(height.16))] flex-col">
+    <div className="flex h-[calc(100vh-theme(height.16))] flex-col overflow-y-auto">
       <div className="flex items-center justify-between p-4 border-b shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push('/')}>
@@ -64,7 +72,10 @@ export function TitleStudio() {
           <div>
             <h1 className="text-xl font-bold">Title Studio</h1>
             <p className="text-sm text-muted-foreground">
-              Using dataset: <span className="font-semibold">{analysis.name}</span>
+              {analysis.name === 'From Scratch' 
+                ? 'Generating titles from scratch' 
+                : <>Using dataset: <span className="font-semibold">{analysis.name}</span></>
+              }
             </p>
           </div>
         </div>
@@ -72,7 +83,7 @@ export function TitleStudio() {
             Continue in ChatGPT
         </Button>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1">
         <TitleStudioBatch 
           analysis={analysis}
           generatedTitles={generatedTitles}

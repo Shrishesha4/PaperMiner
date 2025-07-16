@@ -11,10 +11,11 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
-import { Loader2, Wand2, Copy, SearchCheck, Check } from 'lucide-react';
+import { Loader2, Wand2, Copy, SearchCheck, Check, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { NoveltyResultCard } from './novelty-result-card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -40,6 +41,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
   const [noveltyChecks, setNoveltyChecks] = useState<Record<number, NoveltyState>>({});
+  const isFromScratch = analysis.titles.length === 0;
 
   const handleGenerate = async () => {
     if (!isApiKeySet || topics.length === 0) return;
@@ -93,7 +95,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   };
   
   const handleCheckNovelty = async (title: string, index: number) => {
-    if (!isApiKeySet) return;
+    if (!isApiKeySet || isFromScratch) return;
 
     setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: true, result: null, error: null } }));
 
@@ -168,7 +170,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         </div>
       </div>
       
-      <div className="p-4 sm:p-6 bg-muted/40 flex-1">
+      <div className="p-4 sm:p-6 bg-muted/40 flex-1 min-h-[400px]">
         {isGenerating ? (
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -192,34 +194,47 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     </Button>
                     
                     <Dialog>
-                        <DialogTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
-                                disabled={noveltyState?.isLoading}
-                            >
-                                {noveltyState?.isLoading ? (
-                                    <Loader2 className="animate-spin" />
-                                ) : noveltyState?.result ? (
-                                    <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
-                                        Score: {noveltyState.result.noveltyScore.toFixed(2)}
-                                    </span>
-                                ) : (
-                                    <SearchCheck />
-                                )}
-                                <span className="ml-2">{noveltyState?.result ? 'View Details' : 'Check Novelty'}</span>
-                            </Button>
-                        </DialogTrigger>
-                        {noveltyState?.result && (
-                            <DialogContent className="sm:max-w-lg">
-                               <DialogHeader>
-                                  <DialogTitle>Novelty Analysis</DialogTitle>
-                               </DialogHeader>
-                               <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
-                               <NoveltyResultCard result={noveltyState.result} />
-                            </DialogContent>
-                        )}
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
+                          disabled={noveltyState?.isLoading || isFromScratch}
+                        >
+                          {noveltyState?.isLoading ? (
+                            <Loader2 className="animate-spin" />
+                          ) : noveltyState?.result ? (
+                            <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
+                              Score: {noveltyState.result.noveltyScore.toFixed(2)}
+                            </span>
+                          ) : (
+                            isFromScratch ? (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="flex items-center cursor-not-allowed"><Info /></span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Novelty check requires a dataset.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            ) : (
+                                <SearchCheck />
+                            )
+                          )}
+                          <span className="ml-2">{noveltyState?.result ? 'View Details' : (isFromScratch ? 'Novelty Check' : 'Check Novelty')}</span>
+                        </Button>
+                      </DialogTrigger>
+                      {noveltyState?.result && (
+                        <DialogContent className="sm:max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle>Novelty Analysis</DialogTitle>
+                          </DialogHeader>
+                          <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
+                          <NoveltyResultCard result={noveltyState.result} />
+                        </DialogContent>
+                      )}
                     </Dialog>
                   </CardFooter>
                 </Card>

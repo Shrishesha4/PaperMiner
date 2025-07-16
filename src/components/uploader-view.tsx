@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { UploadCloud, Loader2 } from 'lucide-react';
+import { UploadCloud, Loader2, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type ResearchPaper } from '@/types';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 // A simple CSV parser that handles quoted fields.
 function parseCSV(text: string): { data: ResearchPaper[], errors: number } {
@@ -172,6 +173,14 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
             </label>
             {dragActive && <div className="absolute inset-0 w-full h-full" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}></div>}
         </form>
+         <div className="mt-8">
+          <p className="text-muted-foreground">Or, start from scratch:</p>
+          <Button asChild variant="link" className="text-base">
+            <Link href="/title-studio">
+                Go to Title Studio <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
