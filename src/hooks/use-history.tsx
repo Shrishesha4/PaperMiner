@@ -9,7 +9,7 @@ interface HistoryContextType {
   history: Analysis[];
   selectedAnalysis: Analysis | null;
   addAnalysis: (newAnalysisData: Omit<Analysis, 'id' | 'date'>) => Analysis;
-  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => void;
+  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date' | 'name'>>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
   clearHistory: () => void;
@@ -91,7 +91,9 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     let updatedAnalysis: Analysis | null = null;
     const newHistory = history.map(item => {
         if (item.id === id) {
-            updatedAnalysis = { ...item, ...updates };
+            // The name should not be changed on updates like saving a draft.
+            const { name, ...restOfUpdates } = updates;
+            updatedAnalysis = { ...item, ...restOfUpdates };
             return updatedAnalysis;
         }
         return item;
@@ -99,11 +101,18 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
     setHistory(newHistory);
 
-    // If the updated analysis is the currently selected one, update that state too
     if (selectedAnalysis?.id === id && updatedAnalysis) {
         setSelectedAnalysis(updatedAnalysis);
     }
-  }, [history, selectedAnalysis]);
+    
+    // Only show toast for draft saving, not for other background updates.
+    if (updates.draftedPaper) {
+      toast({
+        title: "Draft Saved",
+        description: "Your paper draft has been saved to your history.",
+      });
+    }
+  }, [history, selectedAnalysis, toast]);
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
@@ -119,7 +128,6 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     const updatedHistory = history.filter(item => item.id !== id);
     setHistory(updatedHistory);
     
-    // If the removed analysis was the selected one, clear selection
     if (selectedAnalysis?.id === id) {
         setSelectedAnalysis(updatedHistory.length > 0 ? updatedHistory[0] : null);
     }

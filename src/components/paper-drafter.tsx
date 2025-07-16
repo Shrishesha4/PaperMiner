@@ -112,10 +112,6 @@ export function PaperDrafter() {
     setIsSaving(true);
     try {
       updateAnalysis(analysisId, { draftedPaper: paper });
-      toast({
-        title: "Draft Saved",
-        description: "Your paper draft has been saved to your history.",
-      });
     } catch (e) {
       toast({
         variant: 'destructive',
