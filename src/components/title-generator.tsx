@@ -18,7 +18,6 @@ import {
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { ScrollArea } from './ui/scroll-area';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import type { CheckTitleNoveltyOutput } from '@/types/schemas';
@@ -109,8 +108,11 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
   }, [apiKey, generatedTitle, existingTitles, toast]);
 
   const handleSuggestionClick = (suggestion: string) => {
-    setGeneratedTitle(suggestion);
-    setNoveltyResult(null);
+    handleAddTopic(suggestion);
+    toast({
+        title: "Topic Added",
+        description: `"${suggestion}" was added to your topics. You can now generate a new title.`
+    })
   };
 
   const handleChatGptClick = () => {
@@ -251,7 +253,7 @@ Respond with only the new title.`;
 
                   {noveltyResult && noveltyResult.suggestionsForImprovement && noveltyResult.suggestionsForImprovement.length > 0 && (
                       <div className="mt-4 space-y-2">
-                          <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement:</h5>
+                          <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement (Click to add as topic):</h5>
                           <div className="flex flex-col items-start gap-2">
                               {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
                                   <Button
@@ -259,7 +261,6 @@ Respond with only the new title.`;
                                     variant="outline"
                                     className="h-auto whitespace-normal text-left p-2 w-full"
                                     onClick={() => handleSuggestionClick(suggestion)}
-                                    disabled={isCheckingNovelty}
                                   >
                                       {suggestion}
                                   </Button>
