@@ -148,7 +148,7 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 text-center bg-background">
       <div className="max-w-2xl w-full">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights from Your Research</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights for Your Research</h2>
         <p className="mt-4 text-lg text-muted-foreground">
           Upload a CSV from IEEE Xplore to automatically categorize titles, visualize trends, and uncover key themes in your data.
         </p>

@@ -138,38 +138,6 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
 
   return (
     <div className="flex flex-col">
-      <div className="p-4 sm:p-6 border-b">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <TopicSelector
-                availableCategories={analysis.categories}
-                onTopicsChange={setTopics}
-                isLoading={isGenerating}
-            />
-            <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="num-titles">Number of Titles to Generate: {numTitles}</Label>
-                    <Slider
-                        id="num-titles"
-                        min={1}
-                        max={5}
-                        step={1}
-                        value={[numTitles]}
-                        onValueChange={(value) => setNumTitles(value[0])}
-                        disabled={isGenerating}
-                    />
-                </div>
-                <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full">
-                    {isGenerating ? (
-                        <Loader2 className="mr-2 animate-spin" />
-                    ) : (
-                        <Wand2 className="mr-2" />
-                    )}
-                    Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
-                </Button>
-            </div>
-        </div>
-      </div>
-      
       <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px]">
         {isGenerating ? (
             <div className="flex items-center justify-center h-full">
@@ -253,6 +221,39 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
           </div>
         )}
       </div>
+      <div className="p-4 sm:p-6 border-b">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TopicSelector
+                availableCategories={analysis.categories}
+                onTopicsChange={setTopics}
+                isLoading={isGenerating}
+            />
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="num-titles">Number of Titles to Generate: {numTitles}</Label>
+                    <Slider
+                        id="num-titles"
+                        min={1}
+                        max={5}
+                        step={1}
+                        value={[numTitles]}
+                        onValueChange={(value) => setNumTitles(value[0])}
+                        disabled={isGenerating}
+                    />
+                </div>
+                <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full">
+                    {isGenerating ? (
+                        <Loader2 className="mr-2 animate-spin" />
+                    ) : (
+                        <Wand2 className="mr-2" />
+                    )}
+                    Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
+                </Button>
+            </div>
+        </div>
+      </div>
+      
+      
     </div>
   );
 }
