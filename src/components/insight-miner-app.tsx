@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { type ResearchPaper, type CategorizedPaper, FailedPaper } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { categorizeResearchTitles } from '@/ai/flows/categorize-research-titles';
@@ -13,6 +13,8 @@ import { ApiKeyDialog } from './api-key-dialog';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
+const CATEGORIZED_PAPERS_STORAGE_KEY = 'categorized_papers';
+const FAILED_PAPERS_STORAGE_KEY = 'failed_papers';
 
 export function InsightMinerApp() {
   const { toast } = useToast();
@@ -23,6 +25,52 @@ export function InsightMinerApp() {
   const [failedPapers, setFailedPapers] = useState<FailedPaper[]>([]);
   const [progress, setProgress] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedCategorized = localStorage.getItem(CATEGORIZED_PAPERS_STORAGE_KEY);
+      const storedFailed = localStorage.getItem(FAILED_PAPERS_STORAGE_KEY);
+      if (storedCategorized) {
+        setCategorizedPapers(JSON.parse(storedCategorized));
+        if (storedFailed) {
+            setFailedPapers(JSON.parse(storedFailed));
+        }
+        setStep('dashboard');
+      }
+    } catch (error) {
+      console.error("Could not load data from localStorage", error);
+    } finally {
+        setIsLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if(!isLoaded) return;
+    try {
+        if (categorizedPapers.length > 0) {
+            localStorage.setItem(CATEGORIZED_PAPERS_STORAGE_KEY, JSON.stringify(categorizedPapers));
+        } else {
+            localStorage.removeItem(CATEGORIZED_PAPERS_STORAGE_KEY);
+        }
+    } catch (error) {
+        console.error("Could not save categorized papers to localStorage", error);
+    }
+  }, [categorizedPapers, isLoaded]);
+
+  useEffect(() => {
+    if(!isLoaded) return;
+    try {
+        if (failedPapers.length > 0) {
+            localStorage.setItem(FAILED_PAPERS_STORAGE_KEY, JSON.stringify(failedPapers));
+        } else {
+            localStorage.removeItem(FAILED_PAPERS_STORAGE_KEY);
+        }
+    } catch (error) {
+        console.error("Could not save failed papers to localStorage", error);
+    }
+  }, [failedPapers, isLoaded]);
+
 
   const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[]) => {
     if (!apiKey) {
@@ -37,6 +85,7 @@ export function InsightMinerApp() {
     setPapers(parsedPapers);
     setStep('processing');
     setProgress(0);
+    setCategorizedPapers([]);
     setFailedPapers([]);
     setProcessingMessage('Starting categorization process...');
 
@@ -114,7 +163,21 @@ export function InsightMinerApp() {
     setFailedPapers([]);
     setProgress(0);
     setProcessingMessage('');
+    try {
+        localStorage.removeItem(CATEGORIZED_PAPERS_STORAGE_KEY);
+        localStorage.removeItem(FAILED_PAPERS_STORAGE_KEY);
+    } catch (error) {
+        console.error("Could not clear localStorage", error);
+    }
   };
+
+  if (!isLoaded) {
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+            <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
