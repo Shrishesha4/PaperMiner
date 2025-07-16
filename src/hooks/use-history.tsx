@@ -9,7 +9,7 @@ interface HistoryContextType {
   history: Analysis[];
   selectedAnalysis: Analysis | null;
   addAnalysis: (newAnalysisData: Omit<Analysis, 'id' | 'date'>) => Analysis;
-  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id'>>) => void;
+  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
   clearHistory: () => void;
@@ -87,7 +87,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     return newAnalysis;
   }, [history, toast]);
 
-  const updateAnalysis = useCallback((id: string, updates: Partial<Omit<Analysis, 'id'>>) => {
+  const updateAnalysis = useCallback((id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => {
     let updatedAnalysis: Analysis | null = null;
     const newHistory = history.map(item => {
         if (item.id === id) {
