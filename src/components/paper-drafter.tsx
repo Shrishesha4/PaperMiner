@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save, Wand2 } from 'lucide-react';
+import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save } from 'lucide-react';
 import { draftPaper } from '@/ai/flows/draft-paper-flow';
 import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
@@ -251,13 +251,14 @@ export function PaperDrafter() {
     });
   };
 
+  const isAiWorking = refinementState.isRefining || regenerationState.isRegenerating;
 
   const renderContent = () => {
     if (isLoading) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading paper draft...</p>
+          <p className="text-muted-foreground">Generating initial draft...</p>
         </div>
       );
     }
@@ -276,28 +277,27 @@ export function PaperDrafter() {
     if (!paper) {
       return (
         <div className="flex items-center justify-center h-full">
-            <Alert className="max-w-md">
-                <Wand2 className="h-4 w-4" />
-                <AlertTitle>Ready to Draft</AlertTitle>
-                <AlertDescription>A title is required to start drafting.</AlertDescription>
+             <Alert variant="destructive" className="max-w-md">
+                <AlertTitle>No Paper Data</AlertTitle>
+                <AlertDescription>Could not load or generate paper data.</AlertDescription>
             </Alert>
         </div>
        )
     }
 
     return (
-        <div className="bg-background p-8 rounded-lg shadow-md space-y-8">
+        <div className="bg-background p-4 sm:p-6 md:p-8 rounded-lg shadow-md space-y-8">
              {paper.sections.map((section, index) => (
                 <div key={index} className="mb-8" data-section-index={index}>
-                    <div className="flex justify-between items-center border-b pb-2 mb-4">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
                         <h2 className="text-2xl font-bold">{section.title}</h2>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 shrink-0">
                              <AlertDialog onOpenChange={() => setRefinePrompt('')}>
                                 <AlertDialogTrigger asChild>
                                     <Button 
                                         variant="outline" 
                                         size="sm"
-                                        disabled={regenerationState.isRegenerating || refinementState.isRefining}
+                                        disabled={isAiWorking}
                                     >
                                         <Edit className="mr-2 h-4 w-4" />
                                         Refine
@@ -338,7 +338,7 @@ export function PaperDrafter() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => handleRegenerateSection(index)}
-                                disabled={regenerationState.isRegenerating || refinementState.isRefining}
+                                disabled={isAiWorking}
                             >
                                 {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -349,7 +349,7 @@ export function PaperDrafter() {
                             </Button>
                         </div>
                     </div>
-                    <article className="prose prose-lg dark:prose-invert max-w-none">
+                    <article className="prose dark:prose-invert max-w-none">
                         <ReactMarkdown>{section.content}</ReactMarkdown>
                     </article>
                 </div>
@@ -360,32 +360,32 @@ export function PaperDrafter() {
 
   return (
     <div className="flex h-screen flex-col bg-muted/20">
-      <header className="flex items-center justify-between p-4 border-b shrink-0 bg-background z-10">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
+      <header className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between p-4 border-b shrink-0 bg-background z-10 gap-4">
+        <div className="flex items-center gap-4 w-full">
+          <Button variant="outline" size="icon" onClick={() => router.back()} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-2xl">
+          <div className="flex-grow overflow-hidden">
             <h1 className="text-xl font-bold truncate">Paper Drafter</h1>
-            <p className="text-sm text-muted-foreground truncate">
+            <p className="text-sm text-muted-foreground truncate" title={title}>
                 {title}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-            <Button onClick={handleSaveDraft} variant="default" disabled={isLoading || !!error || isSaving}>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+            <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Draft
+                Save
             </Button>
-            <Button onClick={handleDownloadDocx} variant="outline" disabled={isLoading || !!error || isDownloading}>
+            <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
                 {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                Download .docx
+                .docx
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={isLoading || !!error} onClick={handleCopyToClipboard}>
+                <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
                     <FileUp className="mr-2 h-4 w-4" />
-                    Export to Google Docs
+                    Export
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -405,7 +405,7 @@ export function PaperDrafter() {
             </AlertDialog>
         </div>
       </header>
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+      <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">
             {renderContent()}
         </div>
