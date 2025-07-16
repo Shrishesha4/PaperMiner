@@ -11,7 +11,6 @@ import { draftPaper } from '@/ai/flows/draft-paper-flow';
 import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
 import { refineSection } from '@/ai/flows/refine-section-flow';
-import ReactMarkdown from 'react-markdown';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import {
   AlertDialog,
@@ -62,12 +61,21 @@ export function PaperDrafter() {
   const [refinePrompt, setRefinePrompt] = useState('');
 
 
-  const generateDraft = useCallback(async () => {
+  const generateDraft = useCallback(async (isFullRegen = false) => {
     if (!isApiKeySet) {
       toast({ variant: 'destructive', title: 'API Key Not Set' });
       setError('Please set your Gemini API key before drafting.');
       setIsLoading(false);
       return;
+    }
+
+    if (!isFullRegen) {
+      const analysis = history.find(h => h.id === analysisId);
+      if (analysis && analysis.draftedPaper) {
+          setPaper(analysis.draftedPaper);
+          setIsLoading(false);
+          return;
+      }
     }
 
     setIsLoading(true);
@@ -84,7 +92,7 @@ export function PaperDrafter() {
     } finally {
       setIsLoading(false);
     }
-  }, [title, isApiKeySet, getNextApiKey, toast]);
+  }, [title, isApiKeySet, getNextApiKey, toast, history, analysisId]);
 
   useEffect(() => {
     if (isHistoryLoading) return; // Wait for history to load
@@ -95,14 +103,8 @@ export function PaperDrafter() {
       return;
     }
 
-    const analysis = history.find(h => h.id === analysisId);
-    if (analysis && analysis.draftedPaper) {
-        setPaper(analysis.draftedPaper);
-        setIsLoading(false);
-    } else {
-        generateDraft();
-    }
-  }, [analysisId, generateDraft, title, history, isHistoryLoading]);
+    generateDraft();
+  }, [analysisId, generateDraft, title, isHistoryLoading]);
 
   const handleSaveDraft = async () => {
     if (!paper || !analysisId) return;
@@ -251,7 +253,7 @@ export function PaperDrafter() {
     });
   };
 
-  const isAiWorking = refinementState.isRefining || regenerationState.isRegenerating;
+  const isAiWorking = refinementState.isRefining || regenerationState.isRegenerating || isLoading;
 
   const renderContent = () => {
     if (isLoading) {
@@ -361,7 +363,9 @@ export function PaperDrafter() {
                             </div>
                         )}
                         <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
-                            <ReactMarkdown>{section.content}</ReactMarkdown>
+                           {section.content.split('\n').map((paragraph, pIndex) => (
+                                <p key={pIndex}>{paragraph}</p>
+                            ))}
                         </article>
                     </div>
                 </div>
@@ -389,6 +393,28 @@ export function PaperDrafter() {
                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isLoading || !!error || isAiWorking}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate All
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will regenerate the entire paper, replacing all current content and edits. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => generateDraft(true)}>
+                    Yes, Regenerate
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
                 {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                 .docx
@@ -425,3 +451,5 @@ export function PaperDrafter() {
     </div>
   );
 }
+
+    
