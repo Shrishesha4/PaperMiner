@@ -91,7 +91,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     let updatedAnalysis: Analysis | null = null;
     const newHistory = history.map(item => {
         if (item.id === id) {
-            updatedAnalysis = { ...item, ...updates, date: new Date().toISOString() };
+            updatedAnalysis = { ...item, ...updates };
             return updatedAnalysis;
         }
         return item;
