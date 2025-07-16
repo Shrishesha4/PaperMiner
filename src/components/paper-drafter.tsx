@@ -6,26 +6,36 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Loader2, RefreshCw, Wand2 } from 'lucide-react';
+import { ArrowLeft, Edit, Loader2, RefreshCw, Wand2 } from 'lucide-react';
 import { draftPaper, type DraftPaperOutput } from '@/ai/flows/draft-paper-flow';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
-import { refineText } from '@/ai/flows/refine-text-flow';
+import { refineSection } from '@/ai/flows/refine-section-flow';
 import ReactMarkdown from 'react-markdown';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { SelectRefinePopover } from './select-refine-popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
 
-type SelectionState = {
-  text: string;
-  sectionIndex: number;
-  startOffset: number;
-  endOffset: number;
-  range: Range | null;
-} | null;
 
 type RegenerationState = {
     isRegenerating: boolean;
     sectionIndex: number | null;
 };
+
+type RefinementState = {
+    isRefining: boolean;
+    sectionIndex: number | null;
+}
 
 export function PaperDrafter() {
   const router = useRouter();
@@ -34,16 +44,13 @@ export function PaperDrafter() {
   const { getNextApiKey, isApiKeySet } = useApiKey();
   
   const title = searchParams.get('title') || 'Untitled Document';
-  const paperContentRef = useRef<HTMLDivElement>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paper, setPaper] = useState<DraftPaperOutput | null>(null);
-  const [isRefining, setIsRefining] = useState(false);
+  const [refinementState, setRefinementState] = useState<RefinementState>({ isRefining: false, sectionIndex: null });
   const [regenerationState, setRegenerationState] = useState<RegenerationState>({ isRegenerating: false, sectionIndex: null });
-
-  const [selection, setSelection] = useState<SelectionState>(null);
-  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [refinePrompt, setRefinePrompt] = useState('');
 
 
   const generateDraft = useCallback(async () => {
@@ -79,93 +86,36 @@ export function PaperDrafter() {
     }
   }, [generateDraft, title]);
 
-  const handleMouseUp = () => {
-    if (isRefining || regenerationState.isRegenerating) return;
+  const handleRefineSection = async (sectionIndex: number) => {
+    if (!paper || !isApiKeySet || !refinePrompt) return;
 
-    const currentSelection = window.getSelection();
-    if (currentSelection && !currentSelection.isCollapsed && currentSelection.rangeCount > 0) {
-      const range = currentSelection.getRangeAt(0);
-      const selectedText = range.toString().trim();
-
-      if (selectedText.length > 5 && paperContentRef.current?.contains(range.commonAncestorContainer)) {
-        let sectionIndex = -1;
-        let node: Node | null = range.startContainer;
-        let sectionElement: HTMLElement | null = null;
-        
-        while(node) {
-            if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).dataset.sectionIndex) {
-                sectionElement = node as HTMLElement;
-                break;
-            }
-            node = node.parentElement;
-        }
-
-        if (sectionElement && sectionElement.dataset.sectionIndex && paper) {
-            sectionIndex = parseInt(sectionElement.dataset.sectionIndex, 10);
-            
-            // This logic is simplified; for complex markdown it might be fragile.
-            // It relies on finding the first occurrence.
-            const sectionContent = paper.sections[sectionIndex].content;
-            const startOffset = sectionContent.indexOf(selectedText);
-            
-            if (startOffset !== -1) {
-              const endOffset = startOffset + selectedText.length;
-              setSelection({ text: selectedText, sectionIndex, startOffset, endOffset, range });
-              setPopoverOpen(true);
-              return; // Exit to prevent clearing selection
-            }
-        }
-      }
-    }
-    
-    // If no valid selection was made, close the popover.
-    // This part is tricky because clicking inside the popover also triggers mouseUp.
-    // The popover's `onInteractOutside` will handle closing it more reliably.
-  };
-
-  const handleRefine = async (prompt: string) => {
-    if (!selection || !isApiKeySet) return;
-
-    setIsRefining(true);
-    setPopoverOpen(false); // Close popover before starting
+    const sectionToRefine = paper.sections[sectionIndex];
+    setRefinementState({ isRefining: true, sectionIndex });
     
     try {
         const apiKey = getNextApiKey();
         if(!apiKey) throw new Error("No API Key available.");
 
-        const result = await refineText({
-            selectedText: selection.text,
-            userPrompt: prompt,
+        const { refinedText } = await refineSection({
+            sectionTitle: sectionToRefine.title,
+            currentText: sectionToRefine.content,
+            userPrompt: refinePrompt,
             apiKey,
         });
 
-        if (paper && paper.sections[selection.sectionIndex]) {
-            const currentSection = paper.sections[selection.sectionIndex];
-            const originalContent = currentSection.content;
-            
-            // Re-create the content with the refined text
-            const newContent = originalContent.substring(0, selection.startOffset) + 
-                               result.refinedText + 
-                               originalContent.substring(selection.endOffset);
-
-            const newSections = [...paper.sections];
-            newSections[selection.sectionIndex] = { ...currentSection, content: newContent };
-            
-            // Clear selection from the window
-            window.getSelection()?.removeAllRanges();
-
-            setPaper({ sections: newSections });
-        }
+        const newSections = [...paper.sections];
+        newSections[sectionIndex] = { ...sectionToRefine, content: refinedText };
+        setPaper({ sections: newSections });
+        setRefinePrompt(''); // Clear prompt on success
         
     } catch (e: any) {
         toast({
             variant: 'destructive',
             title: 'Refinement Failed',
-            description: e.message || 'An error occurred during text refinement.'
+            description: e.message || `Could not refine the ${sectionToRefine.title} section.`
         });
     } finally {
-        setIsRefining(false);
-        setSelection(null);
+        setRefinementState({ isRefining: false, sectionIndex: null });
     }
   };
 
@@ -174,8 +124,6 @@ export function PaperDrafter() {
 
     const sectionToRegen = paper.sections[sectionIndex];
     setRegenerationState({ isRegenerating: true, sectionIndex });
-    setPopoverOpen(false); // Close refine popover if open
-    setSelection(null);
 
     try {
         const apiKey = getNextApiKey();
@@ -237,36 +185,68 @@ export function PaperDrafter() {
     }
 
     return (
-        <div ref={paperContentRef} onMouseUp={handleMouseUp} className="bg-background p-8 rounded-lg shadow-md">
-             <SelectRefinePopover 
-                range={selection?.range} 
-                isOpen={popoverOpen} 
-                onOpenChange={setPopoverOpen}
-                onRefine={handleRefine}
-                isRefining={isRefining}
-              >
-                {/* The child is a dummy element for positioning, the actual content is in the popover */}
-                <span/>
-              </SelectRefinePopover>
-              {(isRefining || regenerationState.isRegenerating) && <div className="fixed inset-0 bg-background/50 z-40 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>}
-
+        <div className="bg-background p-8 rounded-lg shadow-md space-y-8">
              {paper.sections.map((section, index) => (
                 <div key={index} className="mb-8" data-section-index={index}>
                     <div className="flex justify-between items-center border-b pb-2 mb-4">
                         <h2 className="text-2xl font-bold">{section.title}</h2>
-                        <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleRegenerateSection(index)}
-                            disabled={regenerationState.isRegenerating || isRefining}
-                        >
-                            {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                            )}
-                            Regenerate
-                        </Button>
+                        <div className="flex gap-2">
+                             <AlertDialog onOpenChange={() => setRefinePrompt('')}>
+                                <AlertDialogTrigger asChild>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        disabled={regenerationState.isRegenerating || refinementState.isRefining}
+                                    >
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Refine
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Refine "{section.title}"</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Provide instructions for how the AI should rewrite this section.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <div className="grid gap-2 py-4">
+                                        <Label htmlFor="refine-prompt">Your instructions</Label>
+                                        <Textarea 
+                                            id="refine-prompt"
+                                            placeholder="e.g., Make this more formal, or expand on the methodology."
+                                            value={refinePrompt}
+                                            onChange={(e) => setRefinePrompt(e.target.value)}
+                                        />
+                                    </div>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                        onClick={() => handleRefineSection(index)}
+                                        disabled={!refinePrompt || refinementState.isRefining}
+                                    >
+                                       {refinementState.isRefining && refinementState.sectionIndex === index ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : null}
+                                        Submit
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                            <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleRegenerateSection(index)}
+                                disabled={regenerationState.isRegenerating || refinementState.isRefining}
+                            >
+                                {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                )}
+                                Regenerate
+                            </Button>
+                        </div>
                     </div>
                     <article className="prose prose-lg dark:prose-invert max-w-none">
                         <ReactMarkdown>{section.content}</ReactMarkdown>
