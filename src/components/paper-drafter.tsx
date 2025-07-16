@@ -287,7 +287,12 @@ export function PaperDrafter() {
 
     return (
         <div className="bg-background p-4 sm:p-6 md:p-8 rounded-lg shadow-md space-y-8">
-             {paper.sections.map((section, index) => (
+             {paper.sections.map((section, index) => {
+                const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
+                const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
+                const isSectionLoading = isSectionRefining || isSectionRegenerating;
+
+                return (
                 <div key={index} className="mb-8" data-section-index={index}>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
                         <h2 className="text-2xl font-bold">{section.title}</h2>
@@ -349,11 +354,18 @@ export function PaperDrafter() {
                             </Button>
                         </div>
                     </div>
-                    <article className="prose dark:prose-invert max-w-none">
-                        <ReactMarkdown>{section.content}</ReactMarkdown>
-                    </article>
+                    <div className="relative">
+                        {isSectionLoading && (
+                            <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-10">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        )}
+                        <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
+                            <ReactMarkdown>{section.content}</ReactMarkdown>
+                        </article>
+                    </div>
                 </div>
-            ))}
+             )})}
         </div>
     )
   }
