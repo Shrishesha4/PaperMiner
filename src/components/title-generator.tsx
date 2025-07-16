@@ -109,6 +109,11 @@ export function TitleGenerator({ availableCategories, existingTitles }: TitleGen
     }
   }, [apiKey, generatedTitle, existingTitles, toast]);
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setGeneratedTitle(suggestion);
+    handleNoveltyCheck(suggestion);
+  };
+
   const handleChatGptClick = () => {
     const prompt = `You are an expert academic writer specializing in creating compelling research paper titles that adhere to IEEE conventions.
   
@@ -250,12 +255,15 @@ Respond with only the new title.`;
                           <h5 className="text-sm font-medium flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" /> Suggestions for Improvement:</h5>
                           <div className="flex flex-col items-start gap-2">
                               {noveltyResult.suggestionsForImprovement.map((suggestion, index) => (
-                                  <div
+                                  <Button
                                     key={index}
-                                    className="h-auto whitespace-normal text-left p-2 border rounded-md text-sm bg-background w-full"
+                                    variant="outline"
+                                    className="h-auto whitespace-normal text-left p-2 w-full"
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                    disabled={isCheckingNovelty}
                                   >
                                       {suggestion}
-                                  </div>
+                                  </Button>
                               ))}
                           </div>
                       </div>
