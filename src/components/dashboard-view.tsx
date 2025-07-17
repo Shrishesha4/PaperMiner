@@ -57,20 +57,23 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
             categoryCounts[paper.category] = (categoryCounts[paper.category] || 0) + 1;
         }
     });
-
+  
     const allCategories = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
-
+    allCategories.sort((a, b) => b.value - a.value);
+  
     if (data.length >= 100 && allCategories.length > TOP_CATEGORIES_COUNT) {
-      allCategories.sort((a, b) => b.value - a.value);
-      
       const topCategories = allCategories.slice(0, TOP_CATEGORIES_COUNT - 1);
       const otherCategories = allCategories.slice(TOP_CATEGORIES_COUNT - 1);
       
       const otherValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
       
+      // For visual clarity, make the "Other" slice smaller than the smallest top category
+      const smallestTopValue = topCategories[topCategories.length - 1]?.value || 1;
+      const visualOtherValue = Math.max(1, smallestTopValue * 0.9);
+
       return [
         ...topCategories,
-        { name: 'Other', value: otherValue }
+        { name: 'Other', value: visualOtherValue }
       ];
     }
     
@@ -78,11 +81,10 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   }, [data]);
 
   const allUniqueCategories = useMemo(() => {
-    const allCats = categoryChartData.map(c => c.name);
     // Don't include 'Other' in the filter dropdown
     const uniqueCats = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
     return ['all', ...uniqueCats.sort()];
-  }, [data, categoryChartData]);
+  }, [data]);
 
 
   const filteredData = useMemo(() => {
