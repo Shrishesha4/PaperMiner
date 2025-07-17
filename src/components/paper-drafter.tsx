@@ -287,7 +287,7 @@ export function PaperDrafter() {
     }
 
     return (
-        <div className="space-y-6">
+        <>
              {paper.sections.map((section, index) => {
                 const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
                 const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
@@ -369,7 +369,7 @@ export function PaperDrafter() {
                     </CardContent>
                 </Card>
              )})}
-        </div>
+        </>
     )
   }
 
@@ -434,6 +434,7 @@ export function PaperDrafter() {
                 </AlertDialog>
             </div>
         </div>
+        
         <div className="space-y-6">
             {renderContent()}
         </div>

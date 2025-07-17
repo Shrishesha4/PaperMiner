@@ -178,7 +178,7 @@ export function InsightMinerApp() {
   const renderContent = () => {
     if (isHistoryLoading) {
       return (
-          <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+          <div className="flex flex-col items-center justify-center p-4 text-center h-full">
               <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
               <p className="mt-4 text-muted-foreground">Loading analysis history...</p>
           </div>
@@ -213,9 +213,7 @@ export function InsightMinerApp() {
         <ApiKeyDialog />
       </Dialog>
       <WelcomeDialog />
-      <div className="flex-1 flex flex-col">
-        {renderContent()}
-      </div>
+      {renderContent()}
     </>
   );
 }

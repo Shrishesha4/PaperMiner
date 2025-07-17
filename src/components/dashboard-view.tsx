@@ -216,56 +216,54 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
         </div>
       </div>
       
-      <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Category Distribution</CardTitle>
-                  <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
-                </CardHeader>
-                <CardContent ref={categoryChartRef}>
-                  <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                  <CardTitle>Top Keywords</CardTitle>
-                  <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <KeywordDisplay data={filteredData} />
-                </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-              <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                  <div>
-                      <CardTitle>Research Papers</CardTitle>
-                      <CardDescription>
-                          Displaying {filteredData.length} of {data.length} categorized papers.
-                      </CardDescription>
-                  </div>
-                  <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-                      <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
-                          <SelectContent>
-                          {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                      <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                          <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
-                          <SelectContent>
-                          {allUniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
-                          </SelectContent>
-                      </Select>
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  <PapersTable data={filteredData} />
-              </CardContent>
-          </Card>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Category Distribution</CardTitle>
+              <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
+            </CardHeader>
+            <CardContent ref={categoryChartRef}>
+              <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+              <CardTitle>Top Keywords</CardTitle>
+              <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <KeywordDisplay data={filteredData} />
+            </CardContent>
+        </Card>
       </div>
+
+      <Card>
+          <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4">
+              <div>
+                  <CardTitle>Research Papers</CardTitle>
+                  <CardDescription>
+                      Displaying {filteredData.length} of {data.length} categorized papers.
+                  </CardDescription>
+              </div>
+              <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+                  <Select value={filters.year} onValueChange={handleFilterChange('year')}>
+                      <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
+                      <SelectContent>
+                      {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
+                      </SelectContent>
+                  </Select>
+                  <Select value={filters.category} onValueChange={handleFilterChange('category')}>
+                      <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
+                      <SelectContent>
+                      {allUniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
+                      </SelectContent>
+                  </Select>
+              </div>
+          </CardHeader>
+          <CardContent>
+              <PapersTable data={filteredData} />
+          </CardContent>
+      </Card>
 
       {failedData.length > 0 && (
         <Accordion type="single" collapsible className="w-full">
