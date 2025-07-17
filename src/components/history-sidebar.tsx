@@ -105,14 +105,13 @@ export function HistorySidebar() {
   return (
     <Sidebar>
         <SidebarHeader>
-            { state === 'expanded' && (
+            { state === 'expanded' ? (
                 <div className="flex flex-col gap-1 p-2">
                     <Button onClick={handleNewAnalysis}>
                       <Plus className="mr-2 h-4 w-4" /> New Analysis
                     </Button>
                 </div>
-            )}
-             { state === 'collapsed' && (
+            ) : (
                 <div className="flex flex-col gap-1 p-2">
                    <Button onClick={handleNewAnalysis} size="icon">
                       <Plus className="h-4 w-4" />
