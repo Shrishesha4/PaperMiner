@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend, Sector } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -29,22 +29,30 @@ const COLORS = [
 ];
 
 const findNodeByPath = (nodes: CategoryHierarchy[], path: string[]): CategoryHierarchy[] => {
-    if (path.length === 0) {
-        return nodes;
+    let currentLevel = nodes;
+    for (const name of path) {
+        const node = currentLevel.find(n => n.name === name);
+        if (node && node.children) {
+            currentLevel = node.children;
+        } else {
+            // Path leads to a leaf or is invalid, stop traversing.
+            return []; 
+        }
     }
-    const [current, ...rest] = path;
-    const node = nodes.find(n => n.name === current);
-    if (node && node.children) {
-        return findNodeByPath(node.children, rest);
-    }
-    return node ? [node] : [];
+    return currentLevel;
 };
+
 
 export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownPath, setDrilldownPath] = useState<string[]>([]);
 
-  const currentLevelData = useMemo(() => findNodeByPath(data, drilldownPath), [data, drilldownPath]);
+  const currentLevelData = useMemo(() => {
+    if (drilldownPath.length === 0) {
+      return data;
+    }
+    return findNodeByPath(data, drilldownPath);
+  }, [data, drilldownPath]);
 
   const { chartData, chartConfig } = useMemo(() => {
     const sortedData = [...currentLevelData].sort((a, b) => (b.value || 0) - (a.value || 0));
@@ -82,9 +90,27 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
     onCategorySelect(null);
   };
 
+  const getParentName = () => {
+    if (drilldownPath.length === 0) return "Top Level";
+    if (drilldownPath.length === 1) return "Top Level";
+    return drilldownPath[drilldownPath.length - 2];
+  }
+
   const selectedDataPoint = selectedCategory ? chartData.find(d => d.name === selectedCategory) : null;
   const totalPapers = useMemo(() => chartData.reduce((acc, curr) => acc + (curr.value || 0), 0), [chartData]);
   
+  if (chartData.length === 0 && drilldownPath.length > 0) {
+    return (
+        <div className="relative flex h-[400px] w-full flex-col items-center justify-center text-muted-foreground">
+             <Button variant="ghost" size="sm" onClick={handleGoBack} className="absolute left-2 top-0 z-10">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to {getParentName()}
+            </Button>
+            <p>No sub-categories to display.</p>
+        </div>
+    )
+  }
+
   if (chartData.length === 0) {
     return (
       <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
@@ -98,7 +124,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
       {drilldownPath.length > 0 && (
           <Button variant="ghost" size="sm" onClick={handleGoBack} className="absolute left-2 top-0 z-10">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to {drilldownPath.length > 1 ? drilldownPath[drilldownPath.length-2] : "Top Level"}
+              Back to {getParentName()}
           </Button>
       )}
       <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
@@ -112,10 +138,10 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
               innerRadius="60%"
               outerRadius="80%"
               strokeWidth={2}
-              onClick={handlePieClick}
+              onClick={(e) => handlePieClick(e)}
               paddingAngle={2}
             >
-                {chartData.map((entry, index) => (
+                {chartData.map((entry) => (
                     <Cell 
                         key={`cell-${entry.name}`} 
                         fill={chartConfig[entry.name]?.color} 
@@ -144,7 +170,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
               onClick={handleLegendClick}
               verticalAlign="bottom"
               wrapperStyle={{paddingTop: 20}}
-              formatter={(value, entry) => {
+              formatter={(value) => {
                 const item = chartData.find(d => d.name === value);
                 const isDrillable = item && item.children && item.children.length > 0;
                 return (
