@@ -161,7 +161,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
 
   return (
     <div className="flex flex-col">
-      <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px] flex-1">
+      <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px] flex-1 pb-24">
         {isGenerating ? (
             <div className="flex flex-col items-center justify-center h-full">
                 <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary mb-4" />
@@ -315,17 +315,17 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     </Accordion>
                 </div>
             </CardContent>
-            <CardFooter className="flex justify-end">
-                 <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} size="lg">
-                    {isGenerating ? (
-                        <Loader2 className="mr-2 animate-spin" />
-                    ) : (
-                        <Wand2 className="mr-2" />
-                    )}
-                    Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
-                </Button>
-            </CardFooter>
         </Card>
+      </div>
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-2 rounded-full bg-background/50 backdrop-blur-lg border shadow-lg">
+          <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} size="lg">
+              {isGenerating ? (
+                  <Loader2 className="mr-2 animate-spin" />
+              ) : (
+                  <Wand2 className="mr-2" />
+              )}
+              Generate {numTitles > 0 ? numTitles : ''} Title{numTitles !== 1 ? 's' : ''}
+          </Button>
       </div>
     </div>
   );
