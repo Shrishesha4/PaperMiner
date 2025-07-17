@@ -105,7 +105,7 @@ export function TopicSelector({ availableCategories, onGenerate, onTopicsChange,
                 key={cat}
                 variant="outline"
                 onClick={() => handleAddTopic(cat)}
-                className={`cursor-pointer hover:bg-primary/10 ${
+                className={`cursor-pointer hover:bg-primary/10 text-sm ${
                   isLoading ? 'opacity-50 pointer-events-none' : ''
                 }`}
               >
