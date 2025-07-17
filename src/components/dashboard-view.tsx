@@ -18,7 +18,6 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useHistory } from '@/hooks/use-history';
 import { useApiKey } from '@/hooks/use-api-key';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
@@ -63,7 +62,7 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
     });
   }, [data, filters]);
   
-  const categoryChartData = useMemo(() => {
+  const categoryChartData: CategoryData[] = useMemo(() => {
     const categoryCounts: Record<string, number> = {};
     data.forEach(paper => {
         if (paper.category) {
