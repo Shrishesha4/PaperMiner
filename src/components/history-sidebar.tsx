@@ -34,6 +34,7 @@ import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { useRouter } from 'next/navigation';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 function DeleteAnalysisDialog({ item, onConfirm, onArchive, children }: { item: any, onConfirm: () => void, onArchive: () => void, children: React.ReactNode }) {
     const [keepDraft, setKeepDraft] = useState(true);
@@ -112,11 +113,20 @@ export function HistorySidebar() {
                     </Button>
                 </div>
             ) : (
-                <div className="flex flex-col gap-1 p-2">
-                   <Button onClick={handleNewAnalysis} size="icon">
-                      <Plus className="h-4 w-4" />
-                       <span className="sr-only">New Analysis</span>
-                    </Button>
+              <div className="flex flex-col items-center justify-center p-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button onClick={handleNewAnalysis} size="icon" className="h-9 w-9">
+                          <Plus className="h-4 w-4" />
+                          <span className="sr-only">New Analysis</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="center">
+                        New Analysis
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
             )}
         </SidebarHeader>
