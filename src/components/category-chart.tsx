@@ -69,7 +69,7 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
     if (isGeneratingPdf) {
       // Render a simple list for PDF generation
       return (
-        <div className="w-full max-w-[200px]">
+        <div className="w-full max-w-[250px]">
           <ul className="flex flex-col gap-1 p-2">
             {payload?.map((entry, index) => (
               <li key={`item-${index}`} className="flex items-center justify-between gap-2 text-sm">
@@ -87,7 +87,7 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
 
     // Render interactive scrollable list for on-screen display
     return (
-      <ScrollArea className="h-[350px] w-full max-w-[200px]">
+      <ScrollArea className="h-[350px] w-full max-w-[250px]">
         <ul className="flex flex-col gap-1 p-2">
           {payload?.map((entry, index) => (
             <li
