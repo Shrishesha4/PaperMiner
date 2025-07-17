@@ -1,6 +1,6 @@
 
 'use client';
-import { BrainCircuit, Settings } from 'lucide-react';
+import { BrainCircuit, Settings, BookOpen } from 'lucide-react';
 import React from 'react';
 import { SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
@@ -21,6 +21,12 @@ export function AppHeader() {
         </Link>
       </div>
        <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" asChild>
+            <Link href="/guides">
+                <BookOpen />
+                <span className="sr-only">Guides</span>
+            </Link>
+        </Button>
         <Dialog>
             <DialogTrigger asChild>
                 <Button variant="ghost" size="icon">
