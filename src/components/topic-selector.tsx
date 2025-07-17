@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -7,13 +8,11 @@ import { Badge } from './ui/badge';
 import { Plus, Wand2, X, Loader2 } from 'lucide-react';
 
 interface TopicSelectorProps {
-  availableCategories: string[];
-  onGenerate?: (topics: string[]) => void;
   onTopicsChange: (topics: string[]) => void;
   isLoading: boolean;
 }
 
-export function TopicSelector({ availableCategories, onGenerate, onTopicsChange, isLoading }: TopicSelectorProps) {
+export function TopicSelector({ onTopicsChange, isLoading }: TopicSelectorProps) {
   const [topics, setTopics] = useState<string[]>([]);
   const [currentTopic, setCurrentTopic] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,12 +44,6 @@ export function TopicSelector({ availableCategories, onGenerate, onTopicsChange,
     setTopics(topics.filter(topic => topic !== topicToRemove));
   };
   
-  const handleGenerateClick = () => {
-    if (topics.length > 0 && onGenerate) {
-        onGenerate(topics);
-    }
-  }
-
   return (
     <div className="space-y-4">
       <div>
@@ -94,37 +87,6 @@ export function TopicSelector({ availableCategories, onGenerate, onTopicsChange,
           <p className="text-sm text-muted-foreground italic">No topics selected yet.</p>
         )}
       </div>
-
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
-        <div className="flex flex-wrap gap-1">
-          {availableCategories
-            .filter((cat) => !topics.includes(cat))
-            .map((cat) => (
-              <Badge
-                key={cat}
-                variant="outline"
-                onClick={() => handleAddTopic(cat)}
-                className={`cursor-pointer hover:bg-primary/10 text-sm ${
-                  isLoading ? 'opacity-50 pointer-events-none' : ''
-                }`}
-              >
-                {cat}
-              </Badge>
-            ))}
-        </div>
-      </div>
-
-      {onGenerate && (
-        <Button onClick={handleGenerateClick} disabled={isLoading || topics.length === 0}>
-            {isLoading ? (
-            <Loader2 className="mr-2 animate-spin" />
-            ) : (
-            <Wand2 className="mr-2" />
-            )}
-            Generate Title with Gemini
-        </Button>
-      )}
     </div>
   );
 }

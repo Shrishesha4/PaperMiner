@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { NoveltyResultCard } from './novelty-result-card';
 import { TooltipProvider } from './ui/tooltip';
 import Link from 'next/link';
+import { Badge } from './ui/badge';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -139,6 +140,13 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
     return 'text-green-600';
   };
 
+  const handleAddTopic = (topic: string) => {
+    const trimmedTopic = topic.trim();
+    if (trimmedTopic && !topics.includes(trimmedTopic)) {
+      setTopics([...topics, trimmedTopic]);
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px]">
@@ -225,10 +233,9 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
           </div>
         )}
       </div>
-      <div className="p-4 sm:p-6 border-b">
+      <div className="p-4 sm:p-6 border-b space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TopicSelector
-                availableCategories={analysis.categories}
                 onTopicsChange={setTopics}
                 isLoading={isGenerating}
             />
@@ -255,9 +262,29 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                 </Button>
             </div>
         </div>
+
+        {analysis.categories.length > 0 && (
+          <div className="space-y-2 pt-4 border-t">
+            <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
+            <div className="flex flex-wrap gap-1">
+              {analysis.categories
+                .filter((cat) => !topics.includes(cat))
+                .map((cat) => (
+                  <Badge
+                    key={cat}
+                    variant="outline"
+                    onClick={() => handleAddTopic(cat)}
+                    className={`cursor-pointer hover:bg-primary/10 text-sm ${
+                      isGenerating ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {cat}
+                  </Badge>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
-      
-      
     </div>
   );
 }
