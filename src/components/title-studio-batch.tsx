@@ -173,8 +173,8 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             {generatedTitles.map((title, index) => {
               const noveltyState = noveltyChecks[index];
               return (
-                <Card key={index} className="flex flex-col hover:border-primary/50 transition-colors">
-                  <CardContent className="p-4 flex-1">
+                <Card key={index} className="hover:border-primary/50 transition-colors">
+                  <CardContent className="p-4">
                     <p className="font-medium">{title}</p>
                   </CardContent>
                   <CardFooter className="p-2 bg-background border-t flex justify-end items-center gap-1 flex-wrap">
