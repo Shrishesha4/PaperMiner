@@ -245,7 +245,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         )}
       </div>
       <div className="p-4 sm:p-6 border-b space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             <TopicSelector
                 topics={topics}
                 onAddTopic={handleAddTopic}
@@ -268,36 +268,38 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                 </div>
             </div>
         </div>
-        
-        <div className="pt-4">
-             <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full md:w-auto">
-                {isGenerating ? (
-                    <Loader2 className="mr-2 animate-spin" />
-                ) : (
-                    <Wand2 className="mr-2" />
-                )}
-                Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
-            </Button>
-        </div>
 
-        <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="custom-instructions">
-                <AccordionTrigger>Custom Instructions (Optional)</AccordionTrigger>
-                <AccordionContent>
-                    <div className="space-y-2">
-                        <Label htmlFor="custom-instructions" className="text-muted-foreground">Provide specific instructions to guide the title generation process.</Label>
-                        <Textarea
-                            id="custom-instructions"
-                            placeholder="e.g., Focus on the impact on renewable energy, use a question format..."
-                            value={customInstructions}
-                            onChange={(e) => setCustomInstructions(e.target.value)}
-                            disabled={isGenerating}
-                            className="h-24"
-                        />
-                    </div>
-                </AccordionContent>
-            </AccordionItem>
-        </Accordion>
+        <div className="space-y-4">
+            <div className="flex justify-end">
+                 <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full md:w-auto">
+                    {isGenerating ? (
+                        <Loader2 className="mr-2 animate-spin" />
+                    ) : (
+                        <Wand2 className="mr-2" />
+                    )}
+                    Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
+                </Button>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="custom-instructions">
+                    <AccordionTrigger>Custom Instructions (Optional)</AccordionTrigger>
+                    <AccordionContent>
+                        <div className="space-y-2">
+                            <Label htmlFor="custom-instructions" className="text-muted-foreground">Provide specific instructions to guide the title generation process.</Label>
+                            <Textarea
+                                id="custom-instructions"
+                                placeholder="e.g., Focus on the impact on renewable energy, use a question format..."
+                                value={customInstructions}
+                                onChange={(e) => setCustomInstructions(e.target.value)}
+                                disabled={isGenerating}
+                                className="h-24"
+                            />
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            </Accordion>
+        </div>
 
         <div className="space-y-2 pt-4 border-t">
             <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
