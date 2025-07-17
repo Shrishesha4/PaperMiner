@@ -6,9 +6,11 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useHistory } from '@/hooks/use-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
+import jsPDF from 'jspdf';
+
 
 type AnalysisData = {
   id: string;
@@ -27,6 +29,7 @@ export function TitleStudio() {
   
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [generationTopics, setGenerationTopics] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Use a ref to track the ID of a newly created scratch analysis
@@ -74,6 +77,7 @@ export function TitleStudio() {
 
   const handleTitlesGenerated = useCallback((newTitles: string[], topics: string[]) => {
     setGeneratedTitles(newTitles);
+    setGenerationTopics(topics);
     
     if (analysisId) {
        const isFromScratch = history.find(h => h.id === analysisId)?.name === 'From Scratch';
@@ -99,6 +103,57 @@ export function TitleStudio() {
     continueInChatGPT(textToCopy);
   };
 
+  const handleDownloadPDF = () => {
+    if (generatedTitles.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Titles to Download',
+        description: 'Please generate some titles first.',
+      });
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageMargin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = pageMargin;
+
+    doc.setFontSize(18);
+    doc.text('Generated Research Titles', pageWidth / 2, yPos, { align: 'center' });
+    yPos += 15;
+
+    if (generationTopics.length > 0) {
+        doc.setFontSize(14);
+        doc.text('Generated from Topics:', pageMargin, yPos);
+        yPos += 8;
+        doc.setFontSize(10);
+        doc.text(`- ${generationTopics.join('\n- ')}`, pageMargin, yPos);
+        yPos += 10 + (generationTopics.length * 5);
+    }
+    
+    doc.setFontSize(14);
+    doc.text('Generated Titles:', pageMargin, yPos);
+    yPos += 8;
+
+    doc.setFontSize(11);
+    
+    // Use splitTextToSize to handle long titles and prevent overflow
+    const splitTitles = generatedTitles.map(title => 
+        doc.splitTextToSize(`• ${title}`, pageWidth - pageMargin * 2)
+    );
+
+    splitTitles.forEach(titleLines => {
+      if (yPos + (titleLines.length * 7) > doc.internal.pageSize.getHeight() - pageMargin) {
+        doc.addPage();
+        yPos = pageMargin;
+      }
+      doc.text(titleLines, pageMargin, yPos);
+      yPos += titleLines.length * 7;
+    });
+
+    doc.save(`PaperMiner-Generated-Titles.pdf`);
+  };
+
   if (isLoading || !analysis) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -109,7 +164,7 @@ export function TitleStudio() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <div className="flex items-center justify-between p-4 border-b shrink-0">
+      <div className="flex flex-wrap items-center justify-between p-4 border-b shrink-0 gap-2">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push('/')}>
             <ArrowLeft className="h-4 w-4" />
@@ -124,9 +179,15 @@ export function TitleStudio() {
             </p>
           </div>
         </div>
-        <Button onClick={handleContinueInChatGPT} variant="outline" disabled={generatedTitles.length === 0}>
-            Continue in ChatGPT
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button onClick={handleDownloadPDF} variant="outline" disabled={generatedTitles.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+            </Button>
+            <Button onClick={handleContinueInChatGPT} variant="outline" disabled={generatedTitles.length === 0}>
+                Continue in ChatGPT
+            </Button>
+        </div>
       </div>
       <div className="flex-1">
         <TitleStudioBatch 

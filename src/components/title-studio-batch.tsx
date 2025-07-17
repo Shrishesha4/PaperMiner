@@ -11,15 +11,14 @@ import { TopicSelector } from './topic-selector';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Label } from './ui/label';
-import { Slider } from './ui/slider';
 import { Loader2, Wand2, Copy, SearchCheck, Check, Info, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { NoveltyResultCard } from './novelty-result-card';
-import { TooltipProvider } from './ui/tooltip';
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import Link from 'next/link';
 import { Badge } from './ui/badge';
-import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { Input } from './ui/input';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -252,15 +251,15 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             />
             <div className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="num-titles">Number of Titles to Generate: {numTitles}</Label>
-                    <Slider
-                        id="num-titles"
-                        min={1}
-                        max={5}
-                        step={1}
-                        value={[numTitles]}
-                        onValueChange={(value) => setNumTitles(value[0])}
-                        disabled={isGenerating}
+                    <Label htmlFor="num-titles">Number of Titles to Generate</Label>
+                    <Input
+                      id="num-titles"
+                      type="number"
+                      value={numTitles}
+                      onChange={(e) => setNumTitles(parseInt(e.target.value, 10) || 1)}
+                      min={1}
+                      disabled={isGenerating}
+                      className="max-w-[100px]"
                     />
                 </div>
                 <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full">

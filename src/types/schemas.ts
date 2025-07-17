@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 // Schemas for checking title novelty
@@ -25,7 +26,7 @@ export type CheckTitleNoveltyOutput = z.infer<typeof CheckTitleNoveltyOutputSche
 // Schemas for batch title generation
 export const GenerateBatchTitlesInputSchema = z.object({
     topics: z.array(z.string()).describe('A list of topics or categories to base the new titles on.'),
-    count: z.number().min(1).max(5).describe('The number of titles to generate.'),
+    count: z.number().min(1).describe('The number of titles to generate.'),
     apiKey: z.string().describe('The user-provided Gemini API key.'),
 });
 export type GenerateBatchTitlesInput = z.infer<typeof GenerateBatchTitlesInputSchema>;
