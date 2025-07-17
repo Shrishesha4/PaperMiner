@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend, Sector } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -65,8 +65,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
   }
 
   return (
-    <div className="grid h-[400px] w-full grid-cols-3 items-center gap-4">
-      <ChartContainer config={chartConfig} className="col-span-2 min-h-[200px] w-full">
+      <ChartContainer config={chartConfig} className="min-h-[200px] w-full h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <ChartTooltip cursor={true} content={<ChartTooltipContent nameKey="name" />} />
@@ -104,35 +103,35 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     }}
                  />
             </Pie>
+             <Legend
+              content={({ payload }) => (
+                <ScrollArea className="h-[350px] w-full max-w-[200px]">
+                    <ul className="flex flex-col gap-1 p-2">
+                    {payload?.map((entry, index) => (
+                        <li
+                        key={`item-${index}`}
+                        onClick={() => handleLegendClick(entry)}
+                        className={`flex items-center gap-2 text-sm cursor-pointer rounded-md p-2
+                            ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
+                        `}
+                        style={{
+                            opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
+                        }}
+                        >
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="truncate flex-1">{entry.value}</span>
+                        <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
+                        </li>
+                    ))}
+                    </ul>
+                </ScrollArea>
+              )}
+              layout="vertical"
+              verticalAlign="middle"
+              align="right"
+            />
           </PieChart>
         </ResponsiveContainer>
       </ChartContainer>
-      <ScrollArea className="col-span-1 h-[350px]">
-        <Legend
-          content={({ payload }) => {
-            return (
-                <ul className="flex flex-col gap-1 p-2">
-                {payload?.map((entry, index) => (
-                    <li
-                    key={`item-${index}`}
-                    onClick={() => handleLegendClick(entry)}
-                    className={`flex items-center gap-2 text-sm cursor-pointer rounded-md p-2
-                        ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
-                    `}
-                    style={{
-                        opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
-                    }}
-                    >
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                    <span className="truncate flex-1">{entry.value}</span>
-                     <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
-                    </li>
-                ))}
-                </ul>
-            )
-          }}
-        />
-       </ScrollArea>
-    </div>
   );
 }
