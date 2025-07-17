@@ -317,7 +317,7 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
                             </SelectContent>
                         </Select>
                         <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectValue>
+                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
                             <SelectContent>
                             {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
                             </SelectContent>
