@@ -241,6 +241,27 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
         </div>
         
         <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+              <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Category Distribution</CardTitle>
+                    <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
+                  </CardHeader>
+                  <CardContent ref={categoryChartRef}>
+                    <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
+                  </CardContent>
+              </Card>
+              <Card>
+                  <CardHeader>
+                    <CardTitle>Top Keywords</CardTitle>
+                    <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <KeywordDisplay data={filteredData} />
+                  </CardContent>
+              </Card>
+            </div>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Filters</CardTitle>
@@ -262,27 +283,6 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
                     </div>
                 </CardContent>
             </Card>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-              <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Category Distribution</CardTitle>
-                    <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
-                  </CardHeader>
-                  <CardContent ref={categoryChartRef}>
-                    <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
-                    <CardTitle>Top Keywords</CardTitle>
-                    <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <KeywordDisplay data={filteredData} />
-                  </CardContent>
-              </Card>
-            </div>
 
             <Card>
             <CardHeader>
