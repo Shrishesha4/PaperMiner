@@ -150,7 +150,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
         pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
         yPos += 10;
         
-        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: 'hsl(var(--background))' });
+        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: '#f0f2f5' });
         const imgData = canvas.toDataURL('image/png');
         const imgHeight = (canvas.height * contentWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', pageMargin, yPos, contentWidth, imgHeight);
