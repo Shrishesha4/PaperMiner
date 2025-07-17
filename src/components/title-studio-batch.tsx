@@ -246,77 +246,79 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         )}
       </div>
       <div className="p-4 sm:p-6 border-t shrink-0">
-        <Card>
-            <CardHeader>
-                <CardTitle>Title Generation Controls</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <TopicSelector
-                    topics={topics}
-                    onAddTopic={handleAddTopic}
-                    onRemoveTopic={handleRemoveTopic}
-                    onClearTopics={handleClearTopics}
-                    isLoading={isGenerating}
-                />
-                
-                {analysis.categories.length > 0 && (
-                    <div className="space-y-2 pt-4 border-t">
-                        <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
-                        <div className="flex flex-wrap gap-1">
-                        {analysis.categories
-                            .filter((cat) => !topics.includes(cat))
-                            .map((cat) => (
-                            <Badge
-                                key={cat}
-                                variant="outline"
-                                onClick={() => handleAddTopic(cat)}
-                                className={`cursor-pointer hover:bg-primary/10 text-sm ${
-                                isGenerating ? 'opacity-50 pointer-events-none' : ''
-                                }`}
-                            >
-                                {cat}
-                            </Badge>
-                            ))}
+        <div className="w-full md:w-1/2 mx-auto">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Title Generation Controls</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <TopicSelector
+                        topics={topics}
+                        onAddTopic={handleAddTopic}
+                        onRemoveTopic={handleRemoveTopic}
+                        onClearTopics={handleClearTopics}
+                        isLoading={isGenerating}
+                    />
+                    
+                    {analysis.categories.length > 0 && (
+                        <div className="space-y-2 pt-4 border-t">
+                            <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
+                            <div className="flex flex-wrap gap-1">
+                            {analysis.categories
+                                .filter((cat) => !topics.includes(cat))
+                                .map((cat) => (
+                                <Badge
+                                    key={cat}
+                                    variant="outline"
+                                    onClick={() => handleAddTopic(cat)}
+                                    className={`cursor-pointer hover:bg-primary/10 text-sm ${
+                                    isGenerating ? 'opacity-50 pointer-events-none' : ''
+                                    }`}
+                                >
+                                    {cat}
+                                </Badge>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                <div className="pt-4 border-t">
-                     <Accordion type="single" collapsible className="w-full">
-                        <AccordionItem value="custom-instructions">
-                            <AccordionTrigger>Advanced Options</AccordionTrigger>
-                            <AccordionContent className="pt-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="num-titles">Number of Titles</Label>
-                                        <Input
-                                          id="num-titles"
-                                          type="number"
-                                          value={numTitles}
-                                          onChange={(e) => setNumTitles(parseInt(e.target.value, 10) || 1)}
-                                          min={1}
-                                          disabled={isGenerating}
-                                          className="max-w-[100px]"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="custom-instructions">Custom Instructions</Label>
-                                        <Textarea
-                                            id="custom-instructions"
-                                            placeholder="e.g., Focus on renewable energy, use a question format..."
-                                            value={customInstructions}
-                                            onChange={(e) => setCustomInstructions(e.target.value)}
+                    <div className="pt-4 border-t">
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="custom-instructions">
+                                <AccordionTrigger>Advanced Options</AccordionTrigger>
+                                <AccordionContent className="pt-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="num-titles">Number of Titles</Label>
+                                            <Input
+                                            id="num-titles"
+                                            type="number"
+                                            value={numTitles}
+                                            onChange={(e) => setNumTitles(parseInt(e.target.value, 10) || 1)}
+                                            min={1}
                                             disabled={isGenerating}
-                                            className="h-24"
-                                        />
+                                            className="max-w-[100px]"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="custom-instructions">Custom Instructions</Label>
+                                            <Textarea
+                                                id="custom-instructions"
+                                                placeholder="e.g., Focus on renewable energy, use a question format..."
+                                                value={customInstructions}
+                                                onChange={(e) => setCustomInstructions(e.target.value)}
+                                                disabled={isGenerating}
+                                                className="h-24"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                    </Accordion>
-                </div>
-            </CardContent>
-        </Card>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
       </div>
       <div className="floating-blur-button-container">
           <Button 
