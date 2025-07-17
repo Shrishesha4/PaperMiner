@@ -13,7 +13,7 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0 bg-background/70 backdrop-blur-lg z-30">
+    <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0 bg-background/70 backdrop-blur-lg">
       <div className="flex items-center gap-2">
         {isMobile && <SidebarTrigger />}
          <Link href="/" className="flex items-center gap-2">
