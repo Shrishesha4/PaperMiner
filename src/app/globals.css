@@ -100,13 +100,7 @@ body {
 
 @layer components {
     .floating-blur-button-container {
-        @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-12 pointer-events-none;
-    }
-    .floating-blur-button-container::before {
-        content: '';
-        @apply absolute inset-0 rounded-full;
-        background: radial-gradient(circle at center, hsl(var(--background) / 0.7) 30%, transparent 70%);
-        backdrop-filter: blur(12px);
+        @apply fixed bottom-4 left-1/2 -translate-x-1/2 z-50;
     }
     .floating-blur-button-container > .clickable-button {
         @apply pointer-events-auto;
