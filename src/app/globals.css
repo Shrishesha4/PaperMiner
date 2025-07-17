@@ -9,11 +9,11 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 40 50% 98%;
     --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
+    --card: 40 33% 96%;
     --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
+    --popover: 40 33% 96%;
     --popover-foreground: 224 71.4% 4.1%;
     --primary-hue: 262.1;
     --primary: var(--primary-hue) 83.3% 57.8%;
@@ -39,7 +39,7 @@ body {
     --sidebar-foreground: 224 71.4% 4.1%;
     --sidebar-primary: var(--primary-hue) 83.3% 57.8%;
     --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent: 40 33% 96%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: var(--primary-hue) 83.3% 57.8%;
@@ -91,10 +91,10 @@ body {
   }
   .dark body {
      background-image:
-      radial-gradient(at 27% 37%, hsla(var(--primary), 0.1) 0px, transparent 50%),
+      radial-gradient(at 27% 37%, hsla(var(--primary-hue), 83.3%, 57.8%, 0.1) 0px, transparent 50%),
       radial-gradient(at 97% 21%, hsla(338, 70%, 61%, 0.1) 0px, transparent 50%),
       radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.1) 0px, transparent 50%),
-      radial-gradient(at 10% 29%, hsla(var(--primary), 0.1) 0px, transparent 50%),
+      radial-gradient(at 10% 29%, hsla(var(--primary-hue), 83.3%, 57.8%, 0.1) 0px, transparent 50%),
       radial-gradient(at 97% 96%, hsla(38, 60%, 62%, 0.1) 0px, transparent 50%),
       radial-gradient(at 33% 50%, hsla(222, 67%, 61%, 0.1) 0px, transparent 50%),
       radial-gradient(at 79% 53%, hsla(343, 68%, 63%, 0.1) 0px, transparent 50%);
