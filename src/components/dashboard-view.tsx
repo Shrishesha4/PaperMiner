@@ -5,7 +5,7 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import type { CategorizedPaper, FailedPaper } from '@/types';
 import type { CategoryHierarchy } from '@/components/category-chart';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
@@ -67,7 +67,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isConsolidating, setIsConsolidating] = useState(false);
-  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(analysis?.categoryHierarchy || null);
+  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(null);
   
   const categoryChartRef = useRef<HTMLDivElement>(null);
 
@@ -298,7 +298,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
                             </SelectContent>
                         </Select>
                         <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectValue>
+                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
                             <SelectContent>
                             {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
                             </SelectContent>
