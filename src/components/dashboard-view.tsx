@@ -117,20 +117,18 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
 
     setIsGeneratingPdf(true);
 
-    const legendScrollContainer = categoryChartElement.querySelector('.recharts-legend-wrapper') as HTMLElement | null;
-    const legendList = categoryChartElement.querySelector('.recharts-legend-wrapper ul') as HTMLElement | null;
-    
-    let originalContainerStyle: { height: string } | null = null;
-    let originalListStyle: { maxHeight: string; overflow: string } | null = null;
-    
-    if (legendScrollContainer && legendList) {
-        originalContainerStyle = { height: legendScrollContainer.style.height };
-        originalListStyle = { maxHeight: legendList.style.maxHeight, overflow: legendList.style.overflow };
-        
-        legendScrollContainer.style.height = 'auto';
-        legendList.style.maxHeight = 'none';
-        legendList.style.overflow = 'visible';
-    }
+    const elementsToModify = categoryChartElement.querySelectorAll('[data-radix-scroll-area-viewport], [data-radix-scroll-area-viewport] > div');
+    const originalStyles = new Map<HTMLElement, { overflow: string; height: string }>();
+
+    elementsToModify.forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      originalStyles.set(htmlEl, {
+        overflow: htmlEl.style.overflow,
+        height: htmlEl.style.height,
+      });
+      htmlEl.style.overflow = 'visible';
+      htmlEl.style.height = 'auto';
+    });
 
     try {
         const pdf = new jsPDF('p', 'mm', 'a4');
@@ -204,11 +202,10 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
         })
     } finally {
         // Restore original styles
-        if (legendScrollContainer && legendList && originalContainerStyle && originalListStyle) {
-            legendScrollContainer.style.height = originalContainerStyle.height;
-            legendList.style.maxHeight = originalListStyle.maxHeight;
-            legendList.style.overflow = originalListStyle.overflow;
-        }
+        originalStyles.forEach((style, el) => {
+          el.style.overflow = style.overflow;
+          el.style.height = style.height;
+        });
         setIsGeneratingPdf(false);
     }
   }, [filteredData, data.length, allUniqueCategories.length, toast, analysisName, resolvedTheme]);
