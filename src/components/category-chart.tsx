@@ -9,17 +9,15 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
-import { Button } from './ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ScrollArea } from './ui/scroll-area';
 
-export interface CategoryHierarchy {
+export interface CategoryData {
   name: string;
-  value?: number;
-  children?: CategoryHierarchy[];
+  value: number;
 }
 
 interface CategoryChartProps {
-  data: CategoryHierarchy[];
+  data: CategoryData[];
   onCategorySelect: (category: string | null) => void;
 }
 
@@ -28,53 +26,24 @@ const COLORS = [
   "#0088FE", "#FFBB28", "#FF847C", "#E27D60", "#A4DE6C"
 ];
 
-const findNodeByPath = (nodes: CategoryHierarchy[], path: string[]): CategoryHierarchy[] => {
-    let currentLevel = nodes;
-    for (const name of path) {
-        const node = currentLevel.find(n => n.name === name);
-        if (node && node.children) {
-            currentLevel = node.children;
-        } else {
-            // Path leads to a leaf or is invalid, stop traversing.
-            return []; 
-        }
-    }
-    return currentLevel;
-};
-
-
 export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [drilldownPath, setDrilldownPath] = useState<string[]>([]);
-
-  const currentLevelData = useMemo(() => {
-    if (drilldownPath.length === 0) {
-      return data;
-    }
-    return findNodeByPath(data, drilldownPath);
-  }, [data, drilldownPath]);
 
   const { chartData, chartConfig } = useMemo(() => {
-    const sortedData = [...currentLevelData].sort((a, b) => (b.value || 0) - (a.value || 0));
+    const sortedData = [...data].sort((a, b) => b.value - a.value);
     const config: ChartConfig = {};
     sortedData.forEach((item, index) => {
       const color = COLORS[index % COLORS.length];
       config[item.name] = { label: item.name, color: color };
     });
     return { chartData: sortedData, chartConfig: config };
-  }, [currentLevelData]);
+  }, [data]);
 
   const handlePieClick = useCallback((item: any) => {
-    if (item.children && item.children.length > 0) {
-      setDrilldownPath(prev => [...prev, item.name]);
-      setSelectedCategory(null);
-      onCategorySelect(null);
-    } else {
-        const clickedCategory = item.name;
-        const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
-        setSelectedCategory(newSelectedCategory);
-        onCategorySelect(newSelectedCategory);
-    }
+    const clickedCategory = item.name;
+    const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
+    setSelectedCategory(newSelectedCategory);
+    onCategorySelect(newSelectedCategory);
   }, [selectedCategory, onCategorySelect]);
 
   const handleLegendClick = useCallback((payload: any) => {
@@ -84,33 +53,9 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
     }
   }, [chartData, handlePieClick]);
   
-  const handleGoBack = () => {
-    setDrilldownPath(prev => prev.slice(0, -1));
-    setSelectedCategory(null);
-    onCategorySelect(null);
-  };
-
-  const getParentName = () => {
-    if (drilldownPath.length === 0) return "Top Level";
-    if (drilldownPath.length === 1) return "Top Level";
-    return drilldownPath[drilldownPath.length - 2];
-  }
-
   const selectedDataPoint = selectedCategory ? chartData.find(d => d.name === selectedCategory) : null;
-  const totalPapers = useMemo(() => chartData.reduce((acc, curr) => acc + (curr.value || 0), 0), [chartData]);
+  const totalPapers = useMemo(() => chartData.reduce((acc, curr) => acc + curr.value, 0), [chartData]);
   
-  if (chartData.length === 0 && drilldownPath.length > 0) {
-    return (
-        <div className="relative flex h-[400px] w-full flex-col items-center justify-center text-muted-foreground">
-             <Button variant="ghost" size="sm" onClick={handleGoBack} className="absolute left-2 top-0 z-10">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to {getParentName()}
-            </Button>
-            <p>No sub-categories to display.</p>
-        </div>
-    )
-  }
-
   if (chartData.length === 0) {
     return (
       <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
@@ -121,12 +66,6 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
 
   return (
     <div className="relative h-[400px] w-full">
-      {drilldownPath.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={handleGoBack} className="absolute left-2 top-0 z-10">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to {getParentName()}
-          </Button>
-      )}
       <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -146,7 +85,6 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                         key={`cell-${entry.name}`} 
                         fill={chartConfig[entry.name]?.color} 
                         opacity={selectedCategory ? (entry.name === selectedCategory ? 1 : 0.3) : 1}
-                        style={{ cursor: (entry.children && entry.children.length > 0) ? 'pointer' : 'default' }}
                     />
                 ))}
                 <Label
@@ -158,7 +96,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                                     {(selectedDataPoint ? selectedDataPoint.value : totalPapers)?.toLocaleString()}
                                 </text>
                                 <text x={viewBox.cx} y={viewBox.cy + 20} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
-                                    {selectedDataPoint ? selectedDataPoint.name : drilldownPath.length > 0 ? drilldownPath[drilldownPath.length - 1] : 'Total Papers'}
+                                    {selectedDataPoint ? selectedDataPoint.name : 'Total Papers'}
                                 </text>
                                 </>
                             );
@@ -166,29 +104,28 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     }}
                  />
             </Pie>
-            <Legend
-              layout="vertical"
-              align="right"
-              verticalAlign="middle"
-              onClick={handleLegendClick}
-              iconSize={10}
-              wrapperStyle={{
-                  width: '30%',
-                  paddingLeft: 20
-              }}
-              formatter={(value) => {
-                const item = chartData.find(d => d.name === value);
-                const isDrillable = item && item.children && item.children.length > 0;
+             <Legend
+              content={({ payload }) => {
                 return (
-                  <span 
-                    className={`
-                        ${isDrillable ? 'cursor-pointer hover:text-primary' : 'cursor-default'}
-                        ${selectedCategory === value ? 'text-foreground font-medium' : 'text-muted-foreground'}
-                    `}
-                    style={{ opacity: selectedCategory ? (selectedCategory === value ? 1 : 0.5) : 1 }}
-                  >
-                    {value}
-                  </span>
+                  <ScrollArea className="h-[300px] w-[30%] absolute right-0 top-1/2 -translate-y-1/2">
+                    <ul className="flex flex-col gap-1 p-2">
+                    {payload?.map((entry, index) => (
+                        <li
+                        key={`item-${index}`}
+                        onClick={() => handleLegendClick(entry)}
+                        className={`flex items-center gap-2 text-sm cursor-pointer rounded-md p-1
+                            ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
+                        `}
+                        style={{
+                            opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
+                        }}
+                        >
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                        <span className="truncate">{entry.value}</span>
+                        </li>
+                    ))}
+                    </ul>
+                  </ScrollArea>
                 )
               }}
             />

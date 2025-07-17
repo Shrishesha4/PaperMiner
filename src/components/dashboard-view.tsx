@@ -1,16 +1,16 @@
 
 'use client';
 
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import type { CategorizedPaper, FailedPaper, Analysis } from '@/types';
-import type { CategoryHierarchy } from '@/components/category-chart';
+import type { CategoryData } from '@/components/category-chart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { Download, FileDown, Loader2, Plus, Wand2, BrainCircuit, RefreshCw } from 'lucide-react';
+import { Download, FileDown, Loader2, Plus, Wand2, RefreshCw } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
@@ -19,7 +19,6 @@ import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useHistory } from '@/hooks/use-history';
-import { consolidateCategories } from '@/ai/flows/consolidate-categories';
 import { useApiKey } from '@/hooks/use-api-key';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
@@ -35,35 +34,8 @@ declare module 'jspdf' {
     }
 }
 
-const countChildLeaves = (node: CategoryHierarchy): number => {
-    if (!node.children || node.children.length === 0) {
-        return 1;
-    }
-    return node.children.reduce((sum, child) => sum + countChildLeaves(child), 0);
-};
-
-const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
-    if (!Array.isArray(nodes)) {
-        return [];
-    }
-    return nodes.map(node => {
-        let value = 0;
-        let childrenWithCounts = node.children;
-
-        if (node.children && node.children.length > 0) {
-            childrenWithCounts = injectCounts(node.children, allPapers);
-            value = childrenWithCounts.reduce((sum, child) => sum + (child.value || 0), 0);
-        } else {
-            value = allPapers.filter(p => p.category === node.name).length;
-        }
-        return { ...node, children: childrenWithCounts, value };
-    });
-};
-
 export function DashboardView({ analysis, onReset, onRecategorize }: DashboardViewProps) {
   const { toast } = useToast();
-  const { updateAnalysis } = useHistory();
-  const { getNextApiKey, isApiKeySet } = useApiKey();
   const { id: analysisId, name: analysisName, categorizedPapers: data, failedPapers: failedData } = analysis;
 
   const [filters, setFilters] = useState({
@@ -71,9 +43,6 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
     category: 'all',
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [consolidationStatus, setConsolidationStatus] = useState<'idle' | 'consolidating' | 'success' | 'failed'>('idle');
-  const [displayedHierarchy, setDisplayedHierarchy] = useState<CategoryHierarchy[] | null>(null);
-
   const categoryChartRef = useRef<HTMLDivElement>(null);
 
   const years = useMemo(() => {
@@ -94,72 +63,15 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
     });
   }, [data, filters]);
   
-  // Create and display a flat hierarchy immediately
-  useEffect(() => {
-    const uniqueCategories = allUniqueCategories.slice(1); // Exclude 'all'
-    const flatHierarchy = uniqueCategories.map(cat => ({ name: cat }));
-    const hierarchyWithCounts = injectCounts(flatHierarchy, data);
-    setDisplayedHierarchy(hierarchyWithCounts);
-    setConsolidationStatus('idle'); // Reset on data change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, data]); // Only re-run when the core analysis changes
-  
-  useEffect(() => {
-    const consolidate = async () => {
-        // Use existing hierarchy if it's already been successfully generated and saved
-        if (analysis.categoryHierarchy && analysis.categoryHierarchy.length > 0) {
-            const hierarchyWithCounts = injectCounts(analysis.categoryHierarchy, data);
-            setDisplayedHierarchy(hierarchyWithCounts);
-            setConsolidationStatus('success');
-            return;
+  const categoryChartData = useMemo(() => {
+    const categoryCounts: Record<string, number> = {};
+    data.forEach(paper => {
+        if (paper.category) {
+            categoryCounts[paper.category] = (categoryCounts[paper.category] || 0) + 1;
         }
-
-        const uniqueCategories = allUniqueCategories.slice(1);
-        if (uniqueCategories.length <= 1 || !isApiKeySet) {
-            setConsolidationStatus('idle'); // Not applicable or no key
-            return;
-        }
-
-        setConsolidationStatus('consolidating');
-        try {
-            const apiKey = getNextApiKey();
-            if (!apiKey) throw new Error("API Key not available.");
-            
-            const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
-            
-            if (result && result.hierarchy) {
-                const totalLeaves = result.hierarchy.reduce((sum, node) => sum + countChildLeaves(node), 0);
-                const successRate = totalLeaves / uniqueCategories.length;
-
-                if (successRate >= 0.98) {
-                    const hierarchyWithCounts = injectCounts(result.hierarchy, data);
-                    setDisplayedHierarchy(hierarchyWithCounts);
-                    updateAnalysis(analysisId, { ...analysis, categoryHierarchy: result.hierarchy });
-                    setConsolidationStatus('success');
-                } else {
-                     setConsolidationStatus('failed'); // Failed to meet threshold
-                }
-            } else {
-                throw new Error("AI consolidation returned no result.");
-            }
-        } catch (error) {
-            console.error("Error consolidating categories:", error);
-            setConsolidationStatus('failed');
-            toast({
-                variant: "destructive",
-                title: "Could not group categories",
-                description: "The AI failed to create a domain hierarchy. Displaying flat categories."
-            });
-        }
-    };
-
-    // Kick off consolidation only if we haven't tried yet for this dataset
-    if (consolidationStatus === 'idle') {
-        consolidate();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, data, isApiKeySet, analysis.categoryHierarchy]); // Rerun only when core data changes
-
+    });
+    return Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+  }, [data]);
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
@@ -355,28 +267,11 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
             <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                   <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                            <CardTitle>Category Distribution</CardTitle>
-                            <CardDescription>Click a domain to drill down. Filter papers by clicking a category in the legend.</CardDescription>
-                        </div>
-                        {consolidationStatus === 'consolidating' && (
-                             <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 rounded-md bg-muted">
-                                <BrainCircuit className="h-5 w-5 animate-pulse text-primary" />
-                                <span>Grouping domains...</span>
-                            </div>
-                        )}
-                      </div>
+                    <CardTitle>Category Distribution</CardTitle>
+                    <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
                   </CardHeader>
                   <CardContent ref={categoryChartRef}>
-                    {displayedHierarchy ? (
-                       <CategoryChart data={displayedHierarchy} onCategorySelect={handleCategorySelect} />
-                    ) : (
-                        <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
-                           <Loader2 className="h-8 w-8 animate-spin" />
-                           <p className="ml-2">Preparing visualization...</p>
-                        </div>
-                    )}
+                    <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
                   </CardContent>
               </Card>
               <Card>
