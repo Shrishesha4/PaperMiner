@@ -35,16 +35,16 @@ export default function RootLayout({
           <CustomThemeProvider>
             <Providers>
               <SidebarProvider>
-                <div className="flex h-screen flex-col">
-                  <AppHeader />
-                  <div className="flex flex-1 overflow-hidden">
-                    <HistorySidebar />
-                    <SidebarInset>
+                <div className="flex h-screen overflow-hidden">
+                  <HistorySidebar />
+                  <SidebarInset>
+                    <div className="flex flex-col h-screen w-full">
+                      <AppHeader />
                       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                         {children}
                       </main>
-                    </SidebarInset>
-                  </div>
+                    </div>
+                  </SidebarInset>
                 </div>
                 <Toaster />
               </SidebarProvider>
