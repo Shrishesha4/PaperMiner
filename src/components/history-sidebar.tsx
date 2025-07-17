@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useHistory } from '@/hooks/use-history';
 import { Button } from './ui/button';
-import { FileText, Lightbulb, Trash2, FileEdit, Settings } from 'lucide-react';
+import { FileText, Lightbulb, Trash2, FileEdit } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +47,7 @@ export function HistorySidebar() {
     <Sidebar>
         <SidebarHeader>
             { state === 'expanded' && (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 p-2">
                     <p className="text-xs text-muted-foreground">Your recent work</p>
                 </div>
             )}
@@ -182,17 +182,8 @@ export function HistorySidebar() {
           </>
         )}
       </SidebarContent>
-      <SidebarFooter className="p-2">
-        <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: "Settings", side: 'right', align: 'center'}} onClick={handleMobileNav}>
-                    <Link href="/settings">
-                        <Settings />
-                        <span>Settings</span>
-                    </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter>
+        {/* Footer content can go here if needed */}
       </SidebarFooter>
     </Sidebar>
   );

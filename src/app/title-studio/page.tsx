@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 // or while the TitleStudio component is loading data.
 export default function TitleStudioPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
       <TitleStudio />
     </Suspense>
   );

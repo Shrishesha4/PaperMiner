@@ -6,15 +6,12 @@ import { type ResearchPaper, type CategorizedPaper, FailedPaper, Analysis } from
 import { useToast } from '@/hooks/use-toast';
 import { categorizeResearchTitles } from '@/ai/flows/categorize-research-titles';
 import { categorizeSingleTitle } from '@/ai/flows/categorize-single-title';
-import { AppHeader } from './header';
 import { UploaderView } from './uploader-view';
 import { ProcessingView } from './processing-view';
 import { DashboardView } from './dashboard-view';
 import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
 import { useHistory } from '@/hooks/use-history';
-import { SidebarProvider, SidebarInset } from './ui/sidebar';
-import { HistorySidebar } from './history-sidebar';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Dialog } from './ui/dialog';
@@ -158,7 +155,6 @@ export function InsightMinerApp() {
              updateAnalysis(analysisIdToUpdate, {
                 categorizedPapers: [...existingAnalysis.categorizedPapers, ...results],
                 failedPapers: finalFailed,
-                categoryHierarchy: undefined, // Reset hierarchy to be regenerated
             });
         }
     } else {
@@ -178,19 +174,6 @@ export function InsightMinerApp() {
     selectAnalysis(null);
     setCurrentStep('upload');
   };
-
-  const handleRecategorize = useCallback((analysis: Analysis) => {
-    if (!analysis.failedPapers || analysis.failedPapers.length === 0) {
-        toast({
-            title: "No Papers to Re-categorize",
-            description: "All papers have already been successfully categorized."
-        });
-        return;
-    }
-    const papersToProcess = analysis.failedPapers.map(({ failureReason, ...paper }) => paper);
-    handleDataProcessing(papersToProcess, analysis.name, analysis.id);
-  }, [handleDataProcessing, toast]);
-
 
   const renderContent = () => {
     if (isHistoryLoading) {
@@ -214,7 +197,6 @@ export function InsightMinerApp() {
                         key={selectedAnalysis.id}
                         analysis={selectedAnalysis}
                         onReset={handleReset}
-                        onRecategorize={handleRecategorize}
                     />
                 );
             }
@@ -226,18 +208,14 @@ export function InsightMinerApp() {
   }
 
   return (
-    <SidebarProvider>
-        <HistorySidebar />
-        <SidebarInset className="flex flex-col">
-            <AppHeader />
-            <Dialog open={termsAccepted && !isApiKeySet}>
-              <ApiKeyDialog />
-            </Dialog>
-            <WelcomeDialog />
-            <div className="flex-1 flex flex-col">
-              {renderContent()}
-            </div>
-        </SidebarInset>
-    </SidebarProvider>
+    <>
+      <Dialog open={termsAccepted && !isApiKeySet}>
+        <ApiKeyDialog />
+      </Dialog>
+      <WelcomeDialog />
+      <div className="flex-1 flex flex-col">
+        {renderContent()}
+      </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import type { CategorizedPaper, FailedPaper, Analysis } from '@/types';
+import type { Analysis } from '@/types';
 import type { CategoryData } from '@/components/category-chart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,13 +18,10 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useApiKey } from '@/hooks/use-api-key';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface DashboardViewProps {
   analysis: Analysis;
   onReset: (analysisId: string) => void;
-  onRecategorize: (analysis: Analysis) => void;
 }
 
 declare module 'jspdf' {
@@ -33,7 +30,7 @@ declare module 'jspdf' {
     }
 }
 
-export function DashboardView({ analysis, onReset, onRecategorize }: DashboardViewProps) {
+export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   const { toast } = useToast();
   const { id: analysisId, name: analysisName, categorizedPapers: data, failedPapers: failedData } = analysis;
 

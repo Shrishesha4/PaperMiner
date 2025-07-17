@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 // or while the PaperDrafter component is loading.
 export default function PaperDrafterPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="flex h-full w-full items-center justify-center">Loading...</div>}>
         <PaperDrafter />
     </Suspense>
   );

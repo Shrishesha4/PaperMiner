@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useHistory } from '@/hooks/use-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Download, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
 import jsPDF from 'jspdf';
@@ -172,21 +172,16 @@ export function TitleStudio() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
+    <div className="flex h-full flex-col">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b shrink-0 gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.push('/')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold">Title Studio</h1>
-            <p className="text-sm text-muted-foreground">
-              {analysis.name === 'From Scratch' || analysis.name.startsWith('Scratchpad:')
-                ? 'Generating new title ideas' 
-                : <>Using dataset: <span className="font-semibold">{analysis.name}</span></>
-              }
-            </p>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold">Title Studio</h1>
+          <p className="text-sm text-muted-foreground">
+            {analysis.name === 'From Scratch' || analysis.name.startsWith('Scratchpad:')
+              ? 'Generating new title ideas' 
+              : <>Using dataset: <span className="font-semibold">{analysis.name}</span></>
+            }
+          </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <Button onClick={handleDownloadPDF} variant="outline" disabled={generatedTitles.length === 0}>
@@ -198,7 +193,7 @@ export function TitleStudio() {
             </Button>
         </div>
       </div>
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <TitleStudioBatch 
           analysis={analysis}
           generatedTitles={generatedTitles}

@@ -374,18 +374,13 @@ export function PaperDrafter() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-muted/20">
-      <header className="sticky top-0 z-20">
+    <div className="flex h-full flex-col bg-muted/20">
+      <div className="sticky top-0 z-20">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 border-b bg-background/80 p-4 backdrop-blur-lg sm:p-3">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()} className="h-9 w-9 shrink-0">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-grow overflow-hidden">
-              <h1 className="truncate text-xl font-bold" title={title}>
-                {title}
-              </h1>
-            </div>
+          <div className="flex-grow overflow-hidden">
+            <h1 className="truncate text-xl font-bold" title={title}>
+              {title}
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
@@ -442,12 +437,12 @@ export function PaperDrafter() {
             </AlertDialog>
           </div>
         </div>
-      </header>
-      <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8">
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
           {renderContent()}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

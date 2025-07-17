@@ -4,6 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Providers } from '@/components/providers';
 import { ThemeProvider } from '@/components/theme-provider';
 import { CustomThemeProvider } from '@/hooks/use-theme';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { HistorySidebar } from '@/components/history-sidebar';
+import { AppHeader } from '@/components/header';
 
 export const metadata: Metadata = {
   title: 'PaperMiner',
@@ -31,8 +34,20 @@ export default function RootLayout({
         >
           <CustomThemeProvider>
             <Providers>
-              {children}
-              <Toaster />
+              <SidebarProvider>
+                <div className="flex flex-col h-screen">
+                    <AppHeader />
+                    <div className="flex flex-1 overflow-hidden">
+                        <HistorySidebar />
+                        <SidebarInset>
+                          <main className="flex-1 overflow-y-auto">
+                            {children}
+                          </main>
+                        </SidebarInset>
+                    </div>
+                </div>
+                <Toaster />
+              </SidebarProvider>
             </Providers>
           </CustomThemeProvider>
         </ThemeProvider>
