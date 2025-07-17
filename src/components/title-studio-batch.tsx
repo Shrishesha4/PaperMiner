@@ -173,7 +173,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             {generatedTitles.map((title, index) => {
               const noveltyState = noveltyChecks[index];
               return (
-                <Card key={index} className="transition-colors">
+                <Card key={index} className="transition-colors overflow-hidden">
                   <CardContent className="p-4">
                     <p className="font-medium">{title}</p>
                   </CardContent>
@@ -336,5 +336,3 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
     </div>
   );
 }
-
-    

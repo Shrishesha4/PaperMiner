@@ -164,7 +164,7 @@ export function TitleStudio() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <div className="flex flex-wrap items-center justify-between p-4 border-b shrink-0 gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b shrink-0 gap-4">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push('/')}>
             <ArrowLeft className="h-4 w-4" />
@@ -179,7 +179,7 @@ export function TitleStudio() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <Button onClick={handleDownloadPDF} variant="outline" disabled={generatedTitles.length === 0}>
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF

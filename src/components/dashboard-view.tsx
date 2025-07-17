@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
@@ -232,7 +233,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
               {data.length} papers analyzed. Found {categories.length - 1} unique categories.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto">
             <Button onClick={() => selectAnalysis(null)}>
                 <Plus className="mr-2 h-4 w-4" /> New Analysis
             </Button>
