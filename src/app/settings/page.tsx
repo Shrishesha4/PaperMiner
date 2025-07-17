@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useHistory } from "@/hooks/use-history";
-import { KeyRound, Trash2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Trash2 } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 export default function SettingsPage() {
@@ -29,6 +30,12 @@ export default function SettingsPage() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
                 <div className="space-y-1">
+                    <Button asChild variant="outline" size="sm" className="mb-4">
+                      <Link href="/">
+                        <ArrowLeft className="mr-2 h-4 w-4"/>
+                        Back to App
+                      </Link>
+                    </Button>
                     <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
                     <p className="text-muted-foreground">
                         Manage your application settings, API keys, and data.

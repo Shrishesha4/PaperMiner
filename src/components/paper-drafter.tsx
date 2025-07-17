@@ -384,7 +384,7 @@ export function PaperDrafter() {
                         Back to App
                     </Link>
                 </Button>
-                <h1 className="text-3xl font-bold tracking-tight" title={title}>
+                <h1 className="text-3xl font-bold tracking-tight">
                     {title}
                 </h1>
             </div>

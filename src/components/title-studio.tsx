@@ -6,11 +6,12 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useHistory } from '@/hooks/use-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, ArrowLeft } from 'lucide-react';
 import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
 import jsPDF from 'jspdf';
 import type { ExistingPaper } from '@/types/schemas';
+import Link from 'next/link';
 
 
 type AnalysisData = {
@@ -174,8 +175,14 @@ export function TitleStudio() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b shrink-0 gap-4 p-4 mb-4">
-        <div>
+       <div className="p-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b shrink-0 gap-4 mb-4">
+        <div className='flex-1'>
+          <Button asChild variant="outline" size="sm" className="mb-4">
+            <Link href="/">
+              <ArrowLeft className="mr-2 h-4 w-4"/>
+              Back to App
+            </Link>
+          </Button>
           <h1 className="text-3xl font-bold tracking-tight">Title Studio</h1>
           <p className="text-sm text-muted-foreground">
             {analysis.name === 'From Scratch' || analysis.name.startsWith('Scratchpad:')

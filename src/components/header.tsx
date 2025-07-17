@@ -22,17 +22,9 @@ export function AppHeader() {
         </Link>
       </div>
        <div className="flex items-center gap-2">
-         {pathname !== '/' && (
-            <Button asChild variant="outline">
-              <Link href="/">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to App
-              </Link>
-            </Button>
-         )}
          {pathname !== '/settings' && (
             <Button asChild variant="ghost" size="icon">
-                <Link href="/settings">
+                <Link href="/">
                     <Settings />
                     <span className="sr-only">Settings</span>
                 </Link>
