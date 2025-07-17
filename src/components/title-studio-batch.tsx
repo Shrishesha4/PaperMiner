@@ -43,7 +43,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const { getNextApiKey, isApiKeySet } = useApiKey();
   const { toast } = useToast();
   const [topics, setTopics] = useState<string[]>([]);
-  const [numTitles, setNumTitles] = useState(4);
+  const [numTitles, setNumTitles] = useState(3);
   const [customInstructions, setCustomInstructions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
