@@ -19,22 +19,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useHistory } from "@/hooks/use-history";
 import { ArrowLeft, KeyRound, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 export default function SettingsPage() {
     const { clearHistory, history } = useHistory();
     const [isKeyDialogOpen, setIsKeyDialogOpen] = React.useState(false);
+    const router = useRouter();
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
                 <div className="space-y-1">
-                    <Button asChild variant="outline" size="sm" className="mb-4">
-                      <Link href="/">
+                    <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
                         <ArrowLeft className="mr-2 h-4 w-4"/>
-                        Back to App
-                      </Link>
+                        Back
                     </Button>
                     <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
                     <p className="text-muted-foreground">

@@ -177,12 +177,10 @@ export function TitleStudio() {
     <div className="flex h-full flex-col">
        <div className="p-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b shrink-0 gap-4 mb-4">
         <div className='flex-1'>
-          <Button asChild variant="outline" size="sm" className="mb-4">
-            <Link href="/">
+            <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4"/>
-              Back to App
-            </Link>
-          </Button>
+              Back
+            </Button>
           <h1 className="text-3xl font-bold tracking-tight">Title Studio</h1>
           <p className="text-sm text-muted-foreground">
             {analysis.name === 'From Scratch' || analysis.name.startsWith('Scratchpad:')

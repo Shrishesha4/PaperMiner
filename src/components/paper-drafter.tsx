@@ -288,7 +288,7 @@ export function PaperDrafter() {
     }
 
     return (
-        <>
+        <div className="space-y-6">
             {paper.sections.map((section, index) => {
             const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
             const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
@@ -370,19 +370,17 @@ export function PaperDrafter() {
                 </CardContent>
             </Card>
             )})}
-        </>
+        </div>
     )
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full max-w-none space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
              <div className="flex-1 min-w-0">
-                <Button asChild variant="outline" size="sm" className="mb-4">
-                    <Link href="/">
-                        <ArrowLeft className="mr-2 h-4 w-4"/>
-                        Back to App
-                    </Link>
+                <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4"/>
+                    Back
                 </Button>
                 <h1 className="text-3xl font-bold tracking-tight">
                     {title}
