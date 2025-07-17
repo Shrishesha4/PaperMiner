@@ -9,7 +9,7 @@ interface HistoryContextType {
   history: Analysis[];
   selectedAnalysis: Analysis | null;
   addAnalysis: (newAnalysisData: Omit<Analysis, 'id' | 'date'>) => Analysis;
-  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date'>>) => void;
+  updateAnalysis: (id: string, updates: Partial<Omit<Analysis, 'id' | 'date' | 'categoryHierarchy'>>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
   removeDraft: (analysisId: string) => void;
@@ -81,6 +81,10 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     const newHistory = history.map(item => {
         if (item.id === id) {
             updatedAnalysis = { ...item, ...updates };
+            // If categoryHierarchy is explicitly set to undefined, remove it.
+            if ('categoryHierarchy' in updates && updates.categoryHierarchy === undefined) {
+                delete updatedAnalysis.categoryHierarchy;
+            }
             return updatedAnalysis;
         }
         return item;

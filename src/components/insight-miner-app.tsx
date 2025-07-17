@@ -28,7 +28,7 @@ export function InsightMinerApp() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isApiKeySet, getNextApiKey, termsAccepted } = useApiKey();
-  const { selectedAnalysis, selectAnalysis, addAnalysis, removeAnalysis, isLoading: isHistoryLoading } = useHistory();
+  const { selectedAnalysis, selectAnalysis, addAnalysis, updateAnalysis, isLoading: isHistoryLoading } = useHistory();
 
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
   const [processingProgress, setProcessingProgress] = useState(0);
@@ -67,7 +67,7 @@ export function InsightMinerApp() {
   }, [selectedAnalysis, isHistoryLoading]);
 
 
-  const handleDataProcessing = useCallback(async (parsedPapers: ResearchPaper[], fileName: string) => {
+  const handleDataProcessing = useCallback(async (papersToProcess: ResearchPaper[], fileName: string, analysisIdToUpdate?: string) => {
     if (!isApiKeySet) {
         toast({
             variant: 'destructive',
@@ -82,17 +82,9 @@ export function InsightMinerApp() {
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
-    let initiallyFailed: ResearchPaper[] = [];
+    const retries: ResearchPaper[] = [];
     const finalFailed: FailedPaper[] = [];
     let processedCount = 0;
-
-    const papersToProcess = parsedPapers.filter(paper => {
-      if (!paper['Document Title']) {
-        finalFailed.push({ ...paper, failureReason: 'Missing document title.' });
-        return false;
-      }
-      return true;
-    });
 
     const totalToProcess = papersToProcess.length;
     const totalSteps = totalToProcess + (totalToProcess * 0.2); // Estimate retries as 20% of work
@@ -110,23 +102,20 @@ export function InsightMinerApp() {
 
         const batchResults = await categorizeResearchTitles({ titles, apiKey });
         
-        // Match results back to original papers
+        const successfulTitles = new Set(batchResults.map(r => r.title));
+
         batch.forEach(paper => {
           const result = batchResults.find(r => r.title === paper['Document Title']);
           if (result && result.category) {
             results.push({ ...paper, category: result.category, confidence: result.confidence });
           } else {
-            // This paper failed batch processing, add to retry queue
-            initiallyFailed.push(paper);
+            retries.push(paper);
           }
         });
 
       } catch (error) {
         console.error('Error categorizing title batch:', error);
-        // If the whole batch fails, add all to retry queue
-        batch.forEach(paper => {
-            initiallyFailed.push(paper);
-        });
+        batch.forEach(paper => retries.push(paper));
         toast({
           variant: 'destructive',
           title: 'Batch Categorization Issue',
@@ -139,11 +128,11 @@ export function InsightMinerApp() {
     }
     
     // STAGE 2: Individual Retries for Failed Papers
-    if (initiallyFailed.length > 0) {
-        setProcessingMessage(`Retrying ${initiallyFailed.length} failed papers individually...`);
+    if (retries.length > 0) {
+        setProcessingMessage(`Retrying ${retries.length} failed papers individually...`);
         let retriedCount = 0;
         
-        for (const paper of initiallyFailed) {
+        for (const paper of retries) {
             try {
                 const apiKey = getNextApiKey();
                 if (!apiKey) throw new Error("No API key available for retry.");
@@ -164,21 +153,35 @@ export function InsightMinerApp() {
         }
     }
     
-    addAnalysis({
-        name: fileName,
-        categorizedPapers: results,
-        failedPapers: finalFailed,
-    });
+    if (analysisIdToUpdate) {
+        updateAnalysis(analysisIdToUpdate, {
+            categorizedPapers: results,
+            failedPapers: finalFailed,
+            categoryHierarchy: undefined, // Reset hierarchy to be regenerated
+        });
+    } else {
+        addAnalysis({
+            name: fileName,
+            categorizedPapers: results,
+            failedPapers: finalFailed,
+        });
+    }
 
     setProcessingMessage('Analysis complete!');
     setProcessingProgress(100);
     setTimeout(() => setCurrentStep('dashboard'), 1000);
-  }, [toast, isApiKeySet, addAnalysis, getNextApiKey]);
+  }, [toast, isApiKeySet, addAnalysis, getNextApiKey, updateAnalysis]);
 
   const handleReset = (analysisId: string) => {
     selectAnalysis(null);
     setCurrentStep('upload');
   };
+
+  const handleRecategorize = useCallback((analysis: Analysis) => {
+    const allPapers = [...analysis.categorizedPapers, ...analysis.failedPapers];
+    const papersToProcess = allPapers.map(({ failureReason, category, confidence, ...paper }) => paper);
+    handleDataProcessing(papersToProcess, analysis.name, analysis.id);
+  }, [handleDataProcessing]);
 
 
   const renderContent = () => {
@@ -193,7 +196,7 @@ export function InsightMinerApp() {
     
     switch (currentStep) {
         case 'upload':
-            return <UploaderView onProcess={handleDataProcessing} />;
+            return <UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} />;
         case 'processing':
             return <ProcessingView progress={processingProgress} message={processingMessage} />;
         case 'dashboard':
@@ -201,18 +204,16 @@ export function InsightMinerApp() {
                 return (
                     <DashboardView
                         key={selectedAnalysis.id}
-                        analysisId={selectedAnalysis.id}
-                        analysisName={selectedAnalysis.name}
-                        data={selectedAnalysis.categorizedPapers}
-                        failedData={selectedAnalysis.failedPapers}
+                        analysis={selectedAnalysis}
                         onReset={handleReset}
+                        onRecategorize={handleRecategorize}
                     />
                 );
             }
             // If no analysis is selected (e.g., history is cleared), go to uploader
-            return <UploaderView onProcess={handleDataProcessing} />;
+            return <UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} />;
         default:
-            return <UploaderView onProcess={handleDataProcessing} />;
+            return <UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} />;
     }
   }
 

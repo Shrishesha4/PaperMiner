@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import type { CategorizedPaper, FailedPaper } from '@/types';
+import type { CategorizedPaper, FailedPaper, Analysis } from '@/types';
 import type { CategoryHierarchy } from '@/components/category-chart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { Download, FileDown, Loader2, Plus, Wand2, BrainCircuit } from 'lucide-react';
+import { Download, FileDown, Loader2, Plus, Wand2, BrainCircuit, RefreshCw } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
@@ -21,13 +21,12 @@ import Link from 'next/link';
 import { useHistory } from '@/hooks/use-history';
 import { consolidateCategories } from '@/ai/flows/consolidate-categories';
 import { useApiKey } from '@/hooks/use-api-key';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface DashboardViewProps {
-  analysisId: string;
-  analysisName: string;
-  data: CategorizedPaper[];
-  failedData: FailedPaper[];
+  analysis: Analysis;
   onReset: (analysisId: string) => void;
+  onRecategorize: (analysis: Analysis) => void;
 }
 
 // Add this type definition for the autoTable plugin
@@ -55,11 +54,11 @@ const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[])
     });
 };
 
-export function DashboardView({ analysisId, analysisName, data, failedData, onReset }: DashboardViewProps) {
+export function DashboardView({ analysis, onReset, onRecategorize }: DashboardViewProps) {
   const { toast } = useToast();
   const { updateAnalysis } = useHistory();
   const { getNextApiKey, isApiKeySet } = useApiKey();
-  const analysis = useHistory().history.find(a => a.id === analysisId);
+  const { id: analysisId, name: analysisName, categorizedPapers: data, failedPapers: failedData } = analysis;
 
   const [filters, setFilters] = useState({
     year: 'all',
@@ -67,7 +66,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isConsolidating, setIsConsolidating] = useState(false);
-  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(null);
+  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(analysis.categoryHierarchy || null);
   
   const categoryChartRef = useRef<HTMLDivElement>(null);
 
@@ -134,7 +133,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
 
     consolidate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, data, isApiKeySet]); // Rerun only when the core data changes
+  }, [analysisId, data, isApiKeySet, analysis.categoryHierarchy]); // Rerun only when data or hierarchy changes
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
@@ -269,6 +268,26 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             <Button onClick={() => onReset(analysisId)}>
                 <Plus className="mr-2 h-4 w-4" /> New Analysis
             </Button>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Re-categorize
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will re-run the categorization process for all {data.length + failedData.length} papers in this analysis. This will consume API credits and replace the current categories.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onRecategorize(analysis)}>Yes, Re-categorize</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             <Button asChild variant="outline">
                 <Link href={`/title-studio?analysisId=${analysisId}`}>
                     <Wand2 className="mr-2 h-4 w-4" /> Title Studio
@@ -298,7 +317,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
                             </SelectContent>
                         </Select>
                         <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
+                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectValue>
                             <SelectContent>
                             {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
                             </SelectContent>
