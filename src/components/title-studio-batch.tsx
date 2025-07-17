@@ -246,7 +246,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         )}
       </div>
       <div className="p-4 sm:p-6 border-t shrink-0">
-        <div className="w-full md:w-1/2 mx-auto">
+        <div className="w-full">
             <Card>
                 <CardHeader>
                     <CardTitle>Title Generation Controls</CardTitle>
