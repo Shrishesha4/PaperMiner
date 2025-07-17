@@ -1,35 +1,25 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Plus, Wand2, X, Loader2 } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 interface TopicSelectorProps {
-  onTopicsChange: (topics: string[]) => void;
+  topics: string[];
+  onAddTopic: (topic: string) => void;
+  onRemoveTopic: (topic: string) => void;
   isLoading: boolean;
 }
 
-export function TopicSelector({ onTopicsChange, isLoading }: TopicSelectorProps) {
-  const [topics, setTopics] = useState<string[]>([]);
+export function TopicSelector({ topics, onAddTopic, onRemoveTopic, isLoading }: TopicSelectorProps) {
   const [currentTopic, setCurrentTopic] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    onTopicsChange(topics);
-  }, [topics, onTopicsChange]);
-
-  const handleAddTopic = (topic: string) => {
-    const trimmedTopic = topic.trim();
-    if (trimmedTopic && !topics.includes(trimmedTopic)) {
-      setTopics([...topics, trimmedTopic]);
-    }
-  };
-
   const handleManualAdd = () => {
-    handleAddTopic(currentTopic);
+    onAddTopic(currentTopic);
     setCurrentTopic('');
   };
 
@@ -38,10 +28,6 @@ export function TopicSelector({ onTopicsChange, isLoading }: TopicSelectorProps)
       e.preventDefault();
       handleManualAdd();
     }
-  };
-
-  const handleRemoveTopic = (topicToRemove: string) => {
-    setTopics(topics.filter(topic => topic !== topicToRemove));
   };
   
   return (
@@ -71,10 +57,10 @@ export function TopicSelector({ onTopicsChange, isLoading }: TopicSelectorProps)
         {topics.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {topics.map(topic => (
-              <Badge key={topic} variant="secondary" className="flex items-center gap-1">
+              <Badge key={topic} variant="secondary" className="flex items-center gap-1 text-sm">
                 {topic}
                 <button
-                  onClick={() => handleRemoveTopic(topic)}
+                  onClick={() => onRemoveTopic(topic)}
                   className="rounded-full hover:bg-muted-foreground/20 p-0.5"
                   disabled={isLoading}
                 >
