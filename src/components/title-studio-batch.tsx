@@ -9,18 +9,18 @@ import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
 import type { CheckTitleNoveltyOutput } from '@/types/schemas';
 import { TopicSelector } from './topic-selector';
 import { Button } from './ui/button';
-import { Card, CardContent, CardFooter } from './ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
 import { Loader2, Wand2, Copy, SearchCheck, Check, Info, FileText } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { NoveltyResultCard } from './novelty-result-card';
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import Link from 'next/link';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -64,7 +64,6 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const handleClearTopics = () => {
     setTopics([]);
   };
-
 
   const handleGenerate = async () => {
     if (!isApiKeySet || topics.length === 0) return;
@@ -162,53 +161,56 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
 
   return (
     <div className="flex flex-col">
-      <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px]">
+      <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px] flex-1">
         {isGenerating ? (
-            <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary mb-2" />
-                    <p className="text-muted-foreground">Generating titles...</p>
-                </div>
+            <div className="flex flex-col items-center justify-center h-full">
+                <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary mb-4" />
+                <p className="text-lg font-medium">Generating Titles...</p>
+                <p className="text-muted-foreground">The AI is crafting new ideas based on your topics.</p>
             </div>
         ) : generatedTitles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {generatedTitles.map((title, index) => {
               const noveltyState = noveltyChecks[index];
               return (
-                <Card key={index} className="flex flex-col">
+                <Card key={index} className="flex flex-col hover:border-primary/50 transition-colors">
                   <CardContent className="p-4 flex-1">
                     <p className="font-medium">{title}</p>
                   </CardContent>
                   <CardFooter className="p-2 bg-background border-t flex justify-end items-center gap-1 flex-wrap">
                      <Button variant="ghost" size="sm" onClick={() => handleCopy(title, index)}>
                       {copiedStates[index] ? <Check className="text-green-500" /> : <Copy />}
-                      <span className="ml-2">{copiedStates[index] ? 'Copied!' : 'Copy'}</span>
+                      <span className="ml-1">{copiedStates[index] ? 'Copied' : 'Copy'}</span>
                     </Button>
                     
                     <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
-                            disabled={noveltyState?.isLoading || isFromScratch}
-                          >
-                            {noveltyState?.isLoading ? (
-                              <Loader2 className="animate-spin" />
-                            ) : noveltyState?.result ? (
-                              <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
-                                Score: {noveltyState.result.noveltyScore.toFixed(2)}
-                              </span>
-                            ) : (
-                              isFromScratch ? (
-                                <Info />
-                              ) : (
-                                  <SearchCheck />
-                              )
-                            )}
-                            <span className="ml-2">{noveltyState?.result ? 'View Details' : (isFromScratch ? 'Novelty Check' : 'Check Novelty')}</span>
-                          </Button>
-                        </DialogTrigger>
+                        <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
+                                    disabled={noveltyState?.isLoading || isFromScratch}
+                                    className={isFromScratch ? 'cursor-not-allowed' : ''}
+                                  >
+                                    {noveltyState?.isLoading ? (
+                                      <Loader2 className="animate-spin" />
+                                    ) : noveltyState?.result ? (
+                                      <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
+                                        Novelty: {noveltyState.result.noveltyScore.toFixed(2)}
+                                      </span>
+                                    ) : (
+                                        <SearchCheck />
+                                    )}
+                                    <span className="ml-1">{noveltyState?.result ? 'Details' : 'Check'}</span>
+                                  </Button>
+                                </DialogTrigger>
+                            </TooltipTrigger>
+                            {isFromScratch && <TooltipContent><p>Novelty check requires an analysis with existing titles.</p></TooltipContent>}
+                        </Tooltip>
+                        </TooltipProvider>
                         {noveltyState?.result && (
                             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>
@@ -223,7 +225,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     <Button asChild size="sm" variant="default">
                         <Link href={`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${analysis.id}`}>
                             <FileText />
-                            <span className="ml-2">Draft Paper</span>
+                            <span className="ml-1">Draft</span>
                         </Link>
                     </Button>
 
@@ -236,42 +238,85 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
           <div className="flex h-full w-full items-center justify-center">
              <Alert className="max-w-md mx-auto">
                 <Wand2 className="h-4 w-4" />
-                <AlertTitle>Ready to Generate!</AlertTitle>
+                <AlertTitle>Welcome to the Title Studio!</AlertTitle>
                 <AlertDescription>
-                    Select your topics and click the "Generate" button to create a batch of new titles.
+                    Select topics from your dataset or add your own, then click "Generate" to brainstorm new research titles.
                 </AlertDescription>
             </Alert>
           </div>
         )}
       </div>
-      <div className="p-4 sm:p-6 border-b space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            <TopicSelector
-                topics={topics}
-                onAddTopic={handleAddTopic}
-                onRemoveTopic={handleRemoveTopic}
-                onClearTopics={handleClearTopics}
-                isLoading={isGenerating}
-            />
-            <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="num-titles">Number of Titles to Generate</Label>
-                    <Input
-                      id="num-titles"
-                      type="number"
-                      value={numTitles}
-                      onChange={(e) => setNumTitles(parseInt(e.target.value, 10) || 1)}
-                      min={1}
-                      disabled={isGenerating}
-                      className="max-w-[100px]"
-                    />
+      <div className="p-4 sm:p-6 border-b">
+        <Card>
+            <CardHeader>
+                <CardTitle>Title Generation Controls</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <TopicSelector
+                    topics={topics}
+                    onAddTopic={handleAddTopic}
+                    onRemoveTopic={handleRemoveTopic}
+                    onClearTopics={handleClearTopics}
+                    isLoading={isGenerating}
+                />
+                
+                <div className="space-y-2 pt-4 border-t">
+                    <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
+                    <div className="flex flex-wrap gap-1">
+                    {analysis.categories
+                        .filter((cat) => !topics.includes(cat))
+                        .map((cat) => (
+                        <Badge
+                            key={cat}
+                            variant="outline"
+                            onClick={() => handleAddTopic(cat)}
+                            className={`cursor-pointer hover:bg-primary/10 text-sm ${
+                            isGenerating ? 'opacity-50 pointer-events-none' : ''
+                            }`}
+                        >
+                            {cat}
+                        </Badge>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div className="space-y-4">
-            <div className="flex justify-end">
-                 <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full md:w-auto">
+                <div className="pt-4 border-t">
+                     <Accordion type="single" collapsible className="w-full">
+                        <AccordionItem value="custom-instructions">
+                            <AccordionTrigger>Advanced Options</AccordionTrigger>
+                            <AccordionContent className="pt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="num-titles">Number of Titles</Label>
+                                        <Input
+                                          id="num-titles"
+                                          type="number"
+                                          value={numTitles}
+                                          onChange={(e) => setNumTitles(parseInt(e.target.value, 10) || 1)}
+                                          min={1}
+                                          disabled={isGenerating}
+                                          className="max-w-[100px]"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="custom-instructions">Custom Instructions</Label>
+                                        <Textarea
+                                            id="custom-instructions"
+                                            placeholder="e.g., Focus on renewable energy, use a question format..."
+                                            value={customInstructions}
+                                            onChange={(e) => setCustomInstructions(e.target.value)}
+                                            disabled={isGenerating}
+                                            className="h-24"
+                                        />
+                                    </div>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                </div>
+            </CardContent>
+            <CardFooter className="flex justify-end">
+                 <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} size="lg">
                     {isGenerating ? (
                         <Loader2 className="mr-2 animate-spin" />
                     ) : (
@@ -279,47 +324,8 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     )}
                     Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
                 </Button>
-            </div>
-
-            <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="custom-instructions">
-                    <AccordionTrigger>Custom Instructions (Optional)</AccordionTrigger>
-                    <AccordionContent>
-                        <div className="space-y-2">
-                            <Label htmlFor="custom-instructions" className="text-muted-foreground">Provide specific instructions to guide the title generation process.</Label>
-                            <Textarea
-                                id="custom-instructions"
-                                placeholder="e.g., Focus on the impact on renewable energy, use a question format..."
-                                value={customInstructions}
-                                onChange={(e) => setCustomInstructions(e.target.value)}
-                                disabled={isGenerating}
-                                className="h-24"
-                            />
-                        </div>
-                    </AccordionContent>
-                </AccordionItem>
-            </Accordion>
-        </div>
-
-        <div className="space-y-2 pt-4 border-t">
-            <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
-            <div className="flex flex-wrap gap-1">
-            {analysis.categories
-                .filter((cat) => !topics.includes(cat))
-                .map((cat) => (
-                <Badge
-                    key={cat}
-                    variant="outline"
-                    onClick={() => handleAddTopic(cat)}
-                    className={`cursor-pointer hover:bg-primary/10 text-sm ${
-                    isGenerating ? 'opacity-50 pointer-events-none' : ''
-                    }`}
-                >
-                    {cat}
-                </Badge>
-                ))}
-            </div>
-        </div>
+            </CardFooter>
+        </Card>
       </div>
     </div>
   );

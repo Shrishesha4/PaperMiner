@@ -29,6 +29,7 @@ import { Packer } from 'docx';
 import { saveAs } from 'file-saver';
 import { Document, Packer as DocxPacker, Paragraph, HeadingLevel } from 'docx';
 import { useHistory } from '@/hooks/use-history';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 
 type RegenerationState = {
@@ -258,7 +259,7 @@ export function PaperDrafter() {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading draft...</p>
+          <p className="text-muted-foreground">Generating initial draft...</p>
         </div>
       );
     }
@@ -286,16 +287,16 @@ export function PaperDrafter() {
     }
 
     return (
-        <div className="bg-background p-4 sm:p-6 md:p-8 rounded-lg shadow-md space-y-8">
+        <div className="space-y-6">
              {paper.sections.map((section, index) => {
                 const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
                 const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
                 const isSectionLoading = isSectionRefining || isSectionRegenerating;
 
                 return (
-                <div key={index} className="mb-8" data-section-index={index}>
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
-                        <h2 className="text-2xl font-bold">{section.title}</h2>
+                <Card key={index} data-section-index={index}>
+                    <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
+                        <CardTitle className="text-2xl font-bold">{section.title}</CardTitle>
                         <div className="flex gap-2 shrink-0">
                              <AlertDialog onOpenChange={() => setRefinePrompt('')}>
                                 <AlertDialogTrigger asChild>
@@ -312,14 +313,14 @@ export function PaperDrafter() {
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>Refine "{section.title}"</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Provide instructions for how the AI should rewrite this section.
+                                        Provide specific instructions for how the AI should rewrite this section. Be descriptive for the best results.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <div className="grid gap-2 py-4">
                                         <Label htmlFor="refine-prompt">Your instructions</Label>
                                         <Textarea 
                                             id="refine-prompt"
-                                            placeholder="e.g., Make this more formal, or expand on the methodology."
+                                            placeholder="e.g., Make this more formal and academic, or expand on the proposed methodology..."
                                             value={refinePrompt}
                                             onChange={(e) => setRefinePrompt(e.target.value)}
                                         />
@@ -333,7 +334,7 @@ export function PaperDrafter() {
                                        {refinementState.isRefining && refinementState.sectionIndex === index ? (
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         ) : null}
-                                        Submit
+                                        Submit Refinement
                                     </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -353,8 +354,8 @@ export function PaperDrafter() {
                                 Regenerate
                             </Button>
                         </div>
-                    </div>
-                    <div className="relative">
+                    </CardHeader>
+                    <CardContent className="relative">
                         {isSectionLoading && (
                             <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-10">
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -365,8 +366,8 @@ export function PaperDrafter() {
                                 <p key={pIndex}>{paragraph}</p>
                             ))}
                         </article>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
              )})}
         </div>
     )
@@ -374,28 +375,28 @@ export function PaperDrafter() {
 
   return (
     <div className="flex h-screen flex-col bg-muted/20">
-      <header className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between p-4 border-b shrink-0 bg-background z-10 gap-4">
-        <div className="flex items-center gap-4 w-full">
-          <Button variant="outline" size="icon" onClick={() => router.back()} className="shrink-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-grow overflow-hidden">
-            <h1 className="text-xl font-bold truncate">Paper Drafter</h1>
-            <p className="text-sm text-muted-foreground truncate" title={title}>
+      <header className="sticky top-0 z-20">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 border-b bg-background/80 p-4 backdrop-blur-lg sm:p-3">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.back()} className="h-9 w-9 shrink-0">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex-grow overflow-hidden">
+              <h1 className="truncate text-xl font-bold" title={title}>
                 {title}
-            </p>
+              </h1>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+          <div className="flex items-center gap-2">
             <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
-                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Draft
+              {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+              <span className="ml-2 hidden sm:inline">Save Draft</span>
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" disabled={isLoading || !!error || isAiWorking}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Regenerate All
+                  <RefreshCw />
+                  <span className="ml-2 hidden sm:inline">Regen All</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -414,14 +415,14 @@ export function PaperDrafter() {
               </AlertDialogContent>
             </AlertDialog>
             <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
-                {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                .docx
+              {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+              <span className="ml-2 hidden sm:inline">.docx</span>
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
-                    <FileUp className="mr-2 h-4 w-4" />
-                    G Docs
+                  <FileUp />
+                  <span className="ml-2 hidden sm:inline">G Docs</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -439,11 +440,12 @@ export function PaperDrafter() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
         </div>
       </header>
       <main className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-            {renderContent()}
+        <div className="mx-auto max-w-4xl">
+          {renderContent()}
         </div>
       </main>
     </div>
