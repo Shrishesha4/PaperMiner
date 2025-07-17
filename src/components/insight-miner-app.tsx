@@ -82,25 +82,27 @@ export function InsightMinerApp() {
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
-    let initiallyFailed: FailedPaper[] = [];
+    let initiallyFailed: ResearchPaper[] = [];
+    const finalFailed: FailedPaper[] = [];
     let processedCount = 0;
 
     const papersToProcess = parsedPapers.filter(paper => {
       if (!paper['Document Title']) {
-        initiallyFailed.push({ ...paper, failureReason: 'Missing document title.' });
+        finalFailed.push({ ...paper, failureReason: 'Missing document title.' });
         return false;
       }
       return true;
     });
 
     const totalToProcess = papersToProcess.length;
+    const totalSteps = totalToProcess + (totalToProcess * 0.2); // Estimate retries as 20% of work
 
     // STAGE 1: Batch Processing
     for (let i = 0; i < totalToProcess; i += BATCH_SIZE) {
       const batch = papersToProcess.slice(i, i + BATCH_SIZE);
       const titles = batch.map(p => p['Document Title']);
       
-      setProcessingMessage(`Categorizing batch ${i / BATCH_SIZE + 1} of ${Math.ceil(totalToProcess / BATCH_SIZE)}...`);
+      setProcessingMessage(`Categorizing batch ${Math.ceil((i + 1) / BATCH_SIZE)} of ${Math.ceil(totalToProcess / BATCH_SIZE)}...`);
 
       try {
         const apiKey = getNextApiKey();
@@ -112,10 +114,10 @@ export function InsightMinerApp() {
         batch.forEach(paper => {
           const result = batchResults.find(r => r.title === paper['Document Title']);
           if (result && result.category) {
-            results.push({ ...paper, ...result });
+            results.push({ ...paper, category: result.category, confidence: result.confidence });
           } else {
             // This paper failed batch processing, add to retry queue
-            initiallyFailed.push({ ...paper, failureReason: 'Failed initial batch categorization.' });
+            initiallyFailed.push(paper);
           }
         });
 
@@ -123,7 +125,7 @@ export function InsightMinerApp() {
         console.error('Error categorizing title batch:', error);
         // If the whole batch fails, add all to retry queue
         batch.forEach(paper => {
-            initiallyFailed.push({ ...paper, failureReason: 'An API error occurred during batch processing.' });
+            initiallyFailed.push(paper);
         });
         toast({
           variant: 'destructive',
@@ -132,12 +134,11 @@ export function InsightMinerApp() {
         });
       } finally {
         processedCount += batch.length;
-        setProcessingProgress((processedCount / (parsedPapers.length * 2)) * 100); // Batch is ~half the work
+        setProcessingProgress((processedCount / totalSteps) * 100); 
       }
     }
     
     // STAGE 2: Individual Retries for Failed Papers
-    const finalFailed: FailedPaper[] = [];
     if (initiallyFailed.length > 0) {
         setProcessingMessage(`Retrying ${initiallyFailed.length} failed papers individually...`);
         let retriedCount = 0;
@@ -150,7 +151,7 @@ export function InsightMinerApp() {
                 const result = await categorizeSingleTitle({ title: paper['Document Title'], apiKey });
                 
                 if (result && result.category) {
-                    results.push({ ...paper, category: result.category, confidence: result.confidence });
+                    results.push({ ...paper, category: result.category, confidence: result.confidence, title: paper['Document Title'] });
                 } else {
                     finalFailed.push({ ...paper, failureReason: 'AI model did not return a category on retry.' });
                 }
@@ -158,7 +159,7 @@ export function InsightMinerApp() {
                  finalFailed.push({ ...paper, failureReason: 'An API error occurred on retry.' });
             } finally {
                 retriedCount++;
-                setProcessingProgress(((totalToProcess + retriedCount) / (parsedPapers.length * 2)) * 100);
+                setProcessingProgress(((processedCount + retriedCount) / totalSteps) * 100);
             }
         }
     }
@@ -170,6 +171,7 @@ export function InsightMinerApp() {
     });
 
     setProcessingMessage('Analysis complete!');
+    setProcessingProgress(100);
     setTimeout(() => setCurrentStep('dashboard'), 1000);
   }, [toast, isApiKeySet, addAnalysis, getNextApiKey]);
 
