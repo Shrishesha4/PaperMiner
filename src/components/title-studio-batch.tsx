@@ -19,6 +19,7 @@ import { NoveltyResultCard } from './novelty-result-card';
 import { TooltipProvider } from './ui/tooltip';
 import Link from 'next/link';
 import { Badge } from './ui/badge';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -177,8 +178,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                       <span className="ml-2">{copiedStates[index] ? 'Copied!' : 'Copy'}</span>
                     </Button>
                     
-                    <TooltipProvider>
-                      <Dialog>
+                    <Dialog>
                         <DialogTrigger asChild>
                           <Button
                             variant="outline"
@@ -203,16 +203,15 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                           </Button>
                         </DialogTrigger>
                         {noveltyState?.result && (
-                          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Novelty Analysis</DialogTitle>
-                            </DialogHeader>
-                            <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
-                            <NoveltyResultCard result={noveltyState.result} />
-                          </DialogContent>
+                            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                                <DialogHeader>
+                                <DialogTitle>Novelty Analysis</DialogTitle>
+                                </DialogHeader>
+                                <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
+                                <NoveltyResultCard result={noveltyState.result} />
+                            </DialogContent>
                         )}
-                      </Dialog>
-                    </TooltipProvider>
+                    </Dialog>
 
                     <Button asChild size="sm" variant="default">
                         <Link href={`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${analysis.id}`}>
@@ -239,28 +238,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         )}
       </div>
       <div className="p-4 sm:p-6 border-b space-y-4">
-        {analysis.categories.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
-            <div className="flex flex-wrap gap-1">
-              {analysis.categories
-                .filter((cat) => !topics.includes(cat))
-                .map((cat) => (
-                  <Badge
-                    key={cat}
-                    variant="outline"
-                    onClick={() => handleAddTopic(cat)}
-                    className={`cursor-pointer hover:bg-primary/10 text-sm ${
-                      isGenerating ? 'opacity-50 pointer-events-none' : ''
-                    }`}
-                  >
-                    {cat}
-                  </Badge>
-                ))}
-            </div>
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <TopicSelector
                 topics={topics}
                 onAddTopic={handleAddTopic}
@@ -290,6 +268,28 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                 </Button>
             </div>
         </div>
+
+        {analysis.categories.length > 0 && (
+          <div className="space-y-2 pt-4 border-t">
+            <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
+            <div className="flex flex-wrap gap-1">
+              {analysis.categories
+                .filter((cat) => !topics.includes(cat))
+                .map((cat) => (
+                  <Badge
+                    key={cat}
+                    variant="outline"
+                    onClick={() => handleAddTopic(cat)}
+                    className={`cursor-pointer hover:bg-primary/10 text-sm ${
+                      isGenerating ? 'opacity-50 pointer-events-none' : ''
+                    }`}
+                  >
+                    {cat}
+                  </Badge>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
