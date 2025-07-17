@@ -299,27 +299,25 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             </AccordionItem>
         </Accordion>
 
-        {analysis.categories.length > 0 && (
-          <div className="space-y-2 pt-4 border-t">
+        <div className="space-y-2 pt-4 border-t">
             <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
             <div className="flex flex-wrap gap-1">
-              {analysis.categories
+            {analysis.categories
                 .filter((cat) => !topics.includes(cat))
                 .map((cat) => (
-                  <Badge
+                <Badge
                     key={cat}
                     variant="outline"
                     onClick={() => handleAddTopic(cat)}
                     className={`cursor-pointer hover:bg-primary/10 text-sm ${
-                      isGenerating ? 'opacity-50 pointer-events-none' : ''
+                    isGenerating ? 'opacity-50 pointer-events-none' : ''
                     }`}
-                  >
+                >
                     {cat}
-                  </Badge>
+                </Badge>
                 ))}
             </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
