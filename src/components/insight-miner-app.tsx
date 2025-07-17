@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { type ResearchPaper, type CategorizedPaper, FailedPaper, Analysis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { categorizeResearchTitles } from '@/ai/flows/categorize-research-titles';
@@ -31,6 +31,8 @@ export function InsightMinerApp() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingMessage, setProcessingMessage] = useState('');
   
+  const isCancelled = useRef(false);
+
   // Effect to sync URL search param with history selection
   useEffect(() => {
     if (!isHistoryLoading) {
@@ -74,6 +76,7 @@ export function InsightMinerApp() {
         return;
     }
     
+    isCancelled.current = false;
     setCurrentStep('processing');
     setProcessingProgress(0);
     setProcessingMessage('Starting categorization process...');
@@ -88,6 +91,7 @@ export function InsightMinerApp() {
 
     // STAGE 1: Batch Processing
     for (let i = 0; i < totalToProcess; i += BATCH_SIZE) {
+      if (isCancelled.current) break;
       const batch = papersToProcess.slice(i, i + BATCH_SIZE);
       const titles = batch.map(p => p['Document Title']);
       
@@ -124,11 +128,12 @@ export function InsightMinerApp() {
     }
     
     // STAGE 2: Individual Retries for Failed Papers
-    if (retries.length > 0) {
+    if (!isCancelled.current && retries.length > 0) {
         setProcessingMessage(`Retrying ${retries.length} failed papers individually...`);
         let retriedCount = 0;
         
         for (const paper of retries) {
+            if (isCancelled.current) break;
             try {
                 const apiKey = getNextApiKey();
                 if (!apiKey) throw new Error("No API key available for retry.");
@@ -147,6 +152,15 @@ export function InsightMinerApp() {
                 setProcessingProgress(((processedCount + retriedCount) / totalSteps) * 100);
             }
         }
+    }
+
+    if (isCancelled.current) {
+        toast({
+            title: 'Analysis Cancelled',
+            description: 'The categorization process was stopped.',
+        });
+        setCurrentStep('upload');
+        return;
     }
     
     if (analysisIdToUpdate) {
@@ -170,6 +184,10 @@ export function InsightMinerApp() {
     setTimeout(() => setCurrentStep('dashboard'), 1000);
   }, [toast, isApiKeySet, addAnalysis, getNextApiKey, updateAnalysis, history]);
 
+  const handleCancel = () => {
+    isCancelled.current = true;
+  };
+
   const handleReset = (analysisId: string) => {
     selectAnalysis(null);
     setCurrentStep('upload');
@@ -189,7 +207,7 @@ export function InsightMinerApp() {
         case 'upload':
             return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;
         case 'processing':
-            return <div className="h-full"><ProcessingView progress={processingProgress} message={processingMessage} /></div>;
+            return <div className="h-full"><ProcessingView progress={processingProgress} message={processingMessage} onCancel={handleCancel} /></div>;
         case 'dashboard':
             if (selectedAnalysis) {
                 return (
