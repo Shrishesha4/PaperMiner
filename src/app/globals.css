@@ -9,11 +9,11 @@ body {
 
 @layer base {
   :root {
-    --background: 40 50% 98%;
+    --background: 220 20% 95%;
     --foreground: 224 71.4% 4.1%;
-    --card: 40 33% 96%;
+    --card: 220 15% 97%;
     --card-foreground: 224 71.4% 4.1%;
-    --popover: 40 33% 96%;
+    --popover: 220 15% 97%;
     --popover-foreground: 224 71.4% 4.1%;
     --primary-hue: 262.1;
     --primary: var(--primary-hue) 83.3% 57.8%;
@@ -35,7 +35,7 @@ body {
     --chart-3: 39 90% 55%;
     --chart-4: 22 95% 55%;
     --chart-5: 300 85% 60%;
-    --sidebar-background: 220 14.3% 95.9%;
+    --sidebar-background: 220 15% 97%;
     --sidebar-foreground: 224 71.4% 4.1%;
     --sidebar-primary: var(--primary-hue) 83.3% 57.8%;
     --sidebar-primary-foreground: 210 20% 98%;
@@ -88,9 +88,7 @@ body {
   body {
     @apply bg-background text-foreground;
     background-attachment: fixed;
-  }
-  .dark body {
-     background-image:
+    background-image:
       radial-gradient(at 27% 37%, hsla(var(--primary-hue), 83.3%, 57.8%, 0.1) 0px, transparent 50%),
       radial-gradient(at 97% 21%, hsla(338, 70%, 61%, 0.1) 0px, transparent 50%),
       radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.1) 0px, transparent 50%),
