@@ -73,7 +73,8 @@ export function PaperDrafter() {
 
     if (!isFullRegen && analysisId) {
       const analysis = history.find(h => h.id === analysisId);
-      if (analysis && analysis.draftedPaper) {
+      // Only load a saved draft if its title matches the current one
+      if (analysis && analysis.draftedPaper && analysis.draftedPaper.title === title) {
           setPaper(analysis.draftedPaper);
           setIsLoading(false);
           return;
@@ -106,7 +107,7 @@ export function PaperDrafter() {
     }
     
     generateDraft();
-  }, [analysisId, generateDraft, title, isHistoryLoading, history]);
+  }, [analysisId, generateDraft, title, isHistoryLoading]);
 
 
   const handleSaveDraft = async () => {
