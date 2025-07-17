@@ -31,6 +31,9 @@ declare module 'jspdf' {
     }
 }
 
+const MINIMUM_CATEGORY_SIZE = 5;
+const RELATIVE_THRESHOLD_PERCENT = 0.10; // 10%
+
 export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
@@ -59,28 +62,30 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
     const allCats = Object.entries(categoryCounts)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
-  
-    // New logic: Use top 30% of categories if there are many
-    const categoryThreshold = Math.ceil(allCats.length * 0.3);
 
-    if (allCats.length > 10) { // Apply grouping only if there are enough categories to warrant it
-      const topCategories = allCats.slice(0, categoryThreshold);
-      const otherCategories = allCats.slice(categoryThreshold);
-      
-      if (otherCategories.length > 0) {
-        const otherActualValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
+    if (allCats.length === 0) {
+      return { categoryChartData: [], allCategoriesData: [] };
+    }
 
-        const smallestTopValue = topCategories[topCategories.length - 1]?.value || 1;
-        const visualOtherValue = Math.max(1, smallestTopValue * 0.9);
+    const maxCategorySize = allCats[0].value;
+    const relativeThreshold = maxCategorySize * RELATIVE_THRESHOLD_PERCENT;
 
-        const chartData = [
-          ...topCategories,
-          // Use the real value for the legend/tooltip, but the visual value for the pie slice
-          { name: 'Other', value: visualOtherValue }
-        ];
+    const topCategories = allCats.filter(
+      cat => cat.value >= MINIMUM_CATEGORY_SIZE && cat.value >= relativeThreshold
+    );
+    
+    if (topCategories.length < allCats.length) {
+      const otherCategories = allCats.filter(
+        cat => cat.value < MINIMUM_CATEGORY_SIZE || cat.value < relativeThreshold
+      );
+      const otherValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
 
-        return { categoryChartData: chartData, allCategoriesData: allCats };
-      }
+      const chartData = [
+        ...topCategories,
+        { name: 'Other', value: otherValue }
+      ];
+
+      return { categoryChartData: chartData, allCategoriesData: allCats };
     }
     
     return { categoryChartData: allCats, allCategoriesData: allCats };
