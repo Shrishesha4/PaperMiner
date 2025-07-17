@@ -205,26 +205,6 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
             <Button onClick={() => onReset(analysisId)}>
                 <Plus className="mr-2 h-4 w-4" /> New Analysis
             </Button>
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="outline" disabled={failedData.length === 0}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Re-categorize
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Re-categorize Failed Papers?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will re-run the categorization process only for the {failedData.length} paper(s) that failed previously. This will consume API credits.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onRecategorize(analysis)}>Yes, Re-categorize</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
             <Button asChild variant="outline">
                 <Link href={`/title-studio?analysisId=${analysisId}`}>
                     <Wand2 className="mr-2 h-4 w-4" /> Title Studio
