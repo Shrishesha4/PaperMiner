@@ -1,6 +1,6 @@
 
 'use client';
-import { BrainCircuit, Settings, ArrowLeft } from 'lucide-react';
+import { BrainCircuit, Settings, ArrowLeft, PanelLeft } from 'lucide-react';
 import React from 'react';
 import { useSidebar, SidebarTrigger } from './ui/sidebar';
 import { ThemeToggle } from './theme-toggle';
@@ -13,7 +13,7 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0 bg-background/70 backdrop-blur-lg">
+    <header className="fixed top-0 left-0 right-0 px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0 bg-background/70 backdrop-blur-lg z-30">
       <div className="flex items-center gap-2">
         <SidebarTrigger />
          <Link href="/" className="flex items-center gap-2">
