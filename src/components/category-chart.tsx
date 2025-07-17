@@ -72,12 +72,12 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
         <div className="w-full max-w-[250px]">
           <ul className="flex flex-col gap-1 p-2">
             {payload?.map((entry, index) => (
-              <li key={`item-${index}`} className="flex items-center justify-between gap-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                  <span>{entry.value}</span>
+              <li key={`item-${index}`} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                  <span className="break-words">{entry.value}</span>
                 </div>
-                <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
+                <span className="font-mono text-xs shrink-0">({(entry.payload as any)?.value})</span>
               </li>
             ))}
           </ul>
@@ -93,18 +93,18 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
             <li
               key={`item-${index}`}
               onClick={() => handleLegendClick(entry)}
-              className={`flex items-center justify-between gap-2 text-sm cursor-pointer rounded-md p-2
+              className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm cursor-pointer rounded-md p-2
                   ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
               `}
               style={{
                   opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
               }}
             >
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span>{entry.value}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                <span className="break-words">{entry.value}</span>
               </div>
-              <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
+              <span className="font-mono text-xs shrink-0">({(entry.payload as any)?.value})</span>
             </li>
           ))}
         </ul>
