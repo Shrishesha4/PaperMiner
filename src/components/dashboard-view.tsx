@@ -117,17 +117,19 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
 
     setIsGeneratingPdf(true);
 
-    // Find the scrollable legend inside the chart
-    const legendScrollArea = categoryChartElement.querySelector('[data-radix-scroll-area-viewport]');
-    const originalStyles = {
-        height: legendScrollArea?.style.height || '',
-        overflow: legendScrollArea?.style.overflow || '',
-    };
+    const legendScrollContainer = categoryChartElement.querySelector('.recharts-legend-wrapper') as HTMLElement | null;
+    const legendList = categoryChartElement.querySelector('.recharts-legend-wrapper ul') as HTMLElement | null;
     
-    // Temporarily change styles to capture full legend content
-    if (legendScrollArea) {
-        legendScrollArea.style.height = 'auto';
-        legendScrollArea.style.overflow = 'visible';
+    let originalContainerStyle: { height: string } | null = null;
+    let originalListStyle: { maxHeight: string; overflow: string } | null = null;
+    
+    if (legendScrollContainer && legendList) {
+        originalContainerStyle = { height: legendScrollContainer.style.height };
+        originalListStyle = { maxHeight: legendList.style.maxHeight, overflow: legendList.style.overflow };
+        
+        legendScrollContainer.style.height = 'auto';
+        legendList.style.maxHeight = 'none';
+        legendList.style.overflow = 'visible';
     }
 
     try {
@@ -167,7 +169,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
         
         const canvas = await html2canvas(categoryChartElement, {
             scale: 2,
-            backgroundColor: resolvedTheme === 'dark' ? '#1c1917' : '#f0f2f5',
+            backgroundColor: resolvedTheme === 'dark' ? '#1c1917' : '#FFFFFF',
         });
         const imgData = canvas.toDataURL('image/png');
         const imgHeight = (canvas.height * contentWidth) / canvas.width;
@@ -202,9 +204,10 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
         })
     } finally {
         // Restore original styles
-        if (legendScrollArea) {
-            legendScrollArea.style.height = originalStyles.height;
-            legendScrollArea.style.overflow = originalStyles.overflow;
+        if (legendScrollContainer && legendList && originalContainerStyle && originalListStyle) {
+            legendScrollContainer.style.height = originalContainerStyle.height;
+            legendList.style.maxHeight = originalListStyle.maxHeight;
+            legendList.style.overflow = originalListStyle.overflow;
         }
         setIsGeneratingPdf(false);
     }
