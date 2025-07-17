@@ -19,6 +19,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import Link from 'next/link';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -42,6 +43,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const { toast } = useToast();
   const [topics, setTopics] = useState<string[]>([]);
   const [numTitles, setNumTitles] = useState(3);
+  const [customInstructions, setCustomInstructions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
   const [noveltyChecks, setNoveltyChecks] = useState<Record<number, NoveltyState>>({});
@@ -78,6 +80,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
       const result = await generateBatchTitles({
         topics,
         count: numTitles,
+        customInstructions: customInstructions || undefined,
         apiKey,
       });
       onTitlesGenerated(result.titles, topics);
@@ -262,16 +265,31 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                       className="max-w-[100px]"
                     />
                 </div>
-                <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full">
-                    {isGenerating ? (
-                        <Loader2 className="mr-2 animate-spin" />
-                    ) : (
-                        <Wand2 className="mr-2" />
-                    )}
-                    Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
-                </Button>
+                 <div className="space-y-2">
+                    <Label htmlFor="custom-instructions">Custom Instructions (Optional)</Label>
+                    <Textarea
+                        id="custom-instructions"
+                        placeholder="e.g., Focus on the impact on renewable energy, use a question format..."
+                        value={customInstructions}
+                        onChange={(e) => setCustomInstructions(e.target.value)}
+                        disabled={isGenerating}
+                        className="h-24"
+                    />
+                </div>
             </div>
         </div>
+        
+        <div className="pt-4">
+             <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} className="w-full md:w-auto">
+                {isGenerating ? (
+                    <Loader2 className="mr-2 animate-spin" />
+                ) : (
+                    <Wand2 className="mr-2" />
+                )}
+                Generate {numTitles} Title{numTitles > 1 ? 's' : ''}
+            </Button>
+        </div>
+
 
         {analysis.categories.length > 0 && (
           <div className="space-y-2 pt-4 border-t">

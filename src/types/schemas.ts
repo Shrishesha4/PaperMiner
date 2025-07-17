@@ -27,6 +27,7 @@ export type CheckTitleNoveltyOutput = z.infer<typeof CheckTitleNoveltyOutputSche
 export const GenerateBatchTitlesInputSchema = z.object({
     topics: z.array(z.string()).describe('A list of topics or categories to base the new titles on.'),
     count: z.number().min(1).describe('The number of titles to generate.'),
+    customInstructions: z.string().optional().describe('Optional user-provided instructions to guide title generation.'),
     apiKey: z.string().describe('The user-provided Gemini API key.'),
 });
 export type GenerateBatchTitlesInput = z.infer<typeof GenerateBatchTitlesInputSchema>;

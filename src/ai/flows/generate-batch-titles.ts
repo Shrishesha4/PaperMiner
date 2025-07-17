@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -30,6 +31,11 @@ Each title must follow these strict conventions:
 2.  **PICO Framework**: Conceptually structured around Population/Problem, Intervention, Comparison, and Outcome where applicable.
 3.  **Variety**: Ensure the generated titles are distinct from each other.
 
+{{#if customInstructions}}
+**Custom Instructions:**
+{{{customInstructions}}}
+{{/if}}
+
 Topics to synthesize:
 {{#each topics}}
 - {{{this}}}
@@ -53,9 +59,9 @@ const generateBatchTitlesFlow = ai.defineFlow(
     inputSchema: GenerateBatchTitlesInputSchema,
     outputSchema: GenerateBatchTitlesOutputSchema,
   },
-  async ({ topics, count, apiKey }) => {
+  async ({ topics, count, customInstructions, apiKey }) => {
     const { output } = await prompt(
-      { topics, count },
+      { topics, count, customInstructions },
       { auth: apiKey }
     );
     return output!;
