@@ -189,107 +189,105 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
 
 
   return (
-    <div className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="space-y-6">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">{analysisName}</h2>
-            <p className="text-muted-foreground">
-              {data.length} papers analyzed. Found {allUniqueCategories.length - 1} unique categories.
-            </p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Button onClick={() => onReset(analysisId)}>
-                <Plus className="mr-2 h-4 w-4" /> New Analysis
-            </Button>
-            <Button asChild variant="outline">
-                <Link href={`/title-studio?analysisId=${analysisId}`}>
-                    <Wand2 className="mr-2 h-4 w-4" /> Title Studio
-                </Link>
-            </Button>
-            <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
-                {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-                PDF
-            </Button>
-            <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
-                <Download className="mr-2 h-4 w-4" /> CSV
-            </Button>
-          </div>
+    <div className="space-y-6">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">{analysisName}</h2>
+          <p className="text-muted-foreground">
+            {data.length} papers analyzed. Found {allUniqueCategories.length - 1} unique categories.
+          </p>
         </div>
-        
-        <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-3">
-              <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Category Distribution</CardTitle>
-                    <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
-                  </CardHeader>
-                  <CardContent ref={categoryChartRef}>
-                    <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
-                  </CardContent>
-              </Card>
-              <Card>
-                  <CardHeader>
-                    <CardTitle>Top Keywords</CardTitle>
-                    <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <KeywordDisplay data={filteredData} />
-                  </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div>
-                        <CardTitle>Research Papers</CardTitle>
-                        <CardDescription>
-                            Displaying {filteredData.length} of {data.length} categorized papers.
-                        </CardDescription>
-                    </div>
-                    <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-                        <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
-                            <SelectContent>
-                            {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
-                            <SelectContent>
-                            {allUniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+          <Button onClick={() => onReset(analysisId)}>
+              <Plus className="mr-2 h-4 w-4" /> New Analysis
+          </Button>
+          <Button asChild variant="outline">
+              <Link href={`/title-studio?analysisId=${analysisId}`}>
+                  <Wand2 className="mr-2 h-4 w-4" /> Title Studio
+              </Link>
+          </Button>
+          <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
+              {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+              PDF
+          </Button>
+          <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> CSV
+          </Button>
+        </div>
+      </div>
+      
+      <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Category Distribution</CardTitle>
+                  <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <PapersTable data={filteredData} />
+                <CardContent ref={categoryChartRef}>
+                  <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
                 </CardContent>
             </Card>
-        </div>
+            <Card>
+                <CardHeader>
+                  <CardTitle>Top Keywords</CardTitle>
+                  <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <KeywordDisplay data={filteredData} />
+                </CardContent>
+            </Card>
+          </div>
 
-        {failedData.length > 0 && (
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="failed-papers">
-              <Card>
-                <AccordionTrigger className="p-6">
-                  <div className="flex flex-col items-start">
-                    <CardTitle>Failed Categorization</CardTitle>
-                    <CardDescription className="mt-1">
-                      {failedData.length} paper(s) could not be categorized.
-                    </CardDescription>
+          <Card>
+              <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                  <div>
+                      <CardTitle>Research Papers</CardTitle>
+                      <CardDescription>
+                          Displaying {filteredData.length} of {data.length} categorized papers.
+                      </CardDescription>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <CardContent>
-                    <FailedPapersTable data={failedData} />
-                  </CardContent>
-                </AccordionContent>
-              </Card>
-            </AccordionItem>
-          </Accordion>
-        )}
+                  <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+                      <Select value={filters.year} onValueChange={handleFilterChange('year')}>
+                          <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
+                          <SelectContent>
+                          {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                      <Select value={filters.category} onValueChange={handleFilterChange('category')}>
+                          <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
+                          <SelectContent>
+                          {allUniqueCategories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </CardHeader>
+              <CardContent>
+                  <PapersTable data={filteredData} />
+              </CardContent>
+          </Card>
       </div>
+
+      {failedData.length > 0 && (
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="failed-papers">
+            <Card>
+              <AccordionTrigger className="p-6">
+                <div className="flex flex-col items-start">
+                  <CardTitle>Failed Categorization</CardTitle>
+                  <CardDescription className="mt-1">
+                    {failedData.length} paper(s) could not be categorized.
+                  </CardDescription>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <CardContent>
+                  <FailedPapersTable data={failedData} />
+                </CardContent>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
+        </Accordion>
+      )}
     </div>
   );
 }

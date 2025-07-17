@@ -374,75 +374,69 @@ export function PaperDrafter() {
   }
 
   return (
-    <div className="flex h-full flex-col bg-muted/20">
-      <div className="sticky top-0 z-20">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b bg-background/80 p-4 backdrop-blur-lg sm:p-3">
-          <div className="flex-grow overflow-hidden">
-            <h1 className="truncate text-xl font-bold" title={title}>
-              {title}
+    <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="truncate text-3xl font-bold tracking-tight" title={title}>
+                {title}
             </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
-              {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
-              <span className="ml-2 hidden sm:inline">Save Draft</span>
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={isLoading || !!error || isAiWorking}>
-                  <RefreshCw />
-                  <span className="ml-2 hidden sm:inline">Regen All</span>
+            <div className="flex flex-wrap items-center gap-2">
+                <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
+                    {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+                    <span className="ml-2 hidden sm:inline">Save Draft</span>
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will regenerate the entire paper, replacing all current content and edits. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => generateDraft(true)}>
-                    Yes, Regenerate
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
-              {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
-              <span className="ml-2 hidden sm:inline">.docx</span>
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
-                  <FileUp />
-                  <span className="ml-2 hidden sm:inline">G Docs</span>
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={isLoading || !!error || isAiWorking}>
+                    <RefreshCw />
+                    <span className="ml-2 hidden sm:inline">Regen All</span>
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This will regenerate the entire paper, replacing all current content and edits. This action cannot be undone.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => generateDraft(true)}>
+                        Yes, Regenerate
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+                <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
+                {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+                <span className="ml-2 hidden sm:inline">.docx</span>
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Ready to Export</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    The paper content has been copied to your clipboard. Click the button below to open a new Google Doc, where you can paste the content.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => window.open('https://docs.new', '_blank')}>
-                    Open Google Docs
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
+                    <FileUp />
+                    <span className="ml-2 hidden sm:inline">G Docs</span>
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Ready to Export</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        The paper content has been copied to your clipboard. Click the button below to open a new Google Doc, where you can paste the content.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => window.open('https://docs.new', '_blank')}>
+                        Open Google Docs
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8">
         <div className="space-y-6">
-          {renderContent()}
+            {renderContent()}
         </div>
-      </div>
     </div>
   );
 }

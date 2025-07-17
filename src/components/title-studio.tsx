@@ -173,9 +173,9 @@ export function TitleStudio() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b shrink-0 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b shrink-0 gap-4 p-4 mb-4">
         <div>
-          <h1 className="text-xl font-bold">Title Studio</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Title Studio</h1>
           <p className="text-sm text-muted-foreground">
             {analysis.name === 'From Scratch' || analysis.name.startsWith('Scratchpad:')
               ? 'Generating new title ideas' 
