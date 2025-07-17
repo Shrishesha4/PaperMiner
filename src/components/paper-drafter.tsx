@@ -376,7 +376,7 @@ export function PaperDrafter() {
   return (
     <div className="flex h-full flex-col bg-muted/20">
       <div className="sticky top-0 z-20">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 border-b bg-background/80 p-4 backdrop-blur-lg sm:p-3">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b bg-background/80 p-4 backdrop-blur-lg sm:p-3">
           <div className="flex-grow overflow-hidden">
             <h1 className="truncate text-xl font-bold" title={title}>
               {title}
@@ -439,7 +439,7 @@ export function PaperDrafter() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
+        <div className="space-y-6">
           {renderContent()}
         </div>
       </div>
