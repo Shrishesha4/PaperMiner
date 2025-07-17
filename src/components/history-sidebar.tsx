@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useHistory } from '@/hooks/use-history';
 import { Button } from './ui/button';
-import { FileText, Lightbulb, Trash2, FileEdit } from 'lucide-react';
+import { FileText, Lightbulb, Trash2, FileEdit, Settings } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { Separator } from './ui/separator';
 
 export function HistorySidebar() {
-  const { history, selectAnalysis, selectedAnalysis, clearHistory, removeAnalysis, removeDraft, isLoading } = useHistory();
+  const { history, selectAnalysis, selectedAnalysis, removeAnalysis, removeDraft, isLoading } = useHistory();
   const { state } = useSidebar();
 
   const isScratchSelected = selectedAnalysis?.name === 'From Scratch';
@@ -173,30 +173,17 @@ export function HistorySidebar() {
           </>
         )}
       </SidebarContent>
-      <SidebarFooter className="group-data-[collapsible=icon]:hidden p-2">
-        {history.length > 0 && (
-            <AlertDialog>
-            <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Clear History
-                </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete all
-                    of your analysis history and saved drafts.
-                </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={clearHistory}>Delete All</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-            </AlertDialog>
-        )}
+      <SidebarFooter className="p-2">
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip={{children: "Settings", side: 'right', align: 'center'}}>
+                    <Link href="/settings">
+                        <Settings />
+                        <span>Settings</span>
+                    </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );

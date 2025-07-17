@@ -16,7 +16,7 @@ import { Loader2, Wand2, Copy, SearchCheck, Check, Info, FileText } from 'lucide
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { NoveltyResultCard } from './novelty-result-card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { TooltipProvider } from './ui/tooltip';
 import Link from 'next/link';
 
 interface TitleStudioBatchProps {
@@ -164,49 +164,42 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                       <span className="ml-2">{copiedStates[index] ? 'Copied!' : 'Copy'}</span>
                     </Button>
                     
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
-                          disabled={noveltyState?.isLoading || isFromScratch}
-                        >
-                          {noveltyState?.isLoading ? (
-                            <Loader2 className="animate-spin" />
-                          ) : noveltyState?.result ? (
-                             <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
-                              Score: {noveltyState.result.noveltyScore.toFixed(2)}
-                            </span>
-                          ) : (
-                            isFromScratch ? (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <span className="flex items-center cursor-not-allowed"><Info /></span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Novelty check requires a dataset.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                    <TooltipProvider>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
+                            disabled={noveltyState?.isLoading || isFromScratch}
+                          >
+                            {noveltyState?.isLoading ? (
+                              <Loader2 className="animate-spin" />
+                            ) : noveltyState?.result ? (
+                              <span className={getNoveltyScoreColor(noveltyState.result.noveltyScore)}>
+                                Score: {noveltyState.result.noveltyScore.toFixed(2)}
+                              </span>
                             ) : (
-                                <SearchCheck />
-                            )
-                          )}
-                           <span className="ml-2">{noveltyState?.result ? 'View Details' : (isFromScratch ? 'Novelty Check' : 'Check Novelty')}</span>
-                        </Button>
-                      </DialogTrigger>
-                      {noveltyState?.result && (
-                         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Novelty Analysis</DialogTitle>
-                          </DialogHeader>
-                          <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
-                          <NoveltyResultCard result={noveltyState.result} />
-                        </DialogContent>
-                      )}
-                    </Dialog>
+                              isFromScratch ? (
+                                <Info />
+                              ) : (
+                                  <SearchCheck />
+                              )
+                            )}
+                            <span className="ml-2">{noveltyState?.result ? 'View Details' : (isFromScratch ? 'Novelty Check' : 'Check Novelty')}</span>
+                          </Button>
+                        </DialogTrigger>
+                        {noveltyState?.result && (
+                          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Novelty Analysis</DialogTitle>
+                            </DialogHeader>
+                            <p className="text-sm border-l-4 pl-3 py-1 bg-muted">"{title}"</p>
+                            <NoveltyResultCard result={noveltyState.result} />
+                          </DialogContent>
+                        )}
+                      </Dialog>
+                    </TooltipProvider>
 
                     <Button asChild size="sm" variant="default">
                         <Link href={`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${analysis.id}`}>
