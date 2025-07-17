@@ -4,7 +4,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { type Analysis } from '@/types';
 import { useToast } from './use-toast';
-import type { CategoryHierarchy } from '@/components/category-chart';
 
 interface HistoryContextType {
   history: Analysis[];
@@ -13,6 +12,7 @@ interface HistoryContextType {
   updateAnalysis: (id: string, updates: Partial<Analysis>) => void;
   selectAnalysis: (id: string | null) => void;
   removeAnalysis: (id: string) => void;
+  archiveAnalysis: (id: string) => void;
   removeDraft: (analysisId: string) => void;
   clearHistory: () => void;
   isLoading: boolean;
@@ -82,10 +82,6 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     const newHistory = history.map(item => {
         if (item.id === id) {
             updatedAnalysis = { ...item, ...updates };
-            // If categoryHierarchy is explicitly set to undefined, remove it.
-            if ('categoryHierarchy' in updates && updates.categoryHierarchy === undefined) {
-                delete updatedAnalysis.categoryHierarchy;
-            }
             return updatedAnalysis;
         }
         return item;
@@ -108,11 +104,19 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
-        setSelectedAnalysis(null);
+        // Find the most recent non-draft-only analysis or null
+        const mostRecent = history.find(h => h.categorizedPapers.length > 0) || null;
+        setSelectedAnalysis(mostRecent);
         return;
     }
     const analysisToSelect = history.find(item => item.id === id);
-    setSelectedAnalysis(analysisToSelect || null);
+    if(analysisToSelect && analysisToSelect.categorizedPapers.length > 0) {
+        setSelectedAnalysis(analysisToSelect || null);
+    } else {
+        // This case handles selecting an archived draft from the sidebar, which shouldn't happen,
+        // but as a fallback we select nothing to avoid showing an empty dashboard.
+        setSelectedAnalysis(null);
+    }
   }, [history]);
   
   const removeAnalysis = useCallback((id: string) => {
@@ -130,6 +134,36 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [selectedAnalysis, history, toast]);
+
+  const archiveAnalysis = useCallback((id: string) => {
+    let analysisName = '';
+    const newHistory = history.map(item => {
+      if (item.id === id) {
+        analysisName = item.name;
+        // Keep draft and core identifiers, remove analysis data
+        return {
+          id: item.id,
+          name: `Archived Draft from: ${item.name}`,
+          date: item.date,
+          draftedPaper: item.draftedPaper,
+          categorizedPapers: [],
+          failedPapers: [],
+        };
+      }
+      return item;
+    });
+
+    setHistory(newHistory as Analysis[]); // Cast as we are modifying the shape
+
+    if (selectedAnalysis?.id === id) {
+      setSelectedAnalysis(null); // Deselect as the analysis data is gone
+    }
+
+    toast({
+      title: "Analysis Archived",
+      description: `Analysis data for "${analysisName}" removed, draft kept.`,
+    });
+  }, [history, selectedAnalysis, toast]);
 
   const removeDraft = useCallback((analysisId: string) => {
     let draftTitle = '';
@@ -165,7 +199,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   }, [toast]);
 
   return (
-    <HistoryContext.Provider value={{ history, selectedAnalysis, addAnalysis, updateAnalysis, selectAnalysis, removeAnalysis, removeDraft, clearHistory, isLoading }}>
+    <HistoryContext.Provider value={{ history, selectedAnalysis, addAnalysis, updateAnalysis, selectAnalysis, removeAnalysis, archiveAnalysis, removeDraft, clearHistory, isLoading }}>
       {children}
     </HistoryContext.Provider>
   );

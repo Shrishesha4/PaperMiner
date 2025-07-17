@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -31,13 +31,64 @@ import {
 } from "@/components/ui/alert-dialog";
 import Link from 'next/link';
 import { Separator } from './ui/separator';
+import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
+
+function DeleteAnalysisDialog({ item, onConfirm, onArchive, children }: { item: any, onConfirm: () => void, onArchive: () => void, children: React.ReactNode }) {
+    const [keepDraft, setKeepDraft] = useState(true);
+    const hasDraft = !!item.draftedPaper;
+
+    const handleConfirm = () => {
+        if (hasDraft && keepDraft) {
+            onArchive();
+        } else {
+            onConfirm();
+        }
+    };
+
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                {children}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action will permanently delete the analysis for <span className="font-bold">{item.name}</span>.
+                        {hasDraft && " This analysis has a draft associated with it."}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                {hasDraft && (
+                    <div className="flex items-center space-x-2 my-4">
+                        <Checkbox
+                            id="keep-draft"
+                            checked={keepDraft}
+                            onCheckedChange={(checked) => setKeepDraft(!!checked)}
+                        />
+                        <Label htmlFor="keep-draft" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            Keep the associated paper draft
+                        </Label>
+                    </div>
+                )}
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleConfirm}>
+                        {hasDraft && keepDraft ? 'Archive and Keep Draft' : 'Delete Everything'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
 
 export function HistorySidebar() {
-  const { history, selectAnalysis, selectedAnalysis, removeAnalysis, removeDraft, isLoading } = useHistory();
+  const { history, selectAnalysis, selectedAnalysis, removeAnalysis, removeDraft, archiveAnalysis, isLoading } = useHistory();
   const { state, setOpenMobile } = useSidebar();
 
-  const isScratchSelected = selectedAnalysis?.name === 'From Scratch';
+  const isScratchSelected = selectedAnalysis?.name === 'From Scratch' || (!selectedAnalysis && !isLoading);
   const drafts = history.filter(item => !!item.draftedPaper);
+  const analysisHistory = history.filter(item => item.categorizedPapers.length > 0 || (item.name.startsWith("Scratchpad:") && !item.draftedPaper));
 
   const handleMobileNav = () => {
     setOpenMobile(false);
@@ -98,12 +149,12 @@ export function HistorySidebar() {
                                     tooltip={{children: item.draftedPaper?.title, side: 'right', align: 'center'}}
                                     onClick={handleMobileNav}
                                 >
-                                     <Link href={`/paper-drafter?analysisId=${item.id}&title=${encodeURIComponent(item.draftedPaper!.title)}`}>
+                                     <Link href={`/paper-drafter?title=${encodeURIComponent(item.draftedPaper!.title)}&analysisId=${item.id}`}>
                                         <FileEdit className="flex-shrink-0"/>
                                         <div className="flex flex-col text-left overflow-hidden">
                                             <span className="font-medium truncate">{item.draftedPaper?.title}</span>
                                             <span className="text-xs text-muted-foreground truncate">
-                                                Based on: {item.name}
+                                                Based on: {item.name.replace(/^Archived Draft from: /, '')}
                                             </span>
                                         </div>
                                     </Link>
@@ -118,12 +169,13 @@ export function HistorySidebar() {
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the draft for <span className="font-bold">{item.draftedPaper?.title}</span>, but the original analysis data will be kept.
+                                        This action cannot be undone. This will permanently delete the draft for <span className="font-bold">{item.draftedPaper?.title}</span>.
+                                        {item.categorizedPapers.length === 0 && ' The original analysis data has been archived.'}
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => removeDraft(item.id)}>Delete Draft</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => item.categorizedPapers.length > 0 ? removeDraft(item.id) : removeAnalysis(item.id)}>Delete Draft</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                                 </AlertDialog>
@@ -133,54 +185,46 @@ export function HistorySidebar() {
                 </SidebarGroup>
             )}
 
-             <Separator className="my-2" />
+             {analysisHistory.length > 0 && <Separator className="my-2" />}
 
-             <SidebarGroup>
-                <SidebarGroupLabel>Analysis History</SidebarGroupLabel>
-                <SidebarMenu>
-                    {history.map((item) => (
-                        <SidebarMenuItem key={item.id}>
-                            <SidebarMenuButton
-                                onClick={() => {
-                                  selectAnalysis(item.id);
-                                  handleMobileNav();
-                                }}
-                                isActive={selectedAnalysis?.id === item.id}
-                                className="h-auto py-2 justify-start"
-                                tooltip={{children: item.name, side: 'right', align: 'center'}}
-                            >
-                                <FileText className="flex-shrink-0"/>
-                                <div className="flex flex-col text-left overflow-hidden">
-                                    <span className="font-medium truncate">{item.name}</span>
-                                    <span className="text-xs text-muted-foreground truncate">
-                                        {new Date(item.date).toLocaleDateString()} - {item.categorizedPapers.length} papers
-                                    </span>
-                                </div>
-                            </SidebarMenuButton>
+             {analysisHistory.length > 0 && (
+                <SidebarGroup>
+                    <SidebarGroupLabel>Analysis History</SidebarGroupLabel>
+                    <SidebarMenu>
+                        {analysisHistory.map((item) => (
+                            <SidebarMenuItem key={item.id}>
+                                <SidebarMenuButton
+                                    onClick={() => {
+                                      selectAnalysis(item.id);
+                                      handleMobileNav();
+                                    }}
+                                    isActive={selectedAnalysis?.id === item.id}
+                                    className="h-auto py-2 justify-start"
+                                    tooltip={{children: item.name, side: 'right', align: 'center'}}
+                                >
+                                    <FileText className="flex-shrink-0"/>
+                                    <div className="flex flex-col text-left overflow-hidden">
+                                        <span className="font-medium truncate">{item.name}</span>
+                                        <span className="text-xs text-muted-foreground truncate">
+                                            {new Date(item.date).toLocaleDateString()} - {item.categorizedPapers.length} papers
+                                        </span>
+                                    </div>
+                                </SidebarMenuButton>
 
-                            <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-100 md:opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
-                                    <Trash2 className="h-4 w-4 text-destructive"/>
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the analysis for <span className="font-bold">{item.name}</span> and any associated draft.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => removeAnalysis(item.id)}>Delete Analysis</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                            </AlertDialog>
-                        </SidebarMenuItem>
-                    ))}
-                 </SidebarMenu>
-             </SidebarGroup>
+                                <DeleteAnalysisDialog
+                                    item={item}
+                                    onConfirm={() => removeAnalysis(item.id)}
+                                    onArchive={() => archiveAnalysis(item.id)}
+                                >
+                                    <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-100 md:opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
+                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                    </Button>
+                                </DeleteAnalysisDialog>
+                            </SidebarMenuItem>
+                        ))}
+                     </SidebarMenu>
+                </SidebarGroup>
+             )}
           </>
         )}
       </SidebarContent>
