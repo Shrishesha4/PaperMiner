@@ -11,7 +11,6 @@ import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
 import jsPDF from 'jspdf';
 import type { ExistingPaper } from '@/types/schemas';
-import Link from 'next/link';
 
 
 type AnalysisData = {
@@ -175,7 +174,7 @@ export function TitleStudio() {
 
   return (
     <div className="flex h-full flex-col">
-       <div className="p-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b shrink-0 gap-4 mb-4">
+       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b shrink-0 gap-4 pb-4">
         <div className='flex-1'>
             <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
               <ArrowLeft className="mr-2 h-4 w-4"/>
