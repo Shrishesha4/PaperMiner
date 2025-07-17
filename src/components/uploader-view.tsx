@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { UploadCloud, Loader2, ArrowRight } from 'lucide-react';
+import { UploadCloud, Loader2, ArrowRight, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { type ResearchPaper } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -181,12 +181,19 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
                 </form>
                 </Card>
                 <div className="mt-8 text-center">
-                <p className="text-muted-foreground">Or, start from scratch:</p>
-                <Button asChild variant="link" className="text-base">
-                    <Link href="/title-studio">
-                        Go to Title Studio <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
+                    <p className="text-muted-foreground">Or, explore other options:</p>
+                    <div className="flex items-center justify-center gap-4 mt-2">
+                        <Button asChild variant="link" className="text-base">
+                            <Link href="/title-studio">
+                                Go to Title Studio <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button asChild variant="link" className="text-base">
+                            <Link href="/guides">
+                                Show Guide <BookOpen className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
             </div>
             <div className="hidden lg:flex items-center justify-center">
