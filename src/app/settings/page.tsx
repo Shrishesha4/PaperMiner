@@ -2,6 +2,7 @@
 'use client';
 
 import { ApiKeyDialog } from "@/components/api-key-dialog";
+import { ThemeCustomizer } from "@/components/theme-customizer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,18 @@ export default function SettingsPage() {
                         </Link>
                     </Button>
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Theme</CardTitle>
+                        <CardDescription>
+                            Customize the look and feel of the application.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ThemeCustomizer />
+                    </CardContent>
+                </Card>
                 
                 <Card>
                     <CardHeader>

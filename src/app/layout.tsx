@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from '@/components/providers';
 import { ThemeProvider } from '@/components/theme-provider';
+import { CustomThemeProvider } from '@/hooks/use-theme';
 
 export const metadata: Metadata = {
   title: 'PaperMiner',
@@ -28,10 +29,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Providers>
-            {children}
-            <Toaster />
-          </Providers>
+          <CustomThemeProvider>
+            <Providers>
+              {children}
+              <Toaster />
+            </Providers>
+          </CustomThemeProvider>
         </ThemeProvider>
       </body>
     </html>
