@@ -288,103 +288,103 @@ export function PaperDrafter() {
     }
 
     return (
-        <div className="mx-auto w-full max-w-4xl">
-             {paper.sections.map((section, index) => {
-                const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
-                const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
-                const isSectionLoading = isSectionRefining || isSectionRegenerating;
+        <>
+            {paper.sections.map((section, index) => {
+            const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
+            const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
+            const isSectionLoading = isSectionRefining || isSectionRegenerating;
 
-                return (
-                <Card key={index} data-section-index={index}>
-                    <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
-                        <CardTitle className="text-2xl font-bold">{section.title}</CardTitle>
-                        <div className="flex gap-2 shrink-0">
-                             <AlertDialog onOpenChange={() => setRefinePrompt('')}>
-                                <AlertDialogTrigger asChild>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        disabled={isAiWorking}
-                                    >
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Refine
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Refine "{section.title}"</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Provide specific instructions for how the AI should rewrite this section. Be descriptive for the best results.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <div className="grid gap-2 py-4">
-                                        <Label htmlFor="refine-prompt">Your instructions</Label>
-                                        <Textarea 
-                                            id="refine-prompt"
-                                            placeholder="e.g., Make this more formal and academic, or expand on the proposed methodology..."
-                                            value={refinePrompt}
-                                            onChange={(e) => setRefinePrompt(e.target.value)}
-                                        />
-                                    </div>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                        onClick={() => handleRefineSection(index)}
-                                        disabled={!refinePrompt || refinementState.isRefining}
-                                    >
-                                       {refinementState.isRefining && refinementState.sectionIndex === index ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : null}
-                                        Submit Refinement
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+            return (
+            <Card key={index} data-section-index={index}>
+                <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
+                    <CardTitle className="text-2xl font-bold">{section.title}</CardTitle>
+                    <div className="flex gap-2 shrink-0">
+                            <AlertDialog onOpenChange={() => setRefinePrompt('')}>
+                            <AlertDialogTrigger asChild>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    disabled={isAiWorking}
+                                >
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Refine
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Refine "{section.title}"</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Provide specific instructions for how the AI should rewrite this section. Be descriptive for the best results.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <div className="grid gap-2 py-4">
+                                    <Label htmlFor="refine-prompt">Your instructions</Label>
+                                    <Textarea 
+                                        id="refine-prompt"
+                                        placeholder="e.g., Make this more formal and academic, or expand on the proposed methodology..."
+                                        value={refinePrompt}
+                                        onChange={(e) => setRefinePrompt(e.target.value)}
+                                    />
+                                </div>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                    onClick={() => handleRefineSection(index)}
+                                    disabled={!refinePrompt || refinementState.isRefining}
+                                >
+                                    {refinementState.isRefining && refinementState.sectionIndex === index ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : null}
+                                    Submit Refinement
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
 
-                            <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleRegenerateSection(index)}
-                                disabled={isAiWorking}
-                            >
-                                {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <RefreshCw className="mr-2 h-4 w-4" />
-                                )}
-                                Regenerate
-                            </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleRegenerateSection(index)}
+                            disabled={isAiWorking}
+                        >
+                            {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                            )}
+                            Regenerate
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="relative">
+                    {isSectionLoading && (
+                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
-                    </CardHeader>
-                    <CardContent className="relative">
-                        {isSectionLoading && (
-                            <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-10">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                        )}
-                        <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
-                           {section.content.split('\n').map((paragraph, pIndex) => (
-                                <p key={pIndex}>{paragraph}</p>
-                            ))}
-                        </article>
-                    </CardContent>
-                </Card>
-             )})}
-        </div>
+                    )}
+                    <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
+                        {section.content.split('\n').map((paragraph, pIndex) => (
+                            <p key={pIndex}>{paragraph}</p>
+                        ))}
+                    </article>
+                </CardContent>
+            </Card>
+            )})}
+        </>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-4xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-             <div className="flex items-center gap-4">
-                 <Button asChild variant="outline" size="icon">
+             <div className="flex-1 min-w-0">
+                <Button asChild variant="outline" size="sm" className="mb-4">
                     <Link href="/">
-                        <ArrowLeft />
-                        <span className="sr-only">Back to App</span>
+                        <ArrowLeft className="mr-2 h-4 w-4"/>
+                        Back to App
                     </Link>
                 </Button>
-                <h1 className="truncate text-3xl font-bold tracking-tight" title={title}>
+                <h1 className="text-3xl font-bold tracking-tight" title={title}>
                     {title}
                 </h1>
             </div>
@@ -444,11 +444,7 @@ export function PaperDrafter() {
             </div>
         </div>
         
-        <div className="space-y-6">
-            {renderContent()}
-        </div>
+        {renderContent()}
     </div>
   );
 }
-
-    
