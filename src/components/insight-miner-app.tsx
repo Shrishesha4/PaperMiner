@@ -35,33 +35,43 @@ export function InsightMinerApp() {
 
   // Effect to sync URL search param with history selection
   useEffect(() => {
-    if (!isHistoryLoading) {
-        const analysisIdFromUrl = searchParams.get('analysisId');
-        if (analysisIdFromUrl) {
+    if (isHistoryLoading) return;
+    
+    const analysisIdFromUrl = searchParams.get('analysisId');
+    if (analysisIdFromUrl) {
+        // Only select if it's different from the currently selected one
+        if (selectedAnalysis?.id !== analysisIdFromUrl) {
             selectAnalysis(analysisIdFromUrl);
-        } else {
+        }
+    } else {
+        // If there's no ID in the URL, clear the selection
+        if (selectedAnalysis !== null) {
             selectAnalysis(null);
         }
     }
+  // This effect should ONLY re-run when the URL's analysisId or history loading state changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isHistoryLoading]);
-
+  
+  // Effect to determine which main view to show (upload vs dashboard)
   useEffect(() => {
-    if (!isHistoryLoading) {
-        if (selectedAnalysis) {
-            setCurrentStep('dashboard');
-            // Ensure URL reflects the selected analysis
-            if (searchParams.get('analysisId') !== selectedAnalysis.id) {
-                router.replace(`/?analysisId=${selectedAnalysis.id}`, { scroll: false });
-            }
-        } else {
-            setCurrentStep('upload');
-            // Clear analysisId from URL if no analysis is selected
-            if (searchParams.has('analysisId')) {
-                 router.replace(`/`, { scroll: false });
-            }
-        }
+    if (isHistoryLoading) return;
+  
+    if (selectedAnalysis) {
+      setCurrentStep('dashboard');
+      // Update URL if it doesn't match the selected analysis
+      const analysisIdFromUrl = searchParams.get('analysisId');
+      if (analysisIdFromUrl !== selectedAnalysis.id) {
+        router.replace(`/?analysisId=${selectedAnalysis.id}`, { scroll: false });
+      }
+    } else {
+      setCurrentStep('upload');
+      // If no analysis is selected, make sure URL is clean
+      if (searchParams.has('analysisId')) {
+        router.replace(`/`, { scroll: false });
+      }
     }
+  // This effect depends on the selected analysis and history loading state.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAnalysis, isHistoryLoading]);
 
@@ -172,17 +182,22 @@ export function InsightMinerApp() {
             });
         }
     } else {
-        addAnalysis({
+        const newAnalysis = addAnalysis({
             name: fileName,
             categorizedPapers: results,
             failedPapers: finalFailed,
         });
+         // The new analysis is automatically selected, so no need to call setCurrentStep here.
+         // The useEffect for selectedAnalysis will handle it.
+         router.push(`/?analysisId=${newAnalysis.id}`);
     }
 
     setProcessingMessage('Analysis complete!');
     setProcessingProgress(100);
-    setTimeout(() => setCurrentStep('dashboard'), 1000);
-  }, [toast, isApiKeySet, addAnalysis, getNextApiKey, updateAnalysis, history]);
+    setTimeout(() => {
+        // Let the useEffect handle the step change based on selection
+    }, 1000);
+  }, [toast, isApiKeySet, addAnalysis, getNextApiKey, updateAnalysis, history, router]);
 
   const handleCancel = () => {
     isCancelled.current = true;
@@ -217,7 +232,8 @@ export function InsightMinerApp() {
                     />
                 );
             }
-            // If no analysis is selected (e.g., history is cleared), go to uploader
+            // Fallback to upload if dashboard is current step but no analysis is selected
+            setCurrentStep('upload');
             return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;
         default:
             return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;

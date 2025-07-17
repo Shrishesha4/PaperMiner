@@ -104,19 +104,11 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
   const selectAnalysis = useCallback((id: string | null) => {
     if (id === null) {
-        // Find the most recent non-draft-only analysis or null
-        const mostRecent = history.find(h => h.categorizedPapers.length > 0) || null;
-        setSelectedAnalysis(mostRecent);
+        setSelectedAnalysis(null);
         return;
     }
     const analysisToSelect = history.find(item => item.id === id);
-    if(analysisToSelect && analysisToSelect.categorizedPapers.length > 0) {
-        setSelectedAnalysis(analysisToSelect || null);
-    } else {
-        // This case handles selecting an archived draft from the sidebar, which shouldn't happen,
-        // but as a fallback we select nothing to avoid showing an empty dashboard.
-        setSelectedAnalysis(null);
-    }
+    setSelectedAnalysis(analysisToSelect || null);
   }, [history]);
   
   const removeAnalysis = useCallback((id: string) => {
