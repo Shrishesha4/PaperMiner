@@ -1,26 +1,30 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { CategorizedPaper } from '@/types';
-import { Pie, PieChart, ResponsiveContainer, Cell, Label } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
 interface CategoryChartProps {
   data: CategorizedPaper[];
-  onCategorySelect: (category: string) => void;
+  onCategorySelect: (category: string | null) => void;
 }
 
 const MAX_VISIBLE_CATEGORIES = 9; // Show top 9 + "Other"
+const COLORS = [
+  "#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F", 
+  "#0088FE", "#FFBB28", "#FF847C", "#E27D60", "#A4DE6C"
+];
 
 export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
   const { chartData, chartConfig, totalPapers } = useMemo(() => {
     const categoryCounts = data.reduce(
       (acc, paper) => {
@@ -50,18 +54,34 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
     
     const config: ChartConfig = {};
     finalChartData.forEach((item, index) => {
-      const color = `hsl(var(--chart-${(index % 5) + 1}))`;
+      const color = COLORS[index % COLORS.length];
       config[item.name] = {
         label: item.name,
         color: color,
       };
-      item.fill = color; // Assign color directly for Cell component
+      item.fill = color;
     });
 
     const total = finalChartData.reduce((acc, curr) => acc + curr.papers, 0);
 
     return { chartData: finalChartData, chartConfig: config, totalPapers: total };
   }, [data]);
+
+  const handlePieClick = (item: any) => {
+    const clickedCategory = item.name;
+    const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
+    setSelectedCategory(newSelectedCategory);
+    onCategorySelect(newSelectedCategory);
+  };
+
+  const handleLegendClick = (payload: any) => {
+    const clickedCategory = payload.value;
+    const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
+    setSelectedCategory(newSelectedCategory);
+    onCategorySelect(newSelectedCategory);
+  };
+
+  const selectedDataPoint = selectedCategory ? chartData.find(d => d.name === selectedCategory) : null;
 
   if (chartData.length === 0) {
     return (
@@ -84,25 +104,29 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
               data={chartData}
               dataKey="papers"
               nameKey="name"
-              innerRadius="60%" // This creates the donut shape
+              innerRadius="60%"
               outerRadius="80%"
               strokeWidth={2}
-              onClick={(item: any) => onCategorySelect(item.name)}
+              onClick={handlePieClick}
               paddingAngle={2}
             >
                 {chartData.map((entry) => (
-                    <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                    <Cell 
+                        key={`cell-${entry.name}`} 
+                        fill={entry.fill} 
+                        opacity={selectedCategory ? (entry.name === selectedCategory ? 1 : 0.3) : 1}
+                    />
                 ))}
                 <Label
                     content={({ viewBox }) => {
                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                             return (
                                 <>
-                                <text x={viewBox.cx} y={viewBox.cy - 10} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold">
-                                    {totalPapers.toLocaleString()}
+                                <text x={viewBox.cx} y={viewBox.cy - 10} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => handlePieClick({name: null})}>
+                                    {(selectedDataPoint ? selectedDataPoint.papers : totalPapers).toLocaleString()}
                                 </text>
-                                <text x={viewBox.cx} y={viewBox.cy + 15} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm">
-                                    Papers
+                                <text x={viewBox.cx} y={viewBox.cy + 15} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => handlePieClick({name: null})}>
+                                    {selectedDataPoint ? selectedDataPoint.name : 'Total Papers'}
                                 </text>
                                 </>
                             );
@@ -110,9 +134,15 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     }}
                  />
             </Pie>
-            <ChartLegend
-              content={<ChartLegendContent nameKey="name" />}
-              className="flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+            <Legend
+              onClick={handleLegendClick}
+              verticalAlign="bottom"
+              wrapperStyle={{paddingTop: 20}}
+              formatter={(value, entry) => (
+                <span style={{ color: selectedCategory === value ? 'var(--foreground)' : 'var(--muted-foreground)', opacity: selectedCategory ? (selectedCategory === value ? 1 : 0.5) : 1 }}>
+                  {value}
+                </span>
+              )}
             />
           </PieChart>
         </ResponsiveContainer>
