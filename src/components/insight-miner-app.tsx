@@ -189,7 +189,7 @@ export function InsightMinerApp() {
         case 'upload':
             return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;
         case 'processing':
-            return <ProcessingView progress={processingProgress} message={processingMessage} />;
+            return <div className="h-full"><ProcessingView progress={processingProgress} message={processingMessage} /></div>;
         case 'dashboard':
             if (selectedAnalysis) {
                 return (
