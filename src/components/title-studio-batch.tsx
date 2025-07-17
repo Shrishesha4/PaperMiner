@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 interface TitleStudioBatchProps {
   analysis: {
@@ -265,17 +266,6 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                       className="max-w-[100px]"
                     />
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="custom-instructions">Custom Instructions (Optional)</Label>
-                    <Textarea
-                        id="custom-instructions"
-                        placeholder="e.g., Focus on the impact on renewable energy, use a question format..."
-                        value={customInstructions}
-                        onChange={(e) => setCustomInstructions(e.target.value)}
-                        disabled={isGenerating}
-                        className="h-24"
-                    />
-                </div>
             </div>
         </div>
         
@@ -290,6 +280,24 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             </Button>
         </div>
 
+        <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="custom-instructions">
+                <AccordionTrigger>Custom Instructions (Optional)</AccordionTrigger>
+                <AccordionContent>
+                    <div className="space-y-2">
+                        <Label htmlFor="custom-instructions" className="text-muted-foreground">Provide specific instructions to guide the title generation process.</Label>
+                        <Textarea
+                            id="custom-instructions"
+                            placeholder="e.g., Focus on the impact on renewable energy, use a question format..."
+                            value={customInstructions}
+                            onChange={(e) => setCustomInstructions(e.target.value)}
+                            disabled={isGenerating}
+                            className="h-24"
+                        />
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
 
         {analysis.categories.length > 0 && (
           <div className="space-y-2 pt-4 border-t">
