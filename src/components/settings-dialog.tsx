@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useHistory } from "@/hooks/use-history";
-import { KeyRound, Trash2 } from "lucide-react";
+import { Copyright, KeyRound, Trash2 } from "lucide-react";
 import { ApiKeyDialog } from "./api-key-dialog";
 import { ThemeCustomizer } from "./theme-customizer";
 
@@ -56,6 +56,23 @@ export function SettingsDialogContent() {
                         </DialogTrigger>
                         <ApiKeyDialog onOpenChange={setIsKeyDialogOpen} />
                     </Dialog>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Copyright className="h-5 w-5" />
+                        Legal & Copyright
+                    </CardTitle>
+                    <CardDescription>
+                        Information about the application's license and ownership.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                        © {new Date().getFullYear()} Shrishesha. All Rights Reserved.
+                    </p>
                 </CardContent>
             </Card>
 
