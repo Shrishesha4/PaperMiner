@@ -375,7 +375,7 @@ export function PaperDrafter() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-6">
+    <div className="w-full space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
              <div className="flex-1 min-w-0">
                 <Button asChild variant="outline" size="sm" className="mb-4">
