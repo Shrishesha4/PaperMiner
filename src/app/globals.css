@@ -88,7 +88,9 @@ body {
   body {
     @apply bg-background text-foreground;
     background-attachment: fixed;
+    background-size: 4px 4px, cover;
     background-image:
+      radial-gradient(circle at 1px 1px, hsla(var(--foreground) / 0.1) 1px, transparent 0),
       radial-gradient(at 27% 37%, hsla(var(--primary-hue), 83.3%, 57.8%, 0.1) 0px, transparent 50%),
       radial-gradient(at 97% 21%, hsla(338, 70%, 61%, 0.1) 0px, transparent 50%),
       radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.1) 0px, transparent 50%),
