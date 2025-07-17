@@ -147,7 +147,7 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center text-center">
+    <div className="flex h-full items-center justify-center text-center">
       <div className="max-w-2xl w-full">
         <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights for Your Research</h2>
         <p className="mt-4 text-lg text-muted-foreground">

@@ -187,7 +187,7 @@ export function InsightMinerApp() {
     
     switch (currentStep) {
         case 'upload':
-            return <UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} />;
+            return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;
         case 'processing':
             return <ProcessingView progress={processingProgress} message={processingMessage} />;
         case 'dashboard':
@@ -201,9 +201,9 @@ export function InsightMinerApp() {
                 );
             }
             // If no analysis is selected (e.g., history is cleared), go to uploader
-            return <UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} />;
+            return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;
         default:
-            return <UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} />;
+            return <div className="h-full"><UploaderView onProcess={(papers, name) => handleDataProcessing(papers, name)} /></div>;
     }
   }
 
