@@ -83,6 +83,8 @@ export function HistorySidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
 
+            <Separator className="my-2" />
+
             {drafts.length > 0 && (
                 <SidebarGroup>
                     <SidebarGroupLabel>Saved Drafts</SidebarGroupLabel>
