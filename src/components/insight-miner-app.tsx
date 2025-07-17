@@ -28,7 +28,7 @@ export function InsightMinerApp() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isApiKeySet, getNextApiKey, termsAccepted } = useApiKey();
-  const { selectedAnalysis, selectAnalysis, addAnalysis, updateAnalysis, isLoading: isHistoryLoading } = useHistory();
+  const { selectedAnalysis, selectAnalysis, addAnalysis, updateAnalysis, isLoading: isHistoryLoading, history } = useHistory();
 
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
   const [processingProgress, setProcessingProgress] = useState(0);
@@ -101,11 +101,10 @@ export function InsightMinerApp() {
         if (!apiKey) throw new Error("No API key available.");
 
         const batchResults = await categorizeResearchTitles({ titles, apiKey });
-        
-        const successfulTitles = new Set(batchResults.map(r => r.title));
+        const successfulCategorizations = new Map(batchResults.map(r => [r.title, r]));
 
         batch.forEach(paper => {
-          const result = batchResults.find(r => r.title === paper['Document Title']);
+          const result = successfulCategorizations.get(paper['Document Title']);
           if (result && result.category) {
             results.push({ ...paper, category: result.category, confidence: result.confidence });
           } else {
@@ -115,7 +114,7 @@ export function InsightMinerApp() {
 
       } catch (error) {
         console.error('Error categorizing title batch:', error);
-        batch.forEach(paper => retries.push(paper));
+        retries.push(...batch);
         toast({
           variant: 'destructive',
           title: 'Batch Categorization Issue',
@@ -154,11 +153,14 @@ export function InsightMinerApp() {
     }
     
     if (analysisIdToUpdate) {
-        updateAnalysis(analysisIdToUpdate, {
-            categorizedPapers: results,
-            failedPapers: finalFailed,
-            categoryHierarchy: undefined, // Reset hierarchy to be regenerated
-        });
+        const existingAnalysis = history.find(h => h.id === analysisIdToUpdate);
+        if (existingAnalysis) {
+             updateAnalysis(analysisIdToUpdate, {
+                categorizedPapers: [...existingAnalysis.categorizedPapers, ...results],
+                failedPapers: finalFailed,
+                categoryHierarchy: undefined, // Reset hierarchy to be regenerated
+            });
+        }
     } else {
         addAnalysis({
             name: fileName,
@@ -170,7 +172,7 @@ export function InsightMinerApp() {
     setProcessingMessage('Analysis complete!');
     setProcessingProgress(100);
     setTimeout(() => setCurrentStep('dashboard'), 1000);
-  }, [toast, isApiKeySet, addAnalysis, getNextApiKey, updateAnalysis]);
+  }, [toast, isApiKeySet, addAnalysis, getNextApiKey, updateAnalysis, history]);
 
   const handleReset = (analysisId: string) => {
     selectAnalysis(null);
@@ -178,10 +180,16 @@ export function InsightMinerApp() {
   };
 
   const handleRecategorize = useCallback((analysis: Analysis) => {
-    const allPapers = [...analysis.categorizedPapers, ...analysis.failedPapers];
-    const papersToProcess = allPapers.map(({ failureReason, category, confidence, ...paper }) => paper);
+    if (!analysis.failedPapers || analysis.failedPapers.length === 0) {
+        toast({
+            title: "No Papers to Re-categorize",
+            description: "All papers have already been successfully categorized."
+        });
+        return;
+    }
+    const papersToProcess = analysis.failedPapers.map(({ failureReason, ...paper }) => paper);
     handleDataProcessing(papersToProcess, analysis.name, analysis.id);
-  }, [handleDataProcessing]);
+  }, [handleDataProcessing, toast]);
 
 
   const renderContent = () => {
