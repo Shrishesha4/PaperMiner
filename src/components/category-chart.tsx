@@ -3,13 +3,67 @@
 
 import React, { useMemo } from 'react';
 import type { CategorizedPaper } from '@/types';
-import { Bar, BarChart, Brush, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { ResponsiveContainer, Treemap } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 interface CategoryChartProps {
   data: CategorizedPaper[];
   onCategorySelect: (category: string) => void;
 }
+
+const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+];
+
+// Custom content renderer for Treemap cells
+const CustomTreemapContent = (props: any) => {
+    const { root, depth, x, y, width, height, index, name, size } = props;
+
+    // Don't render labels for the root or very small cells
+    if (width < 35 || height < 35) {
+        return null;
+    }
+
+    return (
+        <g>
+            <rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                style={{
+                    fill: COLORS[index % COLORS.length],
+                    stroke: 'hsl(var(--background))',
+                    strokeWidth: 2,
+                    strokeOpacity: 1,
+                }}
+            />
+            <text
+                x={x + width / 2}
+                y={y + height / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                className="fill-primary-foreground font-medium text-xs sm:text-sm"
+                style={{ pointerEvents: 'none' }}
+            >
+                {name}
+            </text>
+            <text
+                x={x + width / 2}
+                y={y + height / 2 + 16}
+                textAnchor="middle"
+                className="fill-primary-foreground/70 text-xs"
+                style={{ pointerEvents: 'none' }}
+            >
+                ({size})
+            </text>
+        </g>
+    );
+};
 
 export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
   const chartData = useMemo(() => {
@@ -20,89 +74,49 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
     }, {} as { [key: string]: number });
 
     return Object.entries(categoryCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
+      .map(([name, count]) => ({ name, size: count })) // Treemap uses 'size' instead of 'count'
+      .sort((a, b) => b.size - a.size);
   }, [data]);
-
-  const initialEndIndex = useMemo(() => {
-    if (chartData.length <= 10) return chartData.length - 1; // Show all if 10 or fewer
-    return Math.max(Math.floor(chartData.length * 0.2), 5); // Show top 20% or at least 5
-  }, [chartData.length]);
-
 
   if (chartData.length === 0) {
     return (
-        <div className="flex items-center justify-center h-96 w-full text-muted-foreground">
-            <p>No data to display for the current filters.</p>
-        </div>
+      <div className="flex items-center justify-center h-96 w-full text-muted-foreground">
+        <p>No data to display for the current filters.</p>
+      </div>
     );
   }
 
   return (
     <div className="h-96 w-full">
-        <ChartContainer config={{
-            count: { label: 'Papers', color: 'hsl(var(--primary))' }
-        }}>
-            <>
-                {/* Desktop Chart (Vertical) */}
-                <div className="hidden sm:block h-full w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 80 }} accessibilityLayer>
-                        <CartesianGrid vertical={false} />
-                        <XAxis
-                            dataKey="name"
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={8}
-                            angle={-45}
-                            textAnchor="end"
-                            interval={0}
-                            height={80} // Increased height to prevent clipping
-                        />
-                        <YAxis />
-                        <Tooltip 
-                            cursor={{ fill: 'hsl(var(--muted))' }} 
-                            content={<ChartTooltipContent />} 
-                        />
-                        <Bar dataKey="count" fill="hsl(var(--primary))" radius={4} onClick={(bar) => onCategorySelect(bar.name)} style={{cursor: 'pointer'}} />
-                        <Brush 
-                            dataKey="name" 
-                            height={30} 
-                            stroke="hsl(var(--primary))" 
-                            startIndex={0}
-                            endIndex={initialEndIndex}
-                            tickFormatter={(index) => chartData[index]?.name ?? ''}
-                        />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Mobile Chart (Horizontal) */}
-                <div className="sm:hidden h-full w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 10, bottom: 20 }}>
-                            <CartesianGrid horizontal={false} />
-                            <XAxis type="number" />
-                            <YAxis 
-                                dataKey="name" 
-                                type="category" 
-                                width={120} 
-                                tickLine={false} 
-                                axisLine={false}
-                                tick={{ fontSize: 12 }}
-                                interval={0}
-                            />
-                            <Tooltip 
-                                cursor={{ fill: 'hsl(var(--muted))' }} 
-                                content={<ChartTooltipContent />} 
-                            />
-                            <Bar dataKey="count" fill="hsl(var(--primary))" radius={4} onClick={(bar) => onCategorySelect(bar.name)} style={{cursor: 'pointer'}}>
-                                <LabelList dataKey="count" position="right" className="fill-foreground" />
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </>
+      <ChartContainer
+        config={{
+          papers: { label: 'Papers' },
+        }}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap
+            data={chartData}
+            dataKey="size"
+            nameKey="name"
+            aspectRatio={16 / 9}
+            stroke="hsl(var(--card))"
+            fill="hsl(var(--primary))"
+            isAnimationActive={true}
+            animationDuration={500}
+            content={<CustomTreemapContent />}
+            onClick={(item: any) => onCategorySelect(item.name)}
+          >
+            <ChartTooltip
+                cursor={{ fill: 'hsla(var(--primary), 0.1)' }}
+                content={
+                    <ChartTooltipContent
+                        labelKey="name"
+                        formatter={(value, name) => `${value} papers`}
+                    />
+                }
+            />
+          </Treemap>
+        </ResponsiveContainer>
       </ChartContainer>
     </div>
   );
