@@ -88,13 +88,14 @@ export function TitleStudio() {
     setGeneratedTitles(newTitles);
     setGenerationTopics(topics);
     
-    if (analysisId) {
-       const isFromScratch = history.find(h => h.id === analysisId)?.name === 'From Scratch';
+    const idToUpdate = analysisId || scratchAnalysisId.current;
+    if (idToUpdate) {
+       const isFromScratch = history.find(h => h.id === idToUpdate)?.name === 'From Scratch';
        const updates: { generatedTitles: string[], name?: string } = { generatedTitles: newTitles };
        if (isFromScratch && topics.length > 0) {
          updates.name = `Scratchpad: ${topics.join(', ')}`;
        }
-       updateAnalysis(analysisId, updates);
+       updateAnalysis(idToUpdate, updates);
     }
   }, [updateAnalysis, analysisId, history]);
   
