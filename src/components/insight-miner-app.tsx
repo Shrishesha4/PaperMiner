@@ -108,10 +108,10 @@ export function InsightMinerApp() {
 
         batch.forEach(paper => {
           const result = batchResults.find(r => r.title === paper['Document Title']);
-          if (result) {
+          if (result && result.category) {
             results.push({ ...paper, ...result });
           } else {
-            failed.push({ ...paper, failureReason: 'AI model did not return a category for this title in the batch.' });
+            failed.push({ ...paper, failureReason: 'AI model did not return a category for this title.' });
           }
         });
 
@@ -153,10 +153,11 @@ export function InsightMinerApp() {
     setTimeout(() => setCurrentStep('dashboard'), 1000);
   }, [toast, isApiKeySet, addAnalysis, getNextApiKey]);
 
-  const handleReset = () => {
+  const handleReset = (analysisId: string) => {
     selectAnalysis(null);
     setCurrentStep('upload');
   };
+
 
   const renderContent = () => {
     if (isHistoryLoading) {
