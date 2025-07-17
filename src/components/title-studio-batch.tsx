@@ -43,7 +43,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const { getNextApiKey, isApiKeySet } = useApiKey();
   const { toast } = useToast();
   const [topics, setTopics] = useState<string[]>([]);
-  const [numTitles, setNumTitles] = useState(3);
+  const [numTitles, setNumTitles] = useState(4);
   const [customInstructions, setCustomInstructions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
@@ -173,7 +173,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             {generatedTitles.map((title, index) => {
               const noveltyState = noveltyChecks[index];
               return (
-                <Card key={index} className="hover:border-primary/50 transition-colors">
+                <Card key={index} className="transition-colors">
                   <CardContent className="p-4">
                     <p className="font-medium">{title}</p>
                   </CardContent>
@@ -336,3 +336,5 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
     </div>
   );
 }
+
+    
