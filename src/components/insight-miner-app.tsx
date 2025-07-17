@@ -190,7 +190,6 @@ export function InsightMinerApp() {
 
   const handleReset = (analysisId: string) => {
     selectAnalysis(null);
-    setCurrentStep('upload');
   };
 
   const renderContent = () => {

@@ -156,7 +156,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
           
           const canvas = await html2canvas(categoryChartElement, {
               scale: 2,
-              backgroundColor: resolvedTheme === 'dark' ? '#111827' : '#FFFFFF', // Use explicit colors
+              backgroundColor: resolvedTheme === 'dark' ? '#111827' : '#FFFFFF',
           });
           const imgData = canvas.toDataURL('image/png');
           const imgHeight = (canvas.height * contentWidth) / canvas.width;
@@ -206,10 +206,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-          <Button onClick={() => onReset(analysisId)}>
-              <Plus className="mr-2 h-4 w-4" /> New Analysis
-          </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="default">
               <Link href={`/title-studio?analysisId=${analysisId}`}>
                   <Wand2 className="mr-2 h-4 w-4" /> Title Studio
               </Link>

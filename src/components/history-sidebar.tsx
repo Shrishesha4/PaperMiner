@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useHistory } from '@/hooks/use-history';
 import { Button } from './ui/button';
-import { FileText, Lightbulb, Trash2, FileEdit } from 'lucide-react';
+import { FileText, Lightbulb, Trash2, FileEdit, Plus } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { Separator } from './ui/separator';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
+import { useRouter } from 'next/navigation';
 
 function DeleteAnalysisDialog({ item, onConfirm, onArchive, children }: { item: any, onConfirm: () => void, onArchive: () => void, children: React.ReactNode }) {
     const [keepDraft, setKeepDraft] = useState(true);
@@ -85,6 +86,7 @@ function DeleteAnalysisDialog({ item, onConfirm, onArchive, children }: { item: 
 export function HistorySidebar() {
   const { history, selectAnalysis, selectedAnalysis, removeAnalysis, removeDraft, archiveAnalysis, isLoading } = useHistory();
   const { state, setOpenMobile } = useSidebar();
+  const router = useRouter();
 
   const isScratchSelected = selectedAnalysis?.name === 'From Scratch' || (!selectedAnalysis && !isLoading);
   const drafts = history.filter(item => !!item.draftedPaper);
@@ -94,12 +96,28 @@ export function HistorySidebar() {
     setOpenMobile(false);
   }
 
+  const handleNewAnalysis = () => {
+    selectAnalysis(null);
+    router.push('/');
+    handleMobileNav();
+  }
+
   return (
     <Sidebar>
         <SidebarHeader>
             { state === 'expanded' && (
                 <div className="flex flex-col gap-1 p-2">
-                    <p className="text-xs text-muted-foreground">Your recent work</p>
+                    <Button onClick={handleNewAnalysis}>
+                      <Plus className="mr-2 h-4 w-4" /> New Analysis
+                    </Button>
+                </div>
+            )}
+             { state === 'collapsed' && (
+                <div className="flex flex-col gap-1 p-2">
+                   <Button onClick={handleNewAnalysis} size="icon">
+                      <Plus className="h-4 w-4" />
+                       <span className="sr-only">New Analysis</span>
+                    </Button>
                 </div>
             )}
         </SidebarHeader>
