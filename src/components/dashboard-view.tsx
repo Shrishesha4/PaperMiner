@@ -92,7 +92,7 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
   useEffect(() => {
     const consolidate = async () => {
       if (analysis?.categoryHierarchy) {
-        setCategoryHierarchy(analysis.categoryHierarchy);
+        setCategoryHierarchy(injectCounts(analysis.categoryHierarchy, data));
         return;
       }
       
@@ -112,13 +112,13 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
           
           const hierarchyWithCounts = injectCounts(result.hierarchy, data);
           setCategoryHierarchy(hierarchyWithCounts);
-          updateAnalysis(analysisId, { categoryHierarchy: hierarchyWithCounts });
+          updateAnalysis(analysisId, { ...analysis, categoryHierarchy: result.hierarchy });
         } catch (error) {
           console.error("Error consolidating categories:", error);
           toast({
             variant: "destructive",
             title: "Could not group categories",
-            description: "Failed to generate category domains. Displaying a flat list."
+            description: "Failed to generate category domains. Displaying a flat list as a fallback."
           });
           const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
           setCategoryHierarchy(flatHierarchy);
