@@ -11,7 +11,7 @@ import { Slider } from './ui/slider';
 
 const THEMES = [
   { name: 'default', color: 'hsl(262.1 83.3% 57.8%)' },
-  { name: 'zinc', color: 'hsl(240 5.9% 10%)' },
+  { name: 'zinc', color: 'hsl(240, 5%, 50%)' },
   { name: 'rose', color: 'hsl(346.8 77.2% 49.8%)' },
   { name: 'blue', color: 'hsl(221.2 83.2% 53.3%)' },
   { name: 'green', color: 'hsl(142.1 76.2% 36.3%)' },
@@ -23,7 +23,7 @@ export function ThemeCustomizer() {
 
   return (
     <div className="flex items-center space-x-2">
-      <div className="grid grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {THEMES.map((t) => (
           <Button
             key={t.name}
@@ -31,13 +31,15 @@ export function ThemeCustomizer() {
             size="sm"
             onClick={() => setTheme(t.name)}
             className={cn(
-              'justify-start',
+              'justify-center',
               theme === t.name && 'border-2 border-primary'
             )}
-            style={{ backgroundColor: t.color, color: '#fff' }}
+            style={{ backgroundColor: t.color }}
           >
-            {theme === t.name && <Check className="mr-2 h-4 w-4" />}
-            {t.name.charAt(0).toUpperCase() + t.name.slice(1)}
+            <div className="flex items-center gap-2">
+                {theme === t.name && <Check className="h-4 w-4 text-white" />}
+                <span className="text-white flex-1">{t.name.charAt(0).toUpperCase() + t.name.slice(1)}</span>
+            </div>
           </Button>
         ))}
       </div>
