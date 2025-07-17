@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { Download, FileDown, Loader2, Plus, Wand2 } from 'lucide-react';
+import { Download, FileDown, Loader2, Wand2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
@@ -30,6 +30,8 @@ declare module 'jspdf' {
       autoTable: (options: any) => jsPDF;
     }
 }
+
+const TOP_CATEGORIES_COUNT = 20;
 
 export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   const { toast } = useToast();
@@ -55,21 +57,50 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
             categoryCounts[paper.category] = (categoryCounts[paper.category] || 0) + 1;
         }
     });
-    return Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+
+    const allCategories = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+
+    if (data.length >= 100 && allCategories.length > TOP_CATEGORIES_COUNT) {
+      allCategories.sort((a, b) => b.value - a.value);
+      
+      const topCategories = allCategories.slice(0, TOP_CATEGORIES_COUNT - 1);
+      const otherCategories = allCategories.slice(TOP_CATEGORIES_COUNT - 1);
+      
+      const otherValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
+      
+      return [
+        ...topCategories,
+        { name: 'Other', value: otherValue }
+      ];
+    }
+    
+    return allCategories;
   }, [data]);
 
   const allUniqueCategories = useMemo(() => {
-    return ['all', ...categoryChartData.map(c => c.name).sort()];
-  }, [categoryChartData]);
+    const allCats = categoryChartData.map(c => c.name);
+    // Don't include 'Other' in the filter dropdown
+    const uniqueCats = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
+    return ['all', ...uniqueCats.sort()];
+  }, [data, categoryChartData]);
 
 
   const filteredData = useMemo(() => {
     return data.filter(paper => {
       const yearMatch = filters.year === 'all' || paper['Publication Year'] === filters.year;
-      const categoryMatch = filters.category === 'all' || paper.category === filters.category;
+      
+      let categoryMatch = filters.category === 'all' || paper.category === filters.category;
+      
+      if (filters.category === 'Other') {
+        const topCategoryNames = categoryChartData
+          .filter(c => c.name !== 'Other')
+          .map(c => c.name);
+        categoryMatch = !topCategoryNames.includes(paper.category);
+      }
+      
       return yearMatch && categoryMatch;
     });
-  }, [data, filters]);
+  }, [data, filters, categoryChartData]);
   
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
@@ -117,7 +148,6 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
 
     setIsGeneratingPdf(true);
     
-    // Use a timeout to allow React to re-render with the non-scrollable list
     setTimeout(async () => {
       try {
           const pdf = new jsPDF('p', 'mm', 'a4');
@@ -156,7 +186,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
           
           const canvas = await html2canvas(categoryChartElement, {
               scale: 2,
-              backgroundColor: resolvedTheme === 'dark' ? '#111827' : '#FFFFFF',
+              backgroundColor: resolvedTheme === 'dark' ? '#020817' : '#FFFFFF',
           });
           const imgData = canvas.toDataURL('image/png');
           const imgHeight = (canvas.height * contentWidth) / canvas.width;
@@ -192,7 +222,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
       } finally {
           setIsGeneratingPdf(false);
       }
-    }, 0);
+    }, 100);
   }, [filteredData, data.length, allUniqueCategories.length, toast, analysisName, resolvedTheme]);
 
 
