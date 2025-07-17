@@ -8,7 +8,7 @@ export function AppHeader() {
   const { isMobile, open, state } = useSidebar();
 
   return (
-    <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0">
+    <header className="px-4 lg:px-6 h-16 flex items-center justify-between border-b shrink-0 bg-background/70 backdrop-blur-lg">
       <div className="flex items-center gap-2">
         <SidebarTrigger />
         {((isMobile && open) || !isMobile && state === 'expanded') && (

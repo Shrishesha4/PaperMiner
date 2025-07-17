@@ -26,10 +26,10 @@ export default function SettingsPage() {
     const [isKeyDialogOpen, setIsKeyDialogOpen] = React.useState(false);
 
     return (
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 bg-background">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">
             <div className="max-w-2xl mx-auto space-y-6">
-                 <div className="flex justify-between items-center">
-                    <div>
+                 <div className="flex justify-between items-center mb-6">
+                    <div className="space-y-1">
                         <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
                         <p className="text-muted-foreground">
                             Manage your application settings, API keys, and data.
@@ -63,7 +63,7 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-destructive">
+                <Card className="border-destructive/50">
                     <CardHeader>
                         <CardTitle>Danger Zone</CardTitle>
                         <CardDescription>

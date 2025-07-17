@@ -223,7 +223,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
 
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8 bg-background">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -262,24 +262,26 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             <Card>
             <CardHeader>
                 <CardTitle>Filters</CardTitle>
-                <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
-                <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by Year" />
-                    </SelectTrigger>
-                    <SelectContent>
-                    {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-                <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                    <SelectTrigger className="w-full sm:w-[220px]">
-                    <SelectValue placeholder="Filter by Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                    {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
-                    </SelectContent>
-                </Select>
-                </div>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
+                    <Select value={filters.year} onValueChange={handleFilterChange('year')}>
+                        <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Filter by Year" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    <Select value={filters.category} onValueChange={handleFilterChange('category')}>
+                        <SelectTrigger className="w-full sm:w-[220px]">
+                        <SelectValue placeholder="Filter by Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
             </CardHeader>
             </Card>
 
