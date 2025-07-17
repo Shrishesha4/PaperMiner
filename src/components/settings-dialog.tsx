@@ -1,8 +1,7 @@
 
 'use client';
 
-import { ApiKeyDialog } from "@/components/api-key-dialog";
-import { ThemeCustomizer } from "@/components/theme-customizer";
+import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,30 +17,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { useHistory } from "@/hooks/use-history";
-import { ArrowLeft, KeyRound, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import React from "react";
+import { KeyRound, Trash2 } from "lucide-react";
+import { ApiKeyDialog } from "./api-key-dialog";
+import { ThemeCustomizer } from "./theme-customizer";
 
-export default function SettingsPage() {
+export function SettingsDialogContent() {
     const { clearHistory, history } = useHistory();
     const [isKeyDialogOpen, setIsKeyDialogOpen] = React.useState(false);
-    const router = useRouter();
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-                <div className="space-y-1">
-                    <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2 h-4 w-4"/>
-                        Back
-                    </Button>
-                    <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-                    <p className="text-muted-foreground">
-                        Manage your application settings, API keys, and data.
-                    </p>
-                </div>
-            </div>
-
             <Card>
                 <CardHeader>
                     <CardTitle>Theme</CardTitle>
