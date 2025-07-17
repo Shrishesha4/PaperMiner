@@ -154,10 +154,10 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                             return (
                                 <>
-                                <text x={viewBox.cx} y={viewBox.cy - 10} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
+                                <text x={viewBox.cx} y={viewBox.cy - 12} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
                                     {(selectedDataPoint ? selectedDataPoint.value : totalPapers)?.toLocaleString()}
                                 </text>
-                                <text x={viewBox.cx} y={viewBox.cy + 15} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
+                                <text x={viewBox.cx} y={viewBox.cy + 20} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
                                     {selectedDataPoint ? selectedDataPoint.name : drilldownPath.length > 0 ? drilldownPath[drilldownPath.length - 1] : 'Total Papers'}
                                 </text>
                                 </>
@@ -167,9 +167,15 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                  />
             </Pie>
             <Legend
+              layout="vertical"
+              align="right"
+              verticalAlign="middle"
               onClick={handleLegendClick}
-              verticalAlign="bottom"
-              wrapperStyle={{paddingTop: 20}}
+              iconSize={10}
+              wrapperStyle={{
+                  width: '30%',
+                  paddingLeft: 20
+              }}
               formatter={(value) => {
                 const item = chartData.find(d => d.name === value);
                 const isDrillable = item && item.children && item.children.length > 0;
