@@ -153,8 +153,9 @@ export function InsightMinerApp() {
     setTimeout(() => setCurrentStep('dashboard'), 1000);
   }, [toast, isApiKeySet, addAnalysis, getNextApiKey]);
 
-  const handleReset = (analysisId: string) => {
-    removeAnalysis(analysisId);
+  const handleReset = () => {
+    selectAnalysis(null);
+    setCurrentStep('upload');
   };
 
   const renderContent = () => {

@@ -39,7 +39,7 @@ declare module 'jspdf' {
 
 export function DashboardView({ analysisId, analysisName, data, failedData, onReset }: DashboardViewProps) {
   const { toast } = useToast();
-  const { selectAnalysis, updateAnalysis } = useHistory();
+  const { updateAnalysis } = useHistory();
   const { getNextApiKey, isApiKeySet } = useApiKey();
   const analysis = useHistory().history.find(a => a.id === analysisId);
 
@@ -71,46 +71,6 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
     });
   }, [data, filters]);
   
-  // Effect to consolidate categories when data is available and hierarchy isn't
-  useEffect(() => {
-    const consolidate = async () => {
-        if (data.length > 0 && !categoryHierarchy && isApiKeySet && categories.length > 1) {
-            setIsConsolidating(true);
-            try {
-                const apiKey = getNextApiKey();
-                if (!apiKey) throw new Error("API Key not available.");
-                const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
-                const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
-                
-                // Now, inject the paper counts into the hierarchy
-                const hierarchyWithCounts = injectCounts(result.hierarchy, data);
-                
-                setCategoryHierarchy(hierarchyWithCounts);
-                // Save the generated hierarchy to history
-                updateAnalysis(analysisId, { categoryHierarchy: hierarchyWithCounts });
-
-            } catch (error) {
-                console.error("Error consolidating categories:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Could not group categories",
-                    description: "Failed to generate category domains. Displaying a flat list."
-                });
-                // Fallback to a flat hierarchy if consolidation fails
-                const flatHierarchy = categories.slice(1).map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
-                setCategoryHierarchy(flatHierarchy);
-            } finally {
-                setIsConsolidating(false);
-            }
-        } else if (data.length > 0 && !categoryHierarchy) {
-            // Handle case where consolidation is not possible (e.g., no API key) or not needed (1 category)
-            const flatHierarchy = categories.slice(1).map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
-            setCategoryHierarchy(flatHierarchy);
-        }
-    };
-    consolidate();
-  }, [data, categoryHierarchy, isApiKeySet, getNextApiKey, toast, updateAnalysis, analysisId, categories]);
-
   const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
     return nodes.map(node => {
         if (node.children && node.children.length > 0) {
@@ -125,6 +85,47 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         }
     });
   };
+
+  // Effect to consolidate categories when data is available and hierarchy isn't
+  useEffect(() => {
+    const consolidate = async () => {
+        if (data.length === 0 || categoryHierarchy) return;
+
+        const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
+        
+        if (isApiKeySet && uniqueCategories.length > 1) {
+            setIsConsolidating(true);
+            try {
+                const apiKey = getNextApiKey();
+                if (!apiKey) throw new Error("API Key not available.");
+                const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
+                
+                const hierarchyWithCounts = injectCounts(result.hierarchy, data);
+                
+                setCategoryHierarchy(hierarchyWithCounts);
+                updateAnalysis(analysisId, { categoryHierarchy: hierarchyWithCounts });
+            } catch (error) {
+                console.error("Error consolidating categories:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Could not group categories",
+                    description: "Failed to generate category domains. Displaying a flat list."
+                });
+                // Fallback to a flat hierarchy if consolidation fails
+                const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
+                setCategoryHierarchy(flatHierarchy);
+            } finally {
+                setIsConsolidating(false);
+            }
+        } else {
+            // Handle case where consolidation is not possible (e.g., no API key) or not needed
+            const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
+            setCategoryHierarchy(flatHierarchy);
+        }
+    };
+    consolidate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysisId, data, isApiKeySet]);
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
@@ -256,7 +257,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-            <Button onClick={() => selectAnalysis(null)}>
+            <Button onClick={() => onReset(analysisId)}>
                 <Plus className="mr-2 h-4 w-4" /> New Analysis
             </Button>
             <Button asChild variant="outline">
