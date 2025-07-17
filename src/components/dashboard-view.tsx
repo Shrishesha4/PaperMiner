@@ -38,19 +38,21 @@ declare module 'jspdf' {
 
 const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
     if (!Array.isArray(nodes)) {
-        return []; // Guard against non-array inputs
+        return [];
     }
     return nodes.map(node => {
+        let value = 0;
+        let childrenWithCounts = node.children;
+
         if (node.children && node.children.length > 0) {
             // It's a parent node, recurse and sum up children values
-            const childrenWithCounts = injectCounts(node.children, allPapers);
-            const totalValue = childrenWithCounts.reduce((sum, child) => sum + (child.value || 0), 0);
-            return { ...node, children: childrenWithCounts, value: totalValue };
+            childrenWithCounts = injectCounts(node.children, allPapers);
+            value = childrenWithCounts.reduce((sum, child) => sum + (child.value || 0), 0);
         } else {
-            // It's a leaf node, calculate its value from the papers
-            const value = allPapers.filter(p => p.category === node.name).length;
-            return { ...node, value };
+            // It's a leaf node or a flat item, calculate its value directly
+            value = allPapers.filter(p => p.category === node.name).length;
         }
+        return { ...node, children: childrenWithCounts, value };
     });
 };
 
@@ -66,7 +68,7 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isConsolidating, setIsConsolidating] = useState(false);
-  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(analysis.categoryHierarchy || null);
+  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(null);
   
   const categoryChartRef = useRef<HTMLDivElement>(null);
 
@@ -91,8 +93,10 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
   // Effect to consolidate categories when data is available and hierarchy isn't
   useEffect(() => {
     const consolidate = async () => {
-      if (analysis?.categoryHierarchy) {
-        setCategoryHierarchy(injectCounts(analysis.categoryHierarchy, data));
+      // Use existing hierarchy if available
+      if (analysis.categoryHierarchy && analysis.categoryHierarchy.length > 0) {
+        const hierarchyWithCounts = injectCounts(analysis.categoryHierarchy, data);
+        setCategoryHierarchy(hierarchyWithCounts);
         return;
       }
       
@@ -103,37 +107,47 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
 
       const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
       
+      // If API key is set and there's something to consolidate, run the AI flow
       if (isApiKeySet && uniqueCategories.length > 1) {
         setIsConsolidating(true);
         try {
           const apiKey = getNextApiKey();
           if (!apiKey) throw new Error("API Key not available.");
+          
           const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
           
-          const hierarchyWithCounts = injectCounts(result.hierarchy, data);
-          setCategoryHierarchy(hierarchyWithCounts);
-          updateAnalysis(analysisId, { ...analysis, categoryHierarchy: result.hierarchy });
+          if (result && result.hierarchy) {
+            const hierarchyWithCounts = injectCounts(result.hierarchy, data);
+            setCategoryHierarchy(hierarchyWithCounts);
+            updateAnalysis(analysisId, { ...analysis, categoryHierarchy: result.hierarchy });
+          } else {
+             throw new Error("AI consolidation returned no result.");
+          }
         } catch (error) {
           console.error("Error consolidating categories:", error);
           toast({
             variant: "destructive",
             title: "Could not group categories",
-            description: "Failed to generate category domains. Displaying a flat list as a fallback."
+            description: "Displaying a flat list as a fallback. You can try again later."
           });
-          const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
-          setCategoryHierarchy(flatHierarchy);
+          // Fallback to a flat hierarchy
+          const flatHierarchy = uniqueCategories.map(cat => ({ name: cat }));
+          const hierarchyWithCounts = injectCounts(flatHierarchy, data);
+          setCategoryHierarchy(hierarchyWithCounts);
         } finally {
           setIsConsolidating(false);
         }
       } else {
-        const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
-        setCategoryHierarchy(flatHierarchy);
+        // Fallback for no API key or only one category
+        const flatHierarchy = uniqueCategories.map(cat => ({ name: cat }));
+        const hierarchyWithCounts = injectCounts(flatHierarchy, data);
+        setCategoryHierarchy(hierarchyWithCounts);
       }
     };
 
     consolidate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, data, isApiKeySet, analysis.categoryHierarchy]); // Rerun only when data or hierarchy changes
+  }, [analysisId, data, isApiKeySet, analysis.categoryHierarchy]); // Rerun only when core data changes
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
@@ -270,16 +284,16 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
             </Button>
             <AlertDialog>
                 <AlertDialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" disabled={failedData.length === 0}>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Re-categorize
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Re-categorize Failed Papers?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will re-run the categorization process for all {data.length + failedData.length} papers in this analysis. This will consume API credits and replace the current categories.
+                        This will re-run the categorization process only for the {failedData.length} paper(s) that failed previously. This will consume API credits.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
