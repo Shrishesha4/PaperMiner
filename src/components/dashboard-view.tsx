@@ -33,6 +33,9 @@ declare module 'jspdf' {
 
 const MINIMUM_CATEGORY_SIZE = 5;
 const RELATIVE_THRESHOLD_PERCENT = 0.10; // 10%
+const LARGE_DATASET_THRESHOLD = 300;
+const TOP_CATEGORIES_COUNT_SMALL_DATASET = 20;
+
 
 export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   const { toast } = useToast();
@@ -67,16 +70,25 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
       return { categoryChartData: [], allCategoriesData: [] };
     }
 
-    const maxCategorySize = allCats[0].value;
-    const relativeThreshold = maxCategorySize * RELATIVE_THRESHOLD_PERCENT;
+    let topCategories: CategoryData[];
+    
+    // Use different logic based on dataset size
+    if (data.length > LARGE_DATASET_THRESHOLD) {
+      // Logic for large datasets (relative + absolute thresholds)
+      const maxCategorySize = allCats.length > 0 ? allCats[0].value : 0;
+      const relativeThreshold = maxCategorySize * RELATIVE_THRESHOLD_PERCENT;
 
-    const topCategories = allCats.filter(
-      cat => cat.value >= MINIMUM_CATEGORY_SIZE && cat.value >= relativeThreshold
-    );
+      topCategories = allCats.filter(
+        cat => cat.value >= MINIMUM_CATEGORY_SIZE && cat.value >= relativeThreshold
+      );
+    } else {
+      // Logic for small datasets (top N)
+      topCategories = allCats.slice(0, TOP_CATEGORIES_COUNT_SMALL_DATASET);
+    }
     
     if (topCategories.length < allCats.length) {
       const otherCategories = allCats.filter(
-        cat => cat.value < MINIMUM_CATEGORY_SIZE || cat.value < relativeThreshold
+        cat => !topCategories.some(topCat => topCat.name === cat.name)
       );
       const otherValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
 
