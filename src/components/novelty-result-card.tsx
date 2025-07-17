@@ -4,8 +4,9 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
-import { Info, Sparkles, Lightbulb } from 'lucide-react';
+import { Info, Lightbulb } from 'lucide-react';
 import type { CheckTitleNoveltyOutput } from '@/types/schemas';
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
@@ -48,6 +49,14 @@ function ImprovementSuggestions({ suggestions }: { suggestions: string[] }) {
 }
 
 export function NoveltyResultCard({ result }: NoveltyResultCardProps) {
+  const [container, setContainer] = React.useState<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    // This effect ensures we have access to document.body on the client.
+    setContainer(document.body);
+  }, []);
+
+
   return (
     <div className="space-y-4">
       <Alert variant={getNoveltyAlertVariant(result.noveltyScore)} className={`${result.noveltyScore >= 0.8 ? 'border-green-500/50 text-green-700 [&>svg]:text-green-700' : ''}`}>
@@ -70,13 +79,15 @@ export function NoveltyResultCard({ result }: NoveltyResultCardProps) {
                     <p className="flex-1 pr-2 break-words">{item.title}</p>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{item.similarityScore.toFixed(2)}</Badge>
-                      <Tooltip delayDuration={100}>
-                        <TooltipTrigger asChild>
-                            <button><Info className="h-4 w-4" /></button>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          <p>{item.reasoning}</p>
-                        </TooltipContent>
+                       <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                              <button><Info className="h-4 w-4" /></button>
+                          </TooltipTrigger>
+                           <TooltipPrimitive.Portal container={container}>
+                                <TooltipContent className="max-w-xs">
+                                    <p>{item.reasoning}</p>
+                                </TooltipContent>
+                           </TooltipPrimitive.Portal>
                       </Tooltip>
                     </div>
                   </div>
