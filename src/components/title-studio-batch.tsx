@@ -160,8 +160,8 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   };
 
   return (
-    <div className="flex flex-col">
-      <div className="p-4 sm:p-6 bg-muted/40 min-h-[400px] flex-1 pb-24">
+    <div className="flex flex-col h-full">
+      <div className="p-4 sm:p-6 bg-muted/40 flex-1 pb-24">
         {isGenerating ? (
             <div className="flex flex-col items-center justify-center h-full">
                 <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary mb-4" />
@@ -193,7 +193,6 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                                     size="sm"
                                     onClick={() => !noveltyState?.result && handleCheckNovelty(title, index)}
                                     disabled={noveltyState?.isLoading || isFromScratch}
-                                    className={isFromScratch ? 'cursor-not-allowed' : ''}
                                   >
                                     {noveltyState?.isLoading ? (
                                       <Loader2 className="animate-spin" />
@@ -246,7 +245,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
           </div>
         )}
       </div>
-      <div className="p-4 sm:p-6 border-b">
+      <div className="p-4 sm:p-6 border-t shrink-0">
         <Card>
             <CardHeader>
                 <CardTitle>Title Generation Controls</CardTitle>
@@ -260,25 +259,27 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                     isLoading={isGenerating}
                 />
                 
-                <div className="space-y-2 pt-4 border-t">
-                    <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
-                    <div className="flex flex-wrap gap-1">
-                    {analysis.categories
-                        .filter((cat) => !topics.includes(cat))
-                        .map((cat) => (
-                        <Badge
-                            key={cat}
-                            variant="outline"
-                            onClick={() => handleAddTopic(cat)}
-                            className={`cursor-pointer hover:bg-primary/10 text-sm ${
-                            isGenerating ? 'opacity-50 pointer-events-none' : ''
-                            }`}
-                        >
-                            {cat}
-                        </Badge>
-                        ))}
+                {analysis.categories.length > 0 && (
+                    <div className="space-y-2 pt-4 border-t">
+                        <h4 className="text-sm font-medium text-muted-foreground">Click to add from existing categories:</h4>
+                        <div className="flex flex-wrap gap-1">
+                        {analysis.categories
+                            .filter((cat) => !topics.includes(cat))
+                            .map((cat) => (
+                            <Badge
+                                key={cat}
+                                variant="outline"
+                                onClick={() => handleAddTopic(cat)}
+                                className={`cursor-pointer hover:bg-primary/10 text-sm ${
+                                isGenerating ? 'opacity-50 pointer-events-none' : ''
+                                }`}
+                            >
+                                {cat}
+                            </Badge>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <div className="pt-4 border-t">
                      <Accordion type="single" collapsible className="w-full">
@@ -317,8 +318,13 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
             </CardContent>
         </Card>
       </div>
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-2 rounded-full bg-background/50 backdrop-blur-lg border shadow-lg">
-          <Button onClick={handleGenerate} disabled={isGenerating || topics.length === 0} size="lg">
+      <div className="floating-blur-button-container">
+          <Button 
+            onClick={handleGenerate} 
+            disabled={isGenerating || topics.length === 0} 
+            size="lg"
+            className="clickable-button"
+            >
               {isGenerating ? (
                   <Loader2 className="mr-2 animate-spin" />
               ) : (
