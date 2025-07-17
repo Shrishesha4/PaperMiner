@@ -263,10 +263,13 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Filters</CardTitle>
-                </CardHeader>
-                <CardContent>
+                <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    <div>
+                        <CardTitle>Research Papers</CardTitle>
+                        <CardDescription>
+                            Displaying {filteredData.length} of {data.length} categorized papers.
+                        </CardDescription>
+                    </div>
                     <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
                         <Select value={filters.year} onValueChange={handleFilterChange('year')}>
                             <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
@@ -281,19 +284,10 @@ export function DashboardView({ analysis, onReset, onRecategorize }: DashboardVi
                             </SelectContent>
                         </Select>
                     </div>
+                </CardHeader>
+                <CardContent>
+                    <PapersTable data={filteredData} />
                 </CardContent>
-            </Card>
-
-            <Card>
-            <CardHeader>
-                <CardTitle>Research Papers</CardTitle>
-                <CardDescription>
-                Displaying {filteredData.length} of {data.length} categorized papers.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <PapersTable data={filteredData} />
-            </CardContent>
             </Card>
         </div>
 
