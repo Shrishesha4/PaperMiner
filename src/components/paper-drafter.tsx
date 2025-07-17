@@ -30,6 +30,7 @@ import { saveAs } from 'file-saver';
 import { Document, Packer as DocxPacker, Paragraph, HeadingLevel } from 'docx';
 import { useHistory } from '@/hooks/use-history';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import Link from 'next/link';
 
 
 type RegenerationState = {
@@ -287,7 +288,7 @@ export function PaperDrafter() {
     }
 
     return (
-        <>
+        <div className="mx-auto w-full max-w-4xl">
              {paper.sections.map((section, index) => {
                 const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
                 const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
@@ -369,16 +370,24 @@ export function PaperDrafter() {
                     </CardContent>
                 </Card>
              )})}
-        </>
+        </div>
     )
   }
 
   return (
     <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="truncate text-3xl font-bold tracking-tight" title={title}>
-                {title}
-            </h1>
+             <div className="flex items-center gap-4">
+                 <Button asChild variant="outline" size="icon">
+                    <Link href="/">
+                        <ArrowLeft />
+                        <span className="sr-only">Back to App</span>
+                    </Link>
+                </Button>
+                <h1 className="truncate text-3xl font-bold tracking-tight" title={title}>
+                    {title}
+                </h1>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
                 <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
                     {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
@@ -441,3 +450,5 @@ export function PaperDrafter() {
     </div>
   );
 }
+
+    
