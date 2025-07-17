@@ -151,7 +151,7 @@ export function InsightMinerApp() {
                 const result = await categorizeSingleTitle({ title: paper['Document Title'], apiKey });
                 
                 if (result && result.category) {
-                    results.push({ ...paper, category: result.category, confidence: result.confidence, title: paper['Document Title'] });
+                    results.push({ ...paper, category: result.category, confidence: result.confidence });
                 } else {
                     finalFailed.push({ ...paper, failureReason: 'AI model did not return a category on retry.' });
                 }
