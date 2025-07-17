@@ -31,8 +31,6 @@ declare module 'jspdf' {
     }
 }
 
-const TOP_CATEGORIES_COUNT = 20;
-
 export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   const { toast } = useToast();
   const { resolvedTheme } = useTheme();
@@ -62,23 +60,27 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   
-    if (data.length >= 100 && allCats.length > TOP_CATEGORIES_COUNT) {
-      const topCategories = allCats.slice(0, TOP_CATEGORIES_COUNT - 1);
+    // New logic: Use top 30% of categories if there are many
+    const categoryThreshold = Math.ceil(allCats.length * 0.3);
+
+    if (allCats.length > 10) { // Apply grouping only if there are enough categories to warrant it
+      const topCategories = allCats.slice(0, categoryThreshold);
+      const otherCategories = allCats.slice(categoryThreshold);
       
-      // The "Other" category should represent the sum of remaining papers for its value
-      // but use a smaller visual value for the pie slice.
-      const otherCategories = allCats.slice(TOP_CATEGORIES_COUNT - 1);
-      const otherActualValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
+      if (otherCategories.length > 0) {
+        const otherActualValue = otherCategories.reduce((acc, curr) => acc + curr.value, 0);
 
-      const smallestTopValue = topCategories[topCategories.length - 1]?.value || 1;
-      const visualOtherValue = Math.max(1, smallestTopValue * 0.9);
+        const smallestTopValue = topCategories[topCategories.length - 1]?.value || 1;
+        const visualOtherValue = Math.max(1, smallestTopValue * 0.9);
 
-      const chartData = [
-        ...topCategories,
-        { name: 'Other', value: visualOtherValue }
-      ];
+        const chartData = [
+          ...topCategories,
+          // Use the real value for the legend/tooltip, but the visual value for the pie slice
+          { name: 'Other', value: visualOtherValue }
+        ];
 
-      return { categoryChartData: chartData, allCategoriesData: allCats };
+        return { categoryChartData: chartData, allCategoriesData: allCats };
+      }
     }
     
     return { categoryChartData: allCats, allCategoriesData: allCats };
