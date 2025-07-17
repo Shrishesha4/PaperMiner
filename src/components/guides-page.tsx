@@ -136,6 +136,38 @@ export function GuidesPage() {
               All of your data—including uploaded file analyses, generated titles, and saved drafts—is stored **only in your browser**. This means your work is completely private. Be aware that clearing your browser's data for this site will permanently delete all your work.
             </AlertDescription>
           </Alert>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="get-api-key">
+              <AccordionTrigger>How to get a Google AI Gemini API Key</AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <ol className="list-decimal space-y-2 pl-6 text-sm leading-relaxed">
+                  <li>
+                    Go to the Google AI Studio website:{' '}
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-medium"
+                    >
+                      aistudio.google.com/app/apikey
+                    </a>.
+                  </li>
+                  <li>
+                    Log in with your Google account if you haven't already.
+                  </li>
+                  <li>
+                    Click on the "<strong>Create API key</strong>" button. You might need to create a new project if you don't have one.
+                  </li>
+                  <li>
+                    An API key will be generated. It's a long string of letters and numbers. Click the copy icon next to the key to copy it to your clipboard.
+                  </li>
+                  <li>
+                    Come back to PaperMiner, open the settings menu, go to "Manage API Keys," and paste your key into the input field.
+                  </li>
+                </ol>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
     </div>
