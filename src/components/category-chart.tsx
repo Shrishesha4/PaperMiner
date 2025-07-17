@@ -19,6 +19,7 @@ export interface CategoryData {
 interface CategoryChartProps {
   data: CategoryData[];
   onCategorySelect: (category: string | null) => void;
+  isGeneratingPdf: boolean;
 }
 
 const COLORS = [
@@ -26,7 +27,7 @@ const COLORS = [
   "#0088FE", "#FFBB28", "#FF847C", "#E27D60", "#A4DE6C"
 ];
 
-export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
+export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: CategoryChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const { chartData, chartConfig } = useMemo(() => {
@@ -63,6 +64,50 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
       </div>
     );
   }
+  
+  const LegendContent = ({ payload }: { payload?: any[] }) => {
+    if (isGeneratingPdf) {
+      // Render a simple list for PDF generation
+      return (
+        <div className="w-full max-w-[200px]">
+          <ul className="flex flex-col gap-1 p-2">
+            {payload?.map((entry, index) => (
+              <li key={`item-${index}`} className="flex items-center gap-2 text-sm">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="truncate flex-1">{entry.value}</span>
+                <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    // Render interactive scrollable list for on-screen display
+    return (
+      <ScrollArea className="h-[350px] w-full max-w-[200px]">
+        <ul className="flex flex-col gap-1 p-2">
+          {payload?.map((entry, index) => (
+            <li
+              key={`item-${index}`}
+              onClick={() => handleLegendClick(entry)}
+              className={`flex items-center gap-2 text-sm cursor-pointer rounded-md p-2
+                  ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
+              `}
+              style={{
+                  opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
+              }}
+            >
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="truncate flex-1">{entry.value}</span>
+              <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
+            </li>
+          ))}
+        </ul>
+      </ScrollArea>
+    );
+  };
+
 
   return (
       <ChartContainer config={chartConfig} className="min-h-[200px] w-full h-[400px]">
@@ -104,28 +149,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                  />
             </Pie>
              <Legend
-              content={({ payload }) => (
-                <ScrollArea className="h-[350px] w-full max-w-[200px]">
-                    <ul className="flex flex-col gap-1 p-2">
-                    {payload?.map((entry, index) => (
-                        <li
-                        key={`item-${index}`}
-                        onClick={() => handleLegendClick(entry)}
-                        className={`flex items-center gap-2 text-sm cursor-pointer rounded-md p-2
-                            ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
-                        `}
-                        style={{
-                            opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
-                        }}
-                        >
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
-                        <span className="truncate flex-1">{entry.value}</span>
-                        <span className="font-mono text-xs">({(entry.payload as any)?.value})</span>
-                        </li>
-                    ))}
-                    </ul>
-                </ScrollArea>
-              )}
+              content={LegendContent}
               layout="vertical"
               verticalAlign="middle"
               align="right"

@@ -116,98 +116,83 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
     if (!categoryChartElement || !filteredData.length) return;
 
     setIsGeneratingPdf(true);
+    
+    // Use a timeout to allow React to re-render with the non-scrollable list
+    setTimeout(async () => {
+      try {
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pageMargin = 15;
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const contentWidth = pageWidth - pageMargin * 2;
+          let yPos = pageMargin;
 
-    const elementsToModify = categoryChartElement.querySelectorAll('[data-radix-scroll-area-viewport], [data-radix-scroll-area-viewport] > div');
-    const originalStyles = new Map<HTMLElement, { overflow: string; height: string }>();
+          pdf.setFontSize(22);
+          pdf.text('PaperMiner Analysis Report', pageWidth / 2, yPos, { align: 'center' });
+          yPos += 10;
+          pdf.setFontSize(16);
+          pdf.text(analysisName, pageWidth / 2, yPos, { align: 'center' });
+          yPos += 15;
+          pdf.setFontSize(12);
+          pdf.text(`Report generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
+          yPos += 15;
+          
+          pdf.setFontSize(14);
+          pdf.text('Summary', pageMargin, yPos);
+          yPos += 8;
+          pdf.setFontSize(11);
+          pdf.text(`- Total papers analyzed: ${data.length}`, pageMargin, yPos);
+          yPos += 7;
+          pdf.text(`- Papers in current view: ${filteredData.length}`, pageMargin, yPos);
+          yPos += 7;
+          pdf.text(`- Unique categories found: ${allUniqueCategories.length - 1}`, pageMargin, yPos);
+          yPos += 15;
+          
+          pdf.addPage();
+          yPos = pageMargin;
 
-    elementsToModify.forEach((el) => {
-      const htmlEl = el as HTMLElement;
-      originalStyles.set(htmlEl, {
-        overflow: htmlEl.style.overflow,
-        height: htmlEl.style.height,
-      });
-      htmlEl.style.overflow = 'visible';
-      htmlEl.style.height = 'auto';
-    });
+          pdf.setFontSize(16);
+          pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
+          yPos += 10;
+          
+          const canvas = await html2canvas(categoryChartElement, {
+              scale: 2,
+              backgroundColor: resolvedTheme === 'dark' ? '#111827' : '#FFFFFF', // Use explicit colors
+          });
+          const imgData = canvas.toDataURL('image/png');
+          const imgHeight = (canvas.height * contentWidth) / canvas.width;
+          pdf.addImage(imgData, 'PNG', pageMargin, yPos, contentWidth, imgHeight);
 
-    try {
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageMargin = 15;
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const contentWidth = pageWidth - pageMargin * 2;
-        let yPos = pageMargin;
+          pdf.addPage();
+          const tableHeaders = [['Title', 'Year', 'Category', 'Confidence']];
+          const tableBody = filteredData.map(p => [
+              p['Document Title'],
+              p['Publication Year'],
+              p.category,
+              p.confidence.toFixed(2)
+          ]);
+          
+          pdf.autoTable({
+              head: tableHeaders,
+              body: tableBody,
+              startY: pageMargin,
+              margin: { left: pageMargin, right: pageMargin },
+              styles: { fontSize: 8, cellPadding: 2 },
+              headStyles: { fillColor: [59, 89, 152], textColor: 255, fontStyle: 'bold' },
+              columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 20 }, 2: { cellWidth: 30 }, 3: { cellWidth: 20 } },
+          });
 
-        pdf.setFontSize(22);
-        pdf.text('PaperMiner Analysis Report', pageWidth / 2, yPos, { align: 'center' });
-        yPos += 10;
-        pdf.setFontSize(16);
-        pdf.text(analysisName, pageWidth / 2, yPos, { align: 'center' });
-        yPos += 15;
-        pdf.setFontSize(12);
-        pdf.text(`Report generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
-        yPos += 15;
-        
-        pdf.setFontSize(14);
-        pdf.text('Summary', pageMargin, yPos);
-        yPos += 8;
-        pdf.setFontSize(11);
-        pdf.text(`- Total papers analyzed: ${data.length}`, pageMargin, yPos);
-        yPos += 7;
-        pdf.text(`- Papers in current view: ${filteredData.length}`, pageMargin, yPos);
-        yPos += 7;
-        pdf.text(`- Unique categories found: ${allUniqueCategories.length - 1}`, pageMargin, yPos);
-        yPos += 15;
-        
-        pdf.addPage();
-        yPos = pageMargin;
-
-        pdf.setFontSize(16);
-        pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
-        yPos += 10;
-        
-        const canvas = await html2canvas(categoryChartElement, {
-            scale: 2,
-            backgroundColor: resolvedTheme === 'dark' ? '#1c1917' : '#FFFFFF',
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', pageMargin, yPos, contentWidth, imgHeight);
-
-        pdf.addPage();
-        const tableHeaders = [['Title', 'Year', 'Category', 'Confidence']];
-        const tableBody = filteredData.map(p => [
-            p['Document Title'],
-            p['Publication Year'],
-            p.category,
-            p.confidence.toFixed(2)
-        ]);
-        
-        pdf.autoTable({
-            head: tableHeaders,
-            body: tableBody,
-            startY: pageMargin,
-            margin: { left: pageMargin, right: pageMargin },
-            styles: { fontSize: 8, cellPadding: 2 },
-            headStyles: { fillColor: [59, 89, 152], textColor: 255, fontStyle: 'bold' },
-            columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 20 }, 2: { cellWidth: 30 }, 3: { cellWidth: 20 } },
-        });
-
-        pdf.save(`${analysisName}-report.pdf`);
-    } catch (error) {
-        console.error("Error generating PDF:", error);
-        toast({
-          variant: "destructive",
-          title: "PDF Generation Error",
-          description: "Could not generate the PDF report."
-        })
-    } finally {
-        // Restore original styles
-        originalStyles.forEach((style, el) => {
-          el.style.overflow = style.overflow;
-          el.style.height = style.height;
-        });
-        setIsGeneratingPdf(false);
-    }
+          pdf.save(`${analysisName}-report.pdf`);
+      } catch (error) {
+          console.error("Error generating PDF:", error);
+          toast({
+            variant: "destructive",
+            title: "PDF Generation Error",
+            description: "Could not generate the PDF report."
+          })
+      } finally {
+          setIsGeneratingPdf(false);
+      }
+    }, 0);
   }, [filteredData, data.length, allUniqueCategories.length, toast, analysisName, resolvedTheme]);
 
 
@@ -246,7 +231,7 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
               <CardDescription>Filter papers by clicking a category in the legend.</CardDescription>
             </CardHeader>
             <CardContent ref={categoryChartRef}>
-              <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} />
+              <CategoryChart data={categoryChartData} onCategorySelect={handleCategorySelect} isGeneratingPdf={isGeneratingPdf} />
             </CardContent>
         </Card>
         <Card>
