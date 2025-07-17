@@ -34,10 +34,14 @@ import { Separator } from './ui/separator';
 
 export function HistorySidebar() {
   const { history, selectAnalysis, selectedAnalysis, removeAnalysis, removeDraft, isLoading } = useHistory();
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
 
   const isScratchSelected = selectedAnalysis?.name === 'From Scratch';
   const drafts = history.filter(item => !!item.draftedPaper);
+
+  const handleMobileNav = () => {
+    setOpenMobile(false);
+  }
 
   return (
     <Sidebar>
@@ -64,6 +68,7 @@ export function HistorySidebar() {
                         isActive={isScratchSelected}
                         tooltip={{children: "Start From Scratch", side: 'right', align: 'center'}}
                         className="h-auto py-2 justify-start"
+                        onClick={handleMobileNav}
                     >
                         <Link href="/title-studio">
                         <Lightbulb className="flex-shrink-0"/>
@@ -89,6 +94,7 @@ export function HistorySidebar() {
                                     isActive={selectedAnalysis?.id === item.id}
                                     className="h-auto py-2 justify-start"
                                     tooltip={{children: item.draftedPaper?.title, side: 'right', align: 'center'}}
+                                    onClick={handleMobileNav}
                                 >
                                      <Link href={`/paper-drafter?analysisId=${item.id}&title=${encodeURIComponent(item.draftedPaper!.title)}`}>
                                         <FileEdit className="flex-shrink-0"/>
@@ -102,7 +108,7 @@ export function HistorySidebar() {
                                 </SidebarMenuButton>
                                 <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
+                                    <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-100 md:opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
                                         <Trash2 className="h-4 w-4 text-destructive"/>
                                     </Button>
                                 </AlertDialogTrigger>
@@ -133,7 +139,10 @@ export function HistorySidebar() {
                     {history.map((item) => (
                         <SidebarMenuItem key={item.id}>
                             <SidebarMenuButton
-                                onClick={() => selectAnalysis(item.id)}
+                                onClick={() => {
+                                  selectAnalysis(item.id);
+                                  handleMobileNav();
+                                }}
                                 isActive={selectedAnalysis?.id === item.id}
                                 className="h-auto py-2 justify-start"
                                 tooltip={{children: item.name, side: 'right', align: 'center'}}
@@ -149,7 +158,7 @@ export function HistorySidebar() {
 
                             <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
+                                <Button variant="ghost" size="icon" className="absolute right-1 top-2 h-7 w-7 opacity-100 md:opacity-0 group-hover/menu-item:opacity-100 group-data-[collapsible=icon]:hidden">
                                     <Trash2 className="h-4 w-4 text-destructive"/>
                                 </Button>
                             </AlertDialogTrigger>
@@ -176,7 +185,7 @@ export function HistorySidebar() {
       <SidebarFooter className="p-2">
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip={{children: "Settings", side: 'right', align: 'center'}}>
+                <SidebarMenuButton asChild tooltip={{children: "Settings", side: 'right', align: 'center'}} onClick={handleMobileNav}>
                     <Link href="/settings">
                         <Settings />
                         <span>Settings</span>
