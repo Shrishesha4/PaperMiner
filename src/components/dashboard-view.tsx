@@ -37,6 +37,21 @@ declare module 'jspdf' {
     }
 }
 
+const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
+    return nodes.map(node => {
+        if (node.children && node.children.length > 0) {
+            // It's a parent node, recurse and sum up children values
+            const childrenWithCounts = injectCounts(node.children, allPapers);
+            const totalValue = childrenWithCounts.reduce((sum, child) => sum + (child.value || 0), 0);
+            return { ...node, children: childrenWithCounts, value: totalValue };
+        } else {
+            // It's a leaf node, calculate its value from the papers
+            const value = allPapers.filter(p => p.category === node.name).length;
+            return { ...node, value };
+        }
+    });
+};
+
 export function DashboardView({ analysisId, analysisName, data, failedData, onReset }: DashboardViewProps) {
   const { toast } = useToast();
   const { updateAnalysis } = useHistory();
@@ -70,29 +85,25 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
       return yearMatch && categoryMatch;
     });
   }, [data, filters]);
-  
-  const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
-    return nodes.map(node => {
-        if (node.children && node.children.length > 0) {
-            // It's a parent node, recurse and sum up children values
-            const childrenWithCounts = injectCounts(node.children, allPapers);
-            const totalValue = childrenWithCounts.reduce((sum, child) => sum + (child.value || 0), 0);
-            return { ...node, children: childrenWithCounts, value: totalValue };
-        } else {
-            // It's a leaf node, calculate its value from the papers
-            const value = allPapers.filter(p => p.category === node.name).length;
-            return { ...node, value };
-        }
-    });
-  };
 
   // Effect to consolidate categories when data is available and hierarchy isn't
   useEffect(() => {
     const consolidate = async () => {
-        if (data.length === 0 || categoryHierarchy) return;
+        // If a hierarchy already exists (from history), use it.
+        if (analysis?.categoryHierarchy) {
+            setCategoryHierarchy(analysis.categoryHierarchy);
+            return;
+        }
+
+        // If there's no data, do nothing.
+        if (data.length === 0) {
+            setCategoryHierarchy([]);
+            return;
+        }
 
         const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
         
+        // If API key is available and there's more than one category, try to consolidate.
         if (isApiKeySet && uniqueCategories.length > 1) {
             setIsConsolidating(true);
             try {
@@ -118,14 +129,15 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
                 setIsConsolidating(false);
             }
         } else {
-            // Handle case where consolidation is not possible (e.g., no API key) or not needed
+            // Handle case where consolidation is not possible or not needed: create a flat list.
             const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
             setCategoryHierarchy(flatHierarchy);
         }
     };
+
     consolidate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, data, isApiKeySet]);
+  }, [analysisId, data, isApiKeySet, analysis?.categoryHierarchy]);
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
@@ -315,7 +327,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
                        <CategoryChart data={categoryHierarchy} onCategorySelect={handleCategorySelect} />
                     ) : (
                         <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
-                            <p>No category data to display.</p>
+                           <Loader2 className="h-8 w-8 animate-spin" />
                         </div>
                     )}
                   </CardContent>
