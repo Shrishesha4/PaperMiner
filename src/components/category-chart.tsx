@@ -1,108 +1,113 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import type { CategorizedPaper } from '@/types';
-import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend } from 'recharts';
+import React, { useMemo, useState, useCallback } from 'react';
+import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend, Sector } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
+import { Button } from './ui/button';
+import { ArrowLeft } from 'lucide-react';
+
+export interface CategoryHierarchy {
+  name: string;
+  value?: number;
+  children?: CategoryHierarchy[];
+}
 
 interface CategoryChartProps {
-  data: CategorizedPaper[];
+  data: CategoryHierarchy[];
   onCategorySelect: (category: string | null) => void;
 }
 
-const MAX_VISIBLE_CATEGORIES = 9; // Show top 9 + "Other"
 const COLORS = [
-  "#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F", 
+  "#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F",
   "#0088FE", "#FFBB28", "#FF847C", "#E27D60", "#A4DE6C"
 ];
 
+const findNodeByPath = (nodes: CategoryHierarchy[], path: string[]): CategoryHierarchy[] => {
+    if (path.length === 0) {
+        return nodes;
+    }
+    const [current, ...rest] = path;
+    const node = nodes.find(n => n.name === current);
+    if (node && node.children) {
+        return findNodeByPath(node.children, rest);
+    }
+    return node ? [node] : [];
+};
+
 export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [drilldownPath, setDrilldownPath] = useState<string[]>([]);
 
-  const { chartData, chartConfig, totalPapers } = useMemo(() => {
-    const categoryCounts = data.reduce(
-      (acc, paper) => {
-        const category = paper.category || 'Uncategorized';
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
+  const currentLevelData = useMemo(() => findNodeByPath(data, drilldownPath), [data, drilldownPath]);
 
-    const sortedCategories = Object.entries(categoryCounts)
-      .map(([name, count]) => ({ name, papers: count, fill: '' }))
-      .sort((a, b) => b.papers - a.papers);
-    
-    let finalChartData = sortedCategories;
-    if (sortedCategories.length > MAX_VISIBLE_CATEGORIES + 1) {
-        const topCategories = sortedCategories.slice(0, MAX_VISIBLE_CATEGORIES);
-        const otherCount = sortedCategories
-            .slice(MAX_VISIBLE_CATEGORIES)
-            .reduce((acc, curr) => acc + curr.papers, 0);
-        
-        finalChartData = [
-            ...topCategories,
-            { name: 'Other', papers: otherCount, fill: '' },
-        ];
-    }
-    
+  const { chartData, chartConfig } = useMemo(() => {
+    const sortedData = [...currentLevelData].sort((a, b) => (b.value || 0) - (a.value || 0));
     const config: ChartConfig = {};
-    finalChartData.forEach((item, index) => {
+    sortedData.forEach((item, index) => {
       const color = COLORS[index % COLORS.length];
-      config[item.name] = {
-        label: item.name,
-        color: color,
-      };
-      item.fill = color;
+      config[item.name] = { label: item.name, color: color };
     });
+    return { chartData: sortedData, chartConfig: config };
+  }, [currentLevelData]);
 
-    const total = finalChartData.reduce((acc, curr) => acc + curr.papers, 0);
+  const handlePieClick = useCallback((item: any) => {
+    if (item.children && item.children.length > 0) {
+      setDrilldownPath(prev => [...prev, item.name]);
+      setSelectedCategory(null);
+      onCategorySelect(null);
+    } else {
+        const clickedCategory = item.name;
+        const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
+        setSelectedCategory(newSelectedCategory);
+        onCategorySelect(newSelectedCategory);
+    }
+  }, [selectedCategory, onCategorySelect]);
 
-    return { chartData: finalChartData, chartConfig: config, totalPapers: total };
-  }, [data]);
-
-  const handlePieClick = (item: any) => {
-    const clickedCategory = item.name;
-    const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
-    setSelectedCategory(newSelectedCategory);
-    onCategorySelect(newSelectedCategory);
-  };
-
-  const handleLegendClick = (payload: any) => {
-    const clickedCategory = payload.value;
-    const newSelectedCategory = selectedCategory === clickedCategory ? null : clickedCategory;
-    setSelectedCategory(newSelectedCategory);
-    onCategorySelect(newSelectedCategory);
+  const handleLegendClick = useCallback((payload: any) => {
+    const clickedItem = chartData.find(d => d.name === payload.value);
+    if (clickedItem) {
+        handlePieClick(clickedItem);
+    }
+  }, [chartData, handlePieClick]);
+  
+  const handleGoBack = () => {
+    setDrilldownPath(prev => prev.slice(0, -1));
+    setSelectedCategory(null);
+    onCategorySelect(null);
   };
 
   const selectedDataPoint = selectedCategory ? chartData.find(d => d.name === selectedCategory) : null;
-
+  const totalPapers = useMemo(() => chartData.reduce((acc, curr) => acc + (curr.value || 0), 0), [chartData]);
+  
   if (chartData.length === 0) {
     return (
       <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
-        <p>No data to display for the current filters.</p>
+        <p>No data to display.</p>
       </div>
     );
   }
 
   return (
-    <div className="h-[400px] w-full">
+    <div className="relative h-[400px] w-full">
+      {drilldownPath.length > 0 && (
+          <Button variant="ghost" size="sm" onClick={handleGoBack} className="absolute left-2 top-0 z-10">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to {drilldownPath.length > 1 ? drilldownPath[drilldownPath.length-2] : "Top Level"}
+          </Button>
+      )}
       <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <ChartTooltip
-              cursor={true}
-              content={<ChartTooltipContent hideLabel />}
-            />
+            <ChartTooltip cursor={true} content={<ChartTooltipContent nameKey="name" />} />
             <Pie
               data={chartData}
-              dataKey="papers"
+              dataKey="value"
               nameKey="name"
               innerRadius="60%"
               outerRadius="80%"
@@ -110,11 +115,12 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
               onClick={handlePieClick}
               paddingAngle={2}
             >
-                {chartData.map((entry) => (
+                {chartData.map((entry, index) => (
                     <Cell 
                         key={`cell-${entry.name}`} 
-                        fill={entry.fill} 
+                        fill={chartConfig[entry.name]?.color} 
                         opacity={selectedCategory ? (entry.name === selectedCategory ? 1 : 0.3) : 1}
+                        style={{ cursor: entry.children ? 'pointer' : 'default' }}
                     />
                 ))}
                 <Label
@@ -123,10 +129,10 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                             return (
                                 <>
                                 <text x={viewBox.cx} y={viewBox.cy - 10} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => handlePieClick({name: null})}>
-                                    {(selectedDataPoint ? selectedDataPoint.papers : totalPapers).toLocaleString()}
+                                    {(selectedDataPoint ? selectedDataPoint.value : totalPapers)?.toLocaleString()}
                                 </text>
                                 <text x={viewBox.cx} y={viewBox.cy + 15} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => handlePieClick({name: null})}>
-                                    {selectedDataPoint ? selectedDataPoint.name : 'Total Papers'}
+                                    {selectedDataPoint ? selectedDataPoint.name : drilldownPath.length > 0 ? drilldownPath[drilldownPath.length - 1] : 'Total Papers'}
                                 </text>
                                 </>
                             );
@@ -138,11 +144,21 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
               onClick={handleLegendClick}
               verticalAlign="bottom"
               wrapperStyle={{paddingTop: 20}}
-              formatter={(value, entry) => (
-                <span style={{ color: selectedCategory === value ? 'var(--foreground)' : 'var(--muted-foreground)', opacity: selectedCategory ? (selectedCategory === value ? 1 : 0.5) : 1 }}>
-                  {value}
-                </span>
-              )}
+              formatter={(value, entry) => {
+                const item = chartData.find(d => d.name === value);
+                const isDrillable = item && item.children && item.children.length > 0;
+                return (
+                  <span 
+                    className={`
+                        ${isDrillable ? 'cursor-pointer hover:text-primary' : 'cursor-default'}
+                        ${selectedCategory === value ? 'text-foreground font-medium' : 'text-muted-foreground'}
+                    `}
+                    style={{ opacity: selectedCategory ? (selectedCategory === value ? 1 : 0.5) : 1 }}
+                  >
+                    {value}
+                  </span>
+                )
+              }}
             />
           </PieChart>
         </ResponsiveContainer>

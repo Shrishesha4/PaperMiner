@@ -1,4 +1,5 @@
 import type { DraftPaperOutput } from "./schemas";
+import type { CategoryHierarchy } from "@/components/category-chart";
 
 export type ResearchPaper = {
   'Document Title': string;
@@ -30,4 +31,5 @@ export type Analysis = {
   failedPapers: FailedPaper[];
   generatedTitles?: string[]; // To store titles from scratch sessions
   draftedPaper?: DraftedPaper;
+  categoryHierarchy?: CategoryHierarchy[]; // For hierarchical chart
 };

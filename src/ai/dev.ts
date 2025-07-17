@@ -7,3 +7,4 @@ import '@/ai/flows/generate-batch-titles.ts';
 import '@/ai/flows/draft-paper-flow.ts';
 import '@/ai/flows/refine-section-flow.ts';
 import '@/ai/flows/regenerate-section-flow.ts';
+import '@/ai/flows/consolidate-categories.ts';

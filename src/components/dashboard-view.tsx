@@ -1,15 +1,16 @@
 
 'use client';
 
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import type { CategorizedPaper, FailedPaper } from '@/types';
+import type { CategoryHierarchy } from '@/components/category-chart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { Download, FileDown, Loader2, Plus, Wand2 } from 'lucide-react';
+import { Download, FileDown, Loader2, Plus, Wand2, BrainCircuit } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
@@ -18,6 +19,8 @@ import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useHistory } from '@/hooks/use-history';
+import { consolidateCategories } from '@/ai/flows/consolidate-categories';
+import { useApiKey } from '@/hooks/use-api-key';
 
 interface DashboardViewProps {
   analysisId: string;
@@ -36,17 +39,19 @@ declare module 'jspdf' {
 
 export function DashboardView({ analysisId, analysisName, data, failedData, onReset }: DashboardViewProps) {
   const { toast } = useToast();
-  const { selectAnalysis } = useHistory();
+  const { selectAnalysis, updateAnalysis } = useHistory();
+  const { getNextApiKey, isApiKeySet } = useApiKey();
+  const analysis = useHistory().history.find(a => a.id === analysisId);
+
   const [filters, setFilters] = useState({
     year: 'all',
     category: 'all',
   });
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isConsolidating, setIsConsolidating] = useState(false);
+  const [categoryHierarchy, setCategoryHierarchy] = useState<CategoryHierarchy[] | null>(analysis?.categoryHierarchy || null);
   
-  // We need refs for the individual components we want to capture
   const categoryChartRef = useRef<HTMLDivElement>(null);
-  const keywordsRef = useRef<HTMLDivElement>(null);
-
 
   const years = useMemo(() => {
     const yearSet = new Set(data.map(p => p['Publication Year']).filter(Boolean));
@@ -58,8 +63,6 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
     return ['all', ...Array.from(categorySet).sort()];
   }, [data]);
 
-  const allTitles = useMemo(() => data.map(p => p['Document Title']), [data]);
-
   const filteredData = useMemo(() => {
     return data.filter(paper => {
       const yearMatch = filters.year === 'all' || paper['Publication Year'] === filters.year;
@@ -67,20 +70,75 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
       return yearMatch && categoryMatch;
     });
   }, [data, filters]);
+  
+  // Effect to consolidate categories when data is available and hierarchy isn't
+  useEffect(() => {
+    const consolidate = async () => {
+        if (data.length > 0 && !categoryHierarchy && isApiKeySet && categories.length > 1) {
+            setIsConsolidating(true);
+            try {
+                const apiKey = getNextApiKey();
+                if (!apiKey) throw new Error("API Key not available.");
+                const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
+                const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
+                
+                // Now, inject the paper counts into the hierarchy
+                const hierarchyWithCounts = injectCounts(result.hierarchy, data);
+                
+                setCategoryHierarchy(hierarchyWithCounts);
+                // Save the generated hierarchy to history
+                updateAnalysis(analysisId, { categoryHierarchy: hierarchyWithCounts });
+
+            } catch (error) {
+                console.error("Error consolidating categories:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Could not group categories",
+                    description: "Failed to generate category domains. Displaying a flat list."
+                });
+                // Fallback to a flat hierarchy if consolidation fails
+                const flatHierarchy = categories.slice(1).map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
+                setCategoryHierarchy(flatHierarchy);
+            } finally {
+                setIsConsolidating(false);
+            }
+        } else if (data.length > 0 && !categoryHierarchy) {
+            // Handle case where consolidation is not possible (e.g., no API key) or not needed (1 category)
+            const flatHierarchy = categories.slice(1).map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
+            setCategoryHierarchy(flatHierarchy);
+        }
+    };
+    consolidate();
+  }, [data, categoryHierarchy, isApiKeySet, getNextApiKey, toast, updateAnalysis, analysisId, categories]);
+
+  const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
+    return nodes.map(node => {
+        if (node.children && node.children.length > 0) {
+            // It's a parent node, recurse and sum up children values
+            const childrenWithCounts = injectCounts(node.children, allPapers);
+            const totalValue = childrenWithCounts.reduce((sum, child) => sum + (child.value || 0), 0);
+            return { ...node, children: childrenWithCounts, value: totalValue };
+        } else {
+            // It's a leaf node, calculate its value from the papers
+            const value = allPapers.filter(p => p.category === node.name).length;
+            return { ...node, value };
+        }
+    });
+  };
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
   };
 
-  const handleCategorySelect = (category: string) => {
-    setFilters(prev => ({ ...prev, category }));
+  const handleCategorySelect = (category: string | null) => {
+    setFilters(prev => ({ ...prev, category: category || 'all' }));
   }
 
   const handleDownloadCSV = () => {
     if (data.length === 0) return;
 
     const headers = ['Document Title', 'Publication Year', 'category', 'confidence'];
-    const csvRows = [headers.join(',')]; // Header row
+    const csvRows = [headers.join(',')];
 
     for (const paper of data) {
         const values = headers.map(header => {
@@ -91,11 +149,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             else if (header === 'confidence') value = paper.confidence;
             
             if (typeof value === 'string') {
-                const hasComma = value.includes(',');
-                const hasQuote = value.includes('"');
-                if (hasComma || hasQuote) {
-                    value = `"${value.replace(/"/g, '""')}"`;
-                }
+                value = `"${value.replace(/"/g, '""')}"`;
             }
             return value;
         });
@@ -107,7 +161,6 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
     const link = document.createElement('a');
     link.setAttribute('href', url);
     link.setAttribute('download', `${analysisName}-categorized.csv`);
-    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -123,18 +176,15 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageMargin = 15;
         const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
         const contentWidth = pageWidth - pageMargin * 2;
         let yPos = pageMargin;
 
-        // --- TITLE PAGE ---
         pdf.setFontSize(22);
         pdf.text('PaperMiner Analysis Report', pageWidth / 2, yPos, { align: 'center' });
         yPos += 10;
         pdf.setFontSize(16);
         pdf.text(analysisName, pageWidth / 2, yPos, { align: 'center' });
         yPos += 15;
-
         pdf.setFontSize(12);
         pdf.text(`Report generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
         yPos += 15;
@@ -142,7 +192,6 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         pdf.setFontSize(14);
         pdf.text('Summary', pageMargin, yPos);
         yPos += 8;
-        
         pdf.setFontSize(11);
         pdf.text(`- Total papers analyzed: ${data.length}`, pageMargin, yPos);
         yPos += 7;
@@ -151,8 +200,6 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         pdf.text(`- Unique categories found: ${categories.length - 1}`, pageMargin, yPos);
         yPos += 15;
         
-
-        // --- CHART PAGE ---
         pdf.addPage();
         yPos = pageMargin;
 
@@ -160,21 +207,12 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
         yPos += 10;
         
-        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: '#ffffff' });
+        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: 'hsl(var(--background))' });
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = contentWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        if (yPos + imgHeight > pageHeight - pageMargin) {
-            pdf.addPage();
-            yPos = pageMargin;
-        }
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', pageMargin, yPos, contentWidth, imgHeight);
 
-        pdf.addImage(imgData, 'PNG', pageMargin, yPos, imgWidth, imgHeight);
-
-        // --- TABLE PAGE ---
         pdf.addPage();
-
         const tableHeaders = [['Title', 'Year', 'Category', 'Confidence']];
         const tableBody = filteredData.map(p => [
             p['Document Title'],
@@ -183,30 +221,14 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             p.confidence.toFixed(2)
         ]);
         
-        // Use jspdf-autotable for robust table creation
         pdf.autoTable({
             head: tableHeaders,
             body: tableBody,
             startY: pageMargin,
             margin: { left: pageMargin, right: pageMargin },
-            styles: {
-                fontSize: 8,
-                cellPadding: 2,
-            },
-            headStyles: {
-                fillColor: [59, 89, 152], // primary color
-                textColor: 255,
-                fontStyle: 'bold',
-            },
-            columnStyles: {
-                0: { cellWidth: 'auto' }, // Title
-                1: { cellWidth: 20 },   // Year
-                2: { cellWidth: 30 },   // Category
-                3: { cellWidth: 20 },   // Confidence
-            },
-            didDrawPage: (data: any) => {
-                // You can add headers/footers to each page here if needed
-            }
+            styles: { fontSize: 8, cellPadding: 2 },
+            headStyles: { fillColor: [59, 89, 152], textColor: 255, fontStyle: 'bold' },
+            columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 20 }, 2: { cellWidth: 30 }, 3: { cellWidth: 20 } },
         });
 
         pdf.save(`${analysisName}-report.pdf`);
@@ -224,16 +246,16 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
 
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex-1 space-y-6 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">{analysisName}</h2>
             <p className="text-muted-foreground">
               {data.length} papers analyzed. Found {categories.length - 1} unique categories.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 w-full sm:w-auto">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
             <Button onClick={() => selectAnalysis(null)}>
                 <Plus className="mr-2 h-4 w-4" /> New Analysis
             </Button>
@@ -243,11 +265,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
                 </Link>
             </Button>
             <Button onClick={handleDownloadPDF} disabled={isGeneratingPdf || data.length === 0} variant="outline">
-                {isGeneratingPdf ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <FileDown className="mr-2 h-4 w-4" />
-                )}
+                {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                 PDF
             </Button>
             <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
@@ -261,21 +279,17 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             <CardHeader>
                 <CardTitle>Filters</CardTitle>
                 <CardContent>
-                  <div className="flex flex-col sm:flex-row gap-4 mt-4 sm:mt-0 w-full sm:w-auto">
+                  <div className="mt-4 flex w-full flex-col gap-4 sm:mt-0 sm:w-auto sm:flex-row">
                     <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Filter by Year" />
-                        </SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
                         <SelectContent>
-                        {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
+                          {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
                         </SelectContent>
                     </Select>
                     <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                        <SelectTrigger className="w-full sm:w-[220px]">
-                        <SelectValue placeholder="Filter by Category" />
-                        </SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
                         <SelectContent>
-                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
+                          {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
                         </SelectContent>
                     </Select>
                   </div>
@@ -286,17 +300,31 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                   <CardHeader>
-                  <CardTitle>Category Distribution</CardTitle>
+                    <CardTitle>Category Distribution</CardTitle>
+                    <CardDescription>Click a domain to drill down. Filter papers by clicking a category in the legend.</CardDescription>
                   </CardHeader>
                   <CardContent ref={categoryChartRef}>
-                    <CategoryChart data={filteredData} onCategorySelect={handleCategorySelect} />
+                    {isConsolidating ? (
+                        <div className="flex h-[400px] w-full flex-col items-center justify-center text-muted-foreground">
+                            <BrainCircuit className="mb-4 h-10 w-10 animate-pulse text-primary" />
+                            <p className="font-medium">AI is grouping categories into domains...</p>
+                            <p className="text-sm">This may take a moment.</p>
+                        </div>
+                    ) : categoryHierarchy ? (
+                       <CategoryChart data={categoryHierarchy} onCategorySelect={handleCategorySelect} />
+                    ) : (
+                        <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
+                            <p>No category data to display.</p>
+                        </div>
+                    )}
                   </CardContent>
               </Card>
               <Card>
                   <CardHeader>
-                  <CardTitle>Top Keywords</CardTitle>
+                    <CardTitle>Top Keywords</CardTitle>
+                    <CardDescription>Most frequent keywords from the filtered papers.</CardDescription>
                   </CardHeader>
-                  <CardContent ref={keywordsRef}>
+                  <CardContent>
                     <KeywordDisplay data={filteredData} />
                   </CardContent>
               </Card>
