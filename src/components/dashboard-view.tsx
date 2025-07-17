@@ -18,6 +18,7 @@ import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 
 interface DashboardViewProps {
   analysis: Analysis;
@@ -32,6 +33,7 @@ declare module 'jspdf' {
 
 export function DashboardView({ analysis, onReset }: DashboardViewProps) {
   const { toast } = useToast();
+  const { resolvedTheme } = useTheme();
   const { id: analysisId, name: analysisName, categorizedPapers: data, failedPapers: failedData } = analysis;
 
   const [filters, setFilters] = useState({
@@ -115,6 +117,19 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
 
     setIsGeneratingPdf(true);
 
+    // Find the scrollable legend inside the chart
+    const legendScrollArea = categoryChartElement.querySelector('[data-radix-scroll-area-viewport]');
+    const originalStyles = {
+        height: legendScrollArea?.style.height || '',
+        overflow: legendScrollArea?.style.overflow || '',
+    };
+    
+    // Temporarily change styles to capture full legend content
+    if (legendScrollArea) {
+        legendScrollArea.style.height = 'auto';
+        legendScrollArea.style.overflow = 'visible';
+    }
+
     try {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pageMargin = 15;
@@ -150,7 +165,10 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
         pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
         yPos += 10;
         
-        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: '#f0f2f5' });
+        const canvas = await html2canvas(categoryChartElement, {
+            scale: 2,
+            backgroundColor: resolvedTheme === 'dark' ? '#1c1917' : '#f0f2f5',
+        });
         const imgData = canvas.toDataURL('image/png');
         const imgHeight = (canvas.height * contentWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', pageMargin, yPos, contentWidth, imgHeight);
@@ -183,9 +201,14 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
           description: "Could not generate the PDF report."
         })
     } finally {
+        // Restore original styles
+        if (legendScrollArea) {
+            legendScrollArea.style.height = originalStyles.height;
+            legendScrollArea.style.overflow = originalStyles.overflow;
+        }
         setIsGeneratingPdf(false);
     }
-  }, [filteredData, data.length, allUniqueCategories.length, toast, analysisName]);
+  }, [filteredData, data.length, allUniqueCategories.length, toast, analysisName, resolvedTheme]);
 
 
   return (
