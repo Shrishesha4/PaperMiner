@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CategoryChart } from './category-chart';
 import { KeywordDisplay } from './keyword-display';
 import { PapersTable } from './papers-table';
-import { ArrowLeft, Download, FileDown, Loader2, Plus, Wand2 } from 'lucide-react';
+import { Download, FileDown, Loader2, Plus, Wand2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { FailedPapersTable } from './failed-papers-table';
 import jsPDF from 'jspdf';
@@ -159,7 +159,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         pdf.text('Category Distribution', pageWidth / 2, yPos, { align: 'center' });
         yPos += 10;
         
-        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: null });
+        const canvas = await html2canvas(categoryChartElement, { scale: 2, backgroundColor: '#ffffff' });
         const imgData = canvas.toDataURL('image/png');
         const imgWidth = contentWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -251,9 +251,6 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
             </Button>
             <Button onClick={handleDownloadCSV} disabled={data.length === 0} variant="outline">
                 <Download className="mr-2 h-4 w-4" /> CSV
-            </Button>
-            <Button onClick={() => onReset(analysisId)} variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Re-analyze
             </Button>
           </div>
         </div>
