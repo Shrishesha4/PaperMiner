@@ -2,7 +2,6 @@
 'use client';
 
 import React from 'react';
-import { BrainCircuit } from 'lucide-react';
 
 export function AnimatedLogo() {
   return (
@@ -30,6 +29,25 @@ export function AnimatedLogo() {
           stroke="hsl(var(--primary) / 0.5)"
           strokeWidth="1"
         />
+
+        {/* Orbiting electrons */}
+        <g className="animated-logo-orbit">
+            <path id="orbit1" d="M 50,50 m -40,0 a 40,25 0 1,0 80,0 a 40,25 0 1,0 -80,0" fill="none" stroke="hsl(var(--primary) / 0.2)" strokeWidth="0.5" strokeDasharray="2 2" />
+            <circle r="2.5" fill="hsl(var(--primary))" filter="url(#glow)">
+                <animateMotion dur="8s" repeatCount="indefinite">
+                    <mpath href="#orbit1" />
+                </animateMotion>
+            </circle>
+        </g>
+         <g className="animated-logo-orbit" style={{ animationDirection: 'reverse', animationDuration: '12s' }}>
+            <path id="orbit2" d="M 50,50 m -25,0 a 25,40 0 1,0 50,0 a 25,40 0 1,0 -50,0" fill="none" stroke="hsl(var(--primary) / 0.2)" strokeWidth="0.5" strokeDasharray="2 2" />
+             <circle r="2.5" fill="hsl(var(--accent-foreground))" filter="url(#glow)">
+                <animateMotion dur="12s" repeatCount="indefinite" begin="-4s">
+                    <mpath href="#orbit2" />
+                </animateMotion>
+            </circle>
+        </g>
+
 
         {/* Circuit Paths */}
         <path
