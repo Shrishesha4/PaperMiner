@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -16,6 +17,7 @@ import { HistorySidebar } from './history-sidebar';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Dialog } from './ui/dialog';
+import { WelcomeDialog } from './welcome-dialog';
 
 type AppStep = 'upload' | 'processing' | 'dashboard';
 const BATCH_SIZE = 40;
@@ -24,7 +26,7 @@ export function InsightMinerApp() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isApiKeySet, getNextApiKey } = useApiKey();
+  const { isApiKeySet, getNextApiKey, termsAccepted } = useApiKey();
   const { selectedAnalysis, selectAnalysis, addAnalysis, removeAnalysis, isLoading: isHistoryLoading } = useHistory();
 
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
@@ -195,9 +197,10 @@ export function InsightMinerApp() {
         <HistorySidebar />
         <SidebarInset className="flex flex-col">
             <AppHeader />
-            <Dialog open={!isApiKeySet}>
+            <Dialog open={termsAccepted && !isApiKeySet}>
               <ApiKeyDialog />
             </Dialog>
+            <WelcomeDialog />
             <div className="flex-1 flex flex-col">
               {renderContent()}
             </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
@@ -7,15 +8,19 @@ interface ApiKeyContextType {
   setApiKeys: (keys: string[]) => void;
   isApiKeySet: boolean;
   getNextApiKey: () => string | null;
+  termsAccepted: boolean;
+  acceptTerms: () => void;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
-const API_KEY_STORAGE_KEY = 'gemini_api_keys'; // Changed key name
+const API_KEY_STORAGE_KEY = 'gemini_api_keys';
+const TERMS_ACCEPTED_KEY = 'paperminer_terms_accepted';
 
 export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   const [apiKeys, setApiKeysState] = useState<string[]>([]);
   const [isApiKeySet, setIsApiKeySet] = useState(false);
+  const [termsAccepted, setTermsAcceptedState] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const currentIndex = useRef(0);
 
@@ -29,6 +34,12 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
             setIsApiKeySet(true);
         }
       }
+      
+      const storedTerms = localStorage.getItem(TERMS_ACCEPTED_KEY);
+      if (storedTerms === 'true') {
+        setTermsAcceptedState(true);
+      }
+
     } catch (error) {
       console.error("Could not access localStorage", error);
     } finally {
@@ -63,13 +74,22 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
     currentIndex.current = (currentIndex.current + 1) % apiKeys.length;
     return key;
   }, [apiKeys]);
+  
+  const acceptTerms = useCallback(() => {
+    setTermsAcceptedState(true);
+    try {
+        localStorage.setItem(TERMS_ACCEPTED_KEY, 'true');
+    } catch (error) {
+        console.error("Could not save terms acceptance to localStorage", error);
+    }
+  }, []);
 
   // Only render children when the key has been loaded from localStorage
   if (!isLoaded) {
     return null; // Or a loading spinner
   }
 
-  const value = { apiKeys, setApiKeys, isApiKeySet, getNextApiKey };
+  const value = { apiKeys, setApiKeys, isApiKeySet, getNextApiKey, termsAccepted, acceptTerms };
 
   return (
     <ApiKeyContext.Provider value={value}>
