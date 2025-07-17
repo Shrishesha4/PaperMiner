@@ -11,10 +11,11 @@ interface TopicSelectorProps {
   topics: string[];
   onAddTopic: (topic: string) => void;
   onRemoveTopic: (topic: string) => void;
+  onClearTopics: () => void;
   isLoading: boolean;
 }
 
-export function TopicSelector({ topics, onAddTopic, onRemoveTopic, isLoading }: TopicSelectorProps) {
+export function TopicSelector({ topics, onAddTopic, onRemoveTopic, onClearTopics, isLoading }: TopicSelectorProps) {
   const [currentTopic, setCurrentTopic] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +54,20 @@ export function TopicSelector({ topics, onAddTopic, onRemoveTopic, isLoading }: 
       </div>
       
       <div className="min-h-[60px] p-2 bg-muted/50 rounded-md">
-        <h4 className="text-sm font-medium text-muted-foreground mb-2">Selected Topics:</h4>
+        <div className="flex justify-between items-center mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground">Selected Topics:</h4>
+            {topics.length > 0 && (
+                <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-muted-foreground"
+                    onClick={onClearTopics}
+                    disabled={isLoading}
+                >
+                    Clear all
+                </Button>
+            )}
+        </div>
         {topics.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {topics.map(topic => (

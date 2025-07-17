@@ -58,6 +58,10 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const handleRemoveTopic = (topicToRemove: string) => {
     setTopics(topics.filter(topic => topic !== topicToRemove));
   };
+  
+  const handleClearTopics = () => {
+    setTopics([]);
+  };
 
 
   const handleGenerate = async () => {
@@ -243,6 +247,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                 topics={topics}
                 onAddTopic={handleAddTopic}
                 onRemoveTopic={handleRemoveTopic}
+                onClearTopics={handleClearTopics}
                 isLoading={isGenerating}
             />
             <div className="space-y-4">
