@@ -48,10 +48,13 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     textAnchor="end"
                     interval={0}
                     height={1}
-                    tick={{ display: 'none' }}
+                    className="hidden sm:block"
                 />
                 <YAxis />
-                <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+                <Tooltip 
+                    cursor={{ fill: 'hsl(var(--muted))' }} 
+                    content={<ChartTooltipContent labelKey="name" />} 
+                />
                 <Bar dataKey="count" fill="hsl(var(--primary))" radius={4} onClick={(bar) => onCategorySelect(bar.name)} style={{cursor: 'pointer'}} />
                 <Brush 
                     dataKey="name" 

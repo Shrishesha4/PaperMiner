@@ -4,10 +4,8 @@
 import React from 'react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
-import { Info, Lightbulb } from 'lucide-react';
+import { Lightbulb, MessageSquareQuote } from 'lucide-react';
 import type { CheckTitleNoveltyOutput } from '@/types/schemas';
-import * as TooltipPrimitive from "@radix-ui/react-tooltip";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 interface NoveltyResultCardProps {
@@ -49,14 +47,6 @@ function ImprovementSuggestions({ suggestions }: { suggestions: string[] }) {
 }
 
 export function NoveltyResultCard({ result }: NoveltyResultCardProps) {
-  const [container, setContainer] = React.useState<HTMLElement | null>(null);
-
-  React.useEffect(() => {
-    // This effect ensures we have access to document.body on the client.
-    setContainer(document.body);
-  }, []);
-
-
   return (
     <div className="space-y-4">
       <Alert variant={getNoveltyAlertVariant(result.noveltyScore)} className={`${result.noveltyScore >= 0.8 ? 'border-green-500/50 text-green-700 [&>svg]:text-green-700' : ''}`}>
@@ -71,30 +61,20 @@ export function NoveltyResultCard({ result }: NoveltyResultCardProps) {
       {result.similarTitles.length > 0 && (
         <div className="space-y-2">
           <h5 className="text-sm font-medium">Potentially Similar Titles Found:</h5>
-          <TooltipProvider>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {result.similarTitles.map((item, index) => (
-                <div key={index} className="text-sm text-muted-foreground p-2 border rounded-md bg-background/50">
+                <div key={index} className="text-sm p-3 border rounded-md bg-background/50 flex flex-col gap-2">
                   <div className="flex justify-between items-start gap-2">
-                    <p className="flex-1 pr-2 break-words">{item.title}</p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{item.similarityScore.toFixed(2)}</Badge>
-                       <Tooltip delayDuration={100}>
-                          <TooltipTrigger asChild>
-                              <button><Info className="h-4 w-4" /></button>
-                          </TooltipTrigger>
-                           <TooltipPrimitive.Portal container={container}>
-                                <TooltipContent className="max-w-xs">
-                                    <p>{item.reasoning}</p>
-                                </TooltipContent>
-                           </TooltipPrimitive.Portal>
-                      </Tooltip>
-                    </div>
+                    <p className="flex-1 font-medium pr-2 break-words">{item.title}</p>
+                    <Badge variant="secondary" className="shrink-0">{item.similarityScore.toFixed(2)}</Badge>
+                  </div>
+                   <div className="flex items-start gap-2 text-muted-foreground text-xs border-t pt-2 mt-1">
+                      <MessageSquareQuote className="w-4 h-4 mt-0.5 shrink-0" />
+                      <p className="flex-1">{item.reasoning}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </TooltipProvider>
         </div>
       )}
     </div>
