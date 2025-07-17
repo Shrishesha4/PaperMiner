@@ -10,13 +10,14 @@ import { ArrowLeft, Download, Loader2 } from 'lucide-react';
 import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
 import jsPDF from 'jspdf';
+import type { ExistingPaper } from '@/types/schemas';
 
 
 type AnalysisData = {
   id: string;
   name: string;
   categories: string[];
-  titles: string[];
+  papers: ExistingPaper[];
 };
 
 export function TitleStudio() {
@@ -44,8 +45,16 @@ export function TitleStudio() {
       const found = history.find((h) => h.id === analysisId);
       if (found) {
         const categories = Array.from(new Set(found.categorizedPapers.map((p) => p.category).filter(Boolean)));
-        const titles = found.categorizedPapers.map((p) => p['Document Title']);
-        setAnalysis({ id: found.id, name: found.name, categories, titles });
+        
+        const papers: ExistingPaper[] = found.categorizedPapers.map((p) => {
+            const ieeeTerms = p['IEEE Terms']?.split(';').map(k => k.trim()).filter(Boolean) || [];
+            return {
+                title: p['Document Title'],
+                keywords: [...ieeeTerms]
+            };
+        });
+
+        setAnalysis({ id: found.id, name: found.name, categories, papers });
         if (found.generatedTitles) {
             setGeneratedTitles(found.generatedTitles);
         }
@@ -57,7 +66,7 @@ export function TitleStudio() {
       // Handle the "from scratch" case. Create a temporary one if needed.
       const scratch = history.find(h => h.name === 'From Scratch' && h.categorizedPapers.length === 0);
       if (scratch) {
-        setAnalysis({ id: scratch.id, name: scratch.name, categories: [], titles: [] });
+        setAnalysis({ id: scratch.id, name: scratch.name, categories: [], papers: [] });
         setGeneratedTitles(scratch.generatedTitles || []);
         scratchAnalysisId.current = scratch.id;
       } else {
@@ -67,7 +76,7 @@ export function TitleStudio() {
             failedPapers: [],
             generatedTitles: [],
           });
-          setAnalysis({ id: newScratch.id, name: newScratch.name, categories: [], titles: [] });
+          setAnalysis({ id: newScratch.id, name: newScratch.name, categories: [], papers: [] });
           scratchAnalysisId.current = newScratch.id;
           router.replace(`/title-studio?analysisId=${newScratch.id}`, { scroll: false });
       }

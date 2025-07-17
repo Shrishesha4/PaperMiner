@@ -1,10 +1,17 @@
 
 import { z } from 'zod';
 
+// Schema for an existing paper used in novelty check
+export const ExistingPaperSchema = z.object({
+  title: z.string().describe('The title of the existing research paper.'),
+  keywords: z.array(z.string()).optional().describe('A list of keywords associated with the paper (from Author Keywords, IEEE Terms, etc.).')
+});
+export type ExistingPaper = z.infer<typeof ExistingPaperSchema>;
+
 // Schemas for checking title novelty
 export const CheckTitleNoveltyInputSchema = z.object({
   generatedTitle: z.string().describe('The newly generated title to check for novelty.'),
-  existingTitles: z.array(z.string()).describe('A list of existing research paper titles to compare against.'),
+  existingPapers: z.array(ExistingPaperSchema).describe('A list of existing research papers with their titles and keywords to compare against.'),
   apiKey: z.string().describe('The user-provided Gemini API key.'),
 });
 export type CheckTitleNoveltyInput = z.infer<typeof CheckTitleNoveltyInputSchema>;

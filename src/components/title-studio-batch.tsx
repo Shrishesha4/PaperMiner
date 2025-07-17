@@ -6,7 +6,7 @@ import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { generateBatchTitles } from '@/ai/flows/generate-batch-titles';
 import { checkTitleNovelty } from '@/ai/flows/check-title-novelty';
-import type { CheckTitleNoveltyOutput } from '@/types/schemas';
+import type { CheckTitleNoveltyOutput, ExistingPaper } from '@/types/schemas';
 import { TopicSelector } from './topic-selector';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
@@ -27,7 +27,7 @@ interface TitleStudioBatchProps {
     id?: string;
     name: string;
     categories: string[];
-    titles: string[];
+    papers: ExistingPaper[];
   };
   generatedTitles: string[];
   onTitlesGenerated: (titles: string[], topics: string[]) => void;
@@ -48,7 +48,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedStates, setCopiedStates] = useState<boolean[]>([]);
   const [noveltyChecks, setNoveltyChecks] = useState<Record<number, NoveltyState>>({});
-  const isFromScratch = analysis.titles.length === 0;
+  const isFromScratch = analysis.papers.length === 0;
 
   const handleAddTopic = (topic: string) => {
     const trimmedTopic = topic.trim();
@@ -128,7 +128,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
 
       const result = await checkTitleNovelty({
         generatedTitle: title,
-        existingTitles: analysis.titles,
+        existingPapers: analysis.papers,
         apiKey
       });
       setNoveltyChecks(prev => ({ ...prev, [index]: { isLoading: false, result, error: null } }));
@@ -207,7 +207,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                                   </Button>
                                 </DialogTrigger>
                             </TooltipTrigger>
-                            {isFromScratch && <TooltipContent><p>Novelty check requires an analysis with existing titles.</p></TooltipContent>}
+                            {isFromScratch && <TooltipContent><p>Novelty check requires an analysis with existing papers.</p></TooltipContent>}
                         </Tooltip>
                         </TooltipProvider>
                         {noveltyState?.result && (
