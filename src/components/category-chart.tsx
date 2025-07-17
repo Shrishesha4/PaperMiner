@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -23,6 +24,12 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
       .sort((a, b) => b.count - a.count);
   }, [data]);
 
+  const initialEndIndex = useMemo(() => {
+    if (chartData.length <= 10) return chartData.length - 1; // Show all if 10 or fewer
+    return Math.max(Math.floor(chartData.length * 0.2), 5); // Show top 20% or at least 5
+  }, [chartData.length]);
+
+
   if (chartData.length === 0) {
     return (
         <div className="flex items-center justify-center h-96 w-full text-muted-foreground">
@@ -47,8 +54,16 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     angle={-45}
                     textAnchor="end"
                     interval={0}
-                    height={1}
+                    height={80} // Increased height to prevent clipping
                     className="hidden sm:block"
+                />
+                 <XAxis
+                    dataKey="name"
+                    xAxisId="mobile"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={false}
+                    className="sm:hidden"
                 />
                 <YAxis />
                 <Tooltip 
@@ -60,6 +75,8 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                     dataKey="name" 
                     height={30} 
                     stroke="hsl(var(--primary))" 
+                    startIndex={0}
+                    endIndex={initialEndIndex}
                     tickFormatter={(index) => chartData[index]?.name ?? ''}
                 />
                 </BarChart>
