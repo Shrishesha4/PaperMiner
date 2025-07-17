@@ -25,7 +25,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased flex flex-col h-screen">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -36,7 +36,7 @@ export default function RootLayout({
             <Providers>
               <SidebarProvider>
                   <AppHeader />
-                  <div className="flex h-screen pt-16">
+                  <div className="flex flex-1 h-full pt-16">
                     <HistorySidebar />
                     <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                       {children}
