@@ -38,6 +38,9 @@ declare module 'jspdf' {
 }
 
 const injectCounts = (nodes: CategoryHierarchy[], allPapers: CategorizedPaper[]): CategoryHierarchy[] => {
+    if (!Array.isArray(nodes)) {
+        return []; // Guard against non-array inputs
+    }
     return nodes.map(node => {
         if (node.children && node.children.length > 0) {
             // It's a parent node, recurse and sum up children values
@@ -130,6 +133,7 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
     };
 
     consolidate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisId, data, isApiKeySet]); // Rerun only when the core data changes
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
@@ -282,25 +286,25 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
         
         <div className="space-y-6">
             <Card>
-            <CardHeader>
-                <CardTitle>Filters</CardTitle>
+                <CardHeader>
+                    <CardTitle>Filters</CardTitle>
+                </CardHeader>
                 <CardContent>
-                  <div className="mt-4 flex w-full flex-col gap-4 sm:mt-0 sm:w-auto sm:flex-row">
-                    <Select value={filters.year} onValueChange={handleFilterChange('year')}>
-                        <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
-                        <SelectContent>
-                          {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                    <Select value={filters.category} onValueChange={handleFilterChange('category')}>
-                        <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectTrigger>
-                        <SelectContent>
-                          {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                  </div>
+                    <div className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
+                        <Select value={filters.year} onValueChange={handleFilterChange('year')}>
+                            <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by Year" /></SelectTrigger>
+                            <SelectContent>
+                            {years.map(year => <SelectItem key={year} value={year}>{year === 'all' ? 'All Years' : year}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={filters.category} onValueChange={handleFilterChange('category')}>
+                            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by Category" /></SelectValue>
+                            <SelectContent>
+                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'all' ? 'All Categories' : cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </CardContent>
-            </CardHeader>
             </Card>
 
             <div className="grid gap-6 lg:grid-cols-3">
