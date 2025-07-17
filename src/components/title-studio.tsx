@@ -14,7 +14,7 @@ import type { ExistingPaper } from '@/types/schemas';
 
 
 type AnalysisData = {
-  id: string;
+  id: string | null; // Can be null for an unsaved scratch analysis
   name: string;
   categories: string[];
   papers: ExistingPaper[];
@@ -35,13 +35,14 @@ export function TitleStudio() {
   
   // Use a ref to track the ID of a newly created scratch analysis
   // so we can update it instead of creating new ones on subsequent generations.
-  const scratchAnalysisId = useRef<string | null>(analysisId);
+  const scratchAnalysisId = useRef<string | null>(null);
 
 
   useEffect(() => {
     if (isHistoryLoading) return;
 
     if (analysisId) {
+      scratchAnalysisId.current = analysisId; // Store for potential updates
       const found = history.find((h) => h.id === analysisId);
       if (found) {
         const categories = Array.from(new Set(found.categorizedPapers.map((p) => p.category).filter(Boolean)));
@@ -63,41 +64,46 @@ export function TitleStudio() {
         router.push('/');
       }
     } else {
-      // Handle the "from scratch" case. Create a temporary one if needed.
-      const scratch = history.find(h => h.name === 'From Scratch' && h.categorizedPapers.length === 0);
-      if (scratch) {
-        setAnalysis({ id: scratch.id, name: scratch.name, categories: [], papers: [] });
-        setGeneratedTitles(scratch.generatedTitles || []);
-        scratchAnalysisId.current = scratch.id;
-      } else {
-         const newScratch = addAnalysis({
-            name: 'From Scratch',
-            categorizedPapers: [],
-            failedPapers: [],
-            generatedTitles: [],
-          });
-          setAnalysis({ id: newScratch.id, name: newScratch.name, categories: [], papers: [] });
-          scratchAnalysisId.current = newScratch.id;
-          router.replace(`/title-studio?analysisId=${newScratch.id}`, { scroll: false });
-      }
+      // Handle the "from scratch" case without saving immediately.
+      setAnalysis({ id: null, name: 'From Scratch', categories: [], papers: [] });
+      setGeneratedTitles([]);
+      scratchAnalysisId.current = null;
     }
     setIsLoading(false);
-  }, [analysisId, history, isHistoryLoading, router, toast, addAnalysis]);
+  }, [analysisId, history, isHistoryLoading, router, toast]);
 
   const handleTitlesGenerated = useCallback((newTitles: string[], topics: string[]) => {
     setGeneratedTitles(newTitles);
     setGenerationTopics(topics);
     
-    const idToUpdate = analysisId || scratchAnalysisId.current;
-    if (idToUpdate) {
-       const isFromScratch = history.find(h => h.id === idToUpdate)?.name === 'From Scratch';
-       const updates: { generatedTitles: string[], name?: string } = { generatedTitles: newTitles };
-       if (isFromScratch && topics.length > 0) {
-         updates.name = `Scratchpad: ${topics.join(', ')}`;
-       }
-       updateAnalysis(idToUpdate, updates);
+    // If it's a new scratch analysis, create it now.
+    if (!scratchAnalysisId.current && (analysisId === null || analysisId === undefined)) {
+        const name = `Scratchpad: ${topics.join(', ')}`;
+        const newAnalysis = addAnalysis({
+            name,
+            categorizedPapers: [],
+            failedPapers: [],
+            generatedTitles: newTitles,
+        });
+        scratchAnalysisId.current = newAnalysis.id;
+        // Update URL to reflect the new analysis ID for persistence
+        router.replace(`/title-studio?analysisId=${newAnalysis.id}`, { scroll: false });
+        return;
     }
-  }, [updateAnalysis, analysisId, history]);
+    
+    // If it's an existing analysis (scratch or otherwise), update it.
+    if (scratchAnalysisId.current) {
+        const existingAnalysis = history.find(h => h.id === scratchAnalysisId.current);
+        const updates: { generatedTitles: string[]; name?: string } = { generatedTitles: newTitles };
+        
+        // Update name for scratchpads
+        if (existingAnalysis && (existingAnalysis.name === 'From Scratch' || existingAnalysis.name.startsWith('Scratchpad:'))) {
+            updates.name = `Scratchpad: ${topics.join(', ')}`;
+        }
+        
+        updateAnalysis(scratchAnalysisId.current, updates);
+    }
+  }, [updateAnalysis, analysisId, history, addAnalysis, router]);
   
   const handleContinueInChatGPT = () => {
     if (generatedTitles.length === 0) {
@@ -200,7 +206,7 @@ export function TitleStudio() {
       </div>
       <div className="flex-1 overflow-y-auto">
         <TitleStudioBatch 
-          analysis={analysis}
+          analysis={{...analysis, id: analysis.id || 'scratch'}}
           generatedTitles={generatedTitles}
           onTitlesGenerated={handleTitlesGenerated}
         />

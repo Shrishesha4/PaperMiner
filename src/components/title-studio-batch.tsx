@@ -24,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 
 interface TitleStudioBatchProps {
   analysis: {
-    id?: string;
+    id: string; // Now can be a placeholder like 'scratch' before saving
     name: string;
     categories: string[];
     papers: ExistingPaper[];
@@ -69,7 +69,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
     if (!isApiKeySet || topics.length === 0) return;
 
     setIsGenerating(true);
-    onTitlesGenerated([], []);
+    // Clear previous results when generating new ones
     setCopiedStates([]);
     setNoveltyChecks({});
 
@@ -83,6 +83,8 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
         customInstructions: customInstructions || undefined,
         apiKey,
       });
+
+      // This call now handles saving logic in the parent component
       onTitlesGenerated(result.titles, topics);
       setCopiedStates(new Array(result.titles.length).fill(false));
     } catch (e) {
@@ -221,7 +223,7 @@ export function TitleStudioBatch({ analysis, generatedTitles, onTitlesGenerated 
                         )}
                     </Dialog>
 
-                    <Button asChild size="sm" variant="default">
+                    <Button asChild size="sm" variant="default" disabled={!analysis.id || analysis.id === 'scratch'}>
                         <Link href={`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${analysis.id}`}>
                             <FileText />
                             <span className="ml-1">Draft</span>
