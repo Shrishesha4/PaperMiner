@@ -3,6 +3,7 @@
 import { BrainCircuit } from 'lucide-react';
 import React from 'react';
 import { useSidebar, SidebarTrigger } from './ui/sidebar';
+import { ThemeToggle } from './theme-toggle';
 
 export function AppHeader() {
   const { isMobile, open, state } = useSidebar();
@@ -18,6 +19,7 @@ export function AppHeader() {
             </div>
         )}
       </div>
+      <ThemeToggle />
     </header>
   );
 }
