@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend, Sector } from 'recharts';
+import { Pie, PieChart, ResponsiveContainer, Cell, Label, Legend } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 import { ScrollArea } from './ui/scroll-area';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 export interface CategoryData {
   name: string;
@@ -17,7 +18,9 @@ export interface CategoryData {
 }
 
 interface CategoryChartProps {
-  data: CategoryData[];
+  chartData: CategoryData[];
+  allCategoriesData: CategoryData[];
+  totalPapers: number;
   onCategorySelect: (category: string | null) => void;
   isGeneratingPdf: boolean;
 }
@@ -27,18 +30,26 @@ const COLORS = [
   "#0088FE", "#FFBB28", "#FF847C", "#E27D60", "#A4DE6C"
 ];
 
-export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: CategoryChartProps) {
+const TOP_CATEGORIES_COUNT = 20;
+
+export function CategoryChart({ chartData, allCategoriesData, totalPapers, onCategorySelect, isGeneratingPdf }: CategoryChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { chartData, chartConfig } = useMemo(() => {
-    const sortedData = [...data].sort((a, b) => b.value - a.value);
+  const { visualChartData, chartConfig } = useMemo(() => {
     const config: ChartConfig = {};
-    sortedData.forEach((item, index) => {
+    const dataForConfig = allCategoriesData.length > chartData.length ? [...chartData.filter(c => c.name !== 'Other'), ...allCategoriesData.slice(TOP_CATEGORIES_COUNT - 1)] : chartData;
+
+    dataForConfig.forEach((item, index) => {
       const color = COLORS[index % COLORS.length];
       config[item.name] = { label: item.name, color: color };
     });
-    return { chartData: sortedData, chartConfig: config };
-  }, [data]);
+    // Ensure 'Other' has a color if it exists
+    if (chartData.some(c => c.name === 'Other') && !config['Other']) {
+        config['Other'] = { label: 'Other', color: COLORS[chartData.length % COLORS.length]};
+    }
+
+    return { visualChartData: chartData, chartConfig: config };
+  }, [chartData, allCategoriesData]);
 
   const handlePieClick = useCallback((item: any) => {
     const clickedCategory = item.name;
@@ -47,17 +58,15 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
     onCategorySelect(newSelectedCategory);
   }, [selectedCategory, onCategorySelect]);
 
-  const handleLegendClick = useCallback((payload: any) => {
-    const clickedItem = chartData.find(d => d.name === payload.value);
-    if (clickedItem) {
-        handlePieClick(clickedItem);
-    }
-  }, [chartData, handlePieClick]);
+  const handleLegendClick = useCallback((itemName: string) => {
+    const newSelectedCategory = selectedCategory === itemName ? null : itemName;
+    setSelectedCategory(newSelectedCategory);
+    onCategorySelect(newSelectedCategory);
+  }, [selectedCategory, onCategorySelect]);
   
-  const selectedDataPoint = selectedCategory ? chartData.find(d => d.name === selectedCategory) : null;
-  const totalPapers = useMemo(() => chartData.reduce((acc, curr) => acc + curr.value, 0), [chartData]);
+  const selectedDataPoint = selectedCategory ? allCategoriesData.find(d => d.name === selectedCategory) : null;
   
-  if (chartData.length === 0) {
+  if (visualChartData.length === 0) {
     return (
       <div className="flex h-[400px] w-full items-center justify-center text-muted-foreground">
         <p>No data to display.</p>
@@ -65,49 +74,67 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
     );
   }
   
-  const LegendContent = ({ payload }: { payload?: any[] }) => {
-    if (isGeneratingPdf) {
-      // Render a simple list for PDF generation
-      return (
-        <div className="w-full max-w-[250px]">
-          <ul className="flex flex-col gap-1 p-2">
-            {payload?.map((entry, index) => (
-              <li key={`item-${index}`} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                  <span className="break-words">{entry.value}</span>
-                </div>
-                <span className="font-mono text-xs shrink-0">({(entry.payload as any)?.value})</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    }
+  const LegendContent = () => {
+    const topCategories = visualChartData.filter(c => c.name !== 'Other');
+    const otherData = allCategoriesData.slice(topCategories.length);
+    const hasOther = otherData.length > 0;
 
-    // Render interactive scrollable list for on-screen display
+    const renderItem = (item: CategoryData, isSubItem = false) => (
+      <li
+        key={`item-${item.name}`}
+        onClick={() => handleLegendClick(item.name)}
+        className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm cursor-pointer rounded-md p-2
+            ${selectedCategory === item.name ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
+            ${isSubItem ? 'pl-8' : ''}
+        `}
+        style={{
+            opacity: selectedCategory ? (selectedCategory === item.name ? 1 : 0.5) : 1,
+        }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: chartConfig[item.name]?.color }} />
+          <span className="break-words">{item.name}</span>
+        </div>
+        <span className="font-mono text-xs shrink-0">({item.value})</span>
+      </li>
+    );
+
     return (
       <ScrollArea className="h-[350px] w-full max-w-[250px]">
-        <ul className="flex flex-col gap-1 p-2">
-          {payload?.map((entry, index) => (
-            <li
-              key={`item-${index}`}
-              onClick={() => handleLegendClick(entry)}
-              className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm cursor-pointer rounded-md p-2
-                  ${selectedCategory === entry.value ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
-              `}
-              style={{
-                  opacity: selectedCategory ? (selectedCategory === entry.value ? 1 : 0.5) : 1,
-              }}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
-                <span className="break-words">{entry.value}</span>
-              </div>
-              <span className="font-mono text-xs shrink-0">({(entry.payload as any)?.value})</span>
-            </li>
-          ))}
-        </ul>
+         <Accordion type="single" collapsible className="w-full">
+            <ul className="flex flex-col gap-1 p-2">
+                {topCategories.map(item => renderItem(item))}
+                {hasOther && (
+                    <AccordionItem value="other-categories" className="border-b-0">
+                         <li
+                            key="item-other"
+                            className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm rounded-md p-0
+                                ${selectedCategory === 'Other' ? 'bg-muted/80 font-medium' : 'text-muted-foreground hover:bg-muted/50'}
+                            `}
+                             style={{
+                                opacity: selectedCategory ? (selectedCategory === 'Other' ? 1 : 0.5) : 1,
+                            }}
+                        >
+                            <AccordionTrigger 
+                                className="flex-1 p-2"
+                                onClick={() => handleLegendClick('Other')}
+                            >
+                                <div className="flex items-center gap-2 min-w-0">
+                                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: chartConfig['Other']?.color }} />
+                                <span className="break-words">Other</span>
+                                </div>
+                                <span className="font-mono text-xs shrink-0 pr-2">({otherData.reduce((acc, i) => acc + i.value, 0)})</span>
+                            </AccordionTrigger>
+                        </li>
+                        <AccordionContent>
+                            <ul className="flex flex-col gap-1 pt-1">
+                                {otherData.map(item => renderItem(item, true))}
+                            </ul>
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+            </ul>
+        </Accordion>
       </ScrollArea>
     );
   };
@@ -119,7 +146,7 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
           <PieChart>
             <ChartTooltip cursor={true} content={<ChartTooltipContent nameKey="name" />} />
             <Pie
-              data={chartData}
+              data={visualChartData}
               dataKey="value"
               nameKey="name"
               innerRadius="60%"
@@ -128,7 +155,7 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
               onClick={(e) => handlePieClick(e)}
               paddingAngle={2}
             >
-                {chartData.map((entry) => (
+                {visualChartData.map((entry) => (
                     <Cell 
                         key={`cell-${entry.name}`} 
                         fill={chartConfig[entry.name]?.color} 
@@ -138,13 +165,15 @@ export function CategoryChart({ data, onCategorySelect, isGeneratingPdf }: Categ
                 <Label
                     content={({ viewBox }) => {
                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                            const displayValue = selectedDataPoint ? selectedDataPoint.value : totalPapers;
+                            const displayName = selectedDataPoint ? selectedDataPoint.name : 'Total Papers';
                             return (
                                 <>
                                 <text x={viewBox.cx} y={viewBox.cy - 12} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
-                                    {(selectedDataPoint ? selectedDataPoint.value : totalPapers)?.toLocaleString()}
+                                    {displayValue?.toLocaleString()}
                                 </text>
                                 <text x={viewBox.cx} y={viewBox.cy + 20} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
-                                    {selectedDataPoint ? selectedDataPoint.name : 'Total Papers'}
+                                    {displayName}
                                 </text>
                                 </>
                             );
