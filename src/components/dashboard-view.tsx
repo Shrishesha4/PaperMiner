@@ -48,19 +48,6 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
     return ['all', ...Array.from(yearSet).sort((a, b) => Number(b) - Number(a))];
   }, [data]);
 
-  const allUniqueCategories = useMemo(() => {
-    const categorySet = new Set(data.map(p => p.category).filter(Boolean));
-    return ['all', ...Array.from(categorySet).sort()];
-  }, [data]);
-
-  const filteredData = useMemo(() => {
-    return data.filter(paper => {
-      const yearMatch = filters.year === 'all' || paper['Publication Year'] === filters.year;
-      const categoryMatch = filters.category === 'all' || paper.category === filters.category;
-      return yearMatch && categoryMatch;
-    });
-  }, [data, filters]);
-  
   const categoryChartData: CategoryData[] = useMemo(() => {
     const categoryCounts: Record<string, number> = {};
     data.forEach(paper => {
@@ -71,6 +58,19 @@ export function DashboardView({ analysis, onReset }: DashboardViewProps) {
     return Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
   }, [data]);
 
+  const allUniqueCategories = useMemo(() => {
+    return ['all', ...categoryChartData.map(c => c.name).sort()];
+  }, [categoryChartData]);
+
+
+  const filteredData = useMemo(() => {
+    return data.filter(paper => {
+      const yearMatch = filters.year === 'all' || paper['Publication Year'] === filters.year;
+      const categoryMatch = filters.category === 'all' || paper.category === filters.category;
+      return yearMatch && categoryMatch;
+    });
+  }, [data, filters]);
+  
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
   };
