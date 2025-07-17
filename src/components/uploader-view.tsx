@@ -150,7 +150,7 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
 
   return (
     <div className="flex h-full items-center justify-center text-center">
-      <div className="w-full max-w-6xl mx-0 lg:ml-auto lg:mr-16">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="text-left">
             <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights for Your Research</h2>
