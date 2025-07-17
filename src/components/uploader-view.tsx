@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useCallback } from 'react';
@@ -7,6 +8,7 @@ import { type ResearchPaper } from '@/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { AnimatedLogo } from './animated-logo';
 
 // A simple CSV parser that handles quoted fields.
 function parseCSV(text: string): { data: ResearchPaper[], errors: number } {
@@ -148,41 +150,48 @@ export function UploaderView({ onProcess }: UploaderViewProps) {
 
   return (
     <div className="flex h-full items-center justify-center text-center">
-      <div className="max-w-2xl w-full">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights for Your Research</h2>
-        <p className="mt-4 text-lg text-muted-foreground">
-          Upload a CSV from IEEE Xplore to automatically categorize titles, visualize trends, and uncover key themes for your research.
-        </p>
-        <Card className="mt-10">
-          <form className="p-4" onDragEnter={handleDrag} onSubmit={(e) => e.preventDefault()}>
-              <label
-                  htmlFor="dropzone-file"
-                  className={`relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card/50 hover:bg-muted/50 transition-colors ${dragActive ? 'border-primary' : 'border-border'}`}
-              >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <UploadCloud className={`w-10 h-10 mb-3 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground">CSV files from ieee.org</p>
-                  </div>
-                  <input id="dropzone-file" type="file" className="hidden" accept=".csv" onChange={handleChange} disabled={isParsing} />
-                   {isParsing && (
-                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="w-full max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="text-left">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Mine Insights for Your Research</h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Upload a CSV from IEEE Xplore to automatically categorize titles, visualize trends, and uncover key themes for your research.
+            </p>
+            <Card className="mt-10">
+              <form className="p-4" onDragEnter={handleDrag} onSubmit={(e) => e.preventDefault()}>
+                  <label
+                      htmlFor="dropzone-file"
+                      className={`relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card/50 hover:bg-muted/50 transition-colors ${dragActive ? 'border-primary' : 'border-border'}`}
+                  >
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <UploadCloud className={`w-10 h-10 mb-3 ${dragActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <p className="mb-2 text-sm text-muted-foreground">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">CSV files from ieee.org</p>
                       </div>
-                  )}
-              </label>
-              {dragActive && <div className="absolute inset-0 w-full h-full" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}></div>}
-          </form>
-        </Card>
-         <div className="mt-8">
-          <p className="text-muted-foreground">Or, start from scratch:</p>
-          <Button asChild variant="link" className="text-base">
-            <Link href="/title-studio">
-                Go to Title Studio <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+                      <input id="dropzone-file" type="file" className="hidden" accept=".csv" onChange={handleChange} disabled={isParsing} />
+                       {isParsing && (
+                          <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                      )}
+                  </label>
+                  {dragActive && <div className="absolute inset-0 w-full h-full" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}></div>}
+              </form>
+            </Card>
+             <div className="mt-8 text-center">
+              <p className="text-muted-foreground">Or, start from scratch:</p>
+              <Button asChild variant="link" className="text-base">
+                <Link href="/title-studio">
+                    Go to Title Studio <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+          <div className="hidden lg:flex items-center justify-center">
+            <AnimatedLogo />
+          </div>
         </div>
       </div>
     </div>
