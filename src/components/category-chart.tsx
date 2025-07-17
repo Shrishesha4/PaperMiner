@@ -120,7 +120,7 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                         key={`cell-${entry.name}`} 
                         fill={chartConfig[entry.name]?.color} 
                         opacity={selectedCategory ? (entry.name === selectedCategory ? 1 : 0.3) : 1}
-                        style={{ cursor: entry.children ? 'pointer' : 'default' }}
+                        style={{ cursor: (entry.children && entry.children.length > 0) ? 'pointer' : 'default' }}
                     />
                 ))}
                 <Label
@@ -128,10 +128,10 @@ export function CategoryChart({ data, onCategorySelect }: CategoryChartProps) {
                         if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                             return (
                                 <>
-                                <text x={viewBox.cx} y={viewBox.cy - 10} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => handlePieClick({name: null})}>
+                                <text x={viewBox.cx} y={viewBox.cy - 10} textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-3xl font-bold" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
                                     {(selectedDataPoint ? selectedDataPoint.value : totalPapers)?.toLocaleString()}
                                 </text>
-                                <text x={viewBox.cx} y={viewBox.cy + 15} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => handlePieClick({name: null})}>
+                                <text x={viewBox.cx} y={viewBox.cy + 15} textAnchor="middle" dominantBaseline="middle" className="fill-muted-foreground text-sm" onClick={() => { setSelectedCategory(null); onCategorySelect(null); }}>
                                     {selectedDataPoint ? selectedDataPoint.name : drilldownPath.length > 0 ? drilldownPath[drilldownPath.length - 1] : 'Total Papers'}
                                 </text>
                                 </>

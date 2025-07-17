@@ -89,55 +89,48 @@ export function DashboardView({ analysisId, analysisName, data, failedData, onRe
   // Effect to consolidate categories when data is available and hierarchy isn't
   useEffect(() => {
     const consolidate = async () => {
-        // If a hierarchy already exists (from history), use it.
-        if (analysis?.categoryHierarchy) {
-            setCategoryHierarchy(analysis.categoryHierarchy);
-            return;
-        }
+      if (analysis?.categoryHierarchy) {
+        setCategoryHierarchy(analysis.categoryHierarchy);
+        return;
+      }
+      
+      if (data.length === 0) {
+        setCategoryHierarchy([]);
+        return;
+      }
 
-        // If there's no data, do nothing.
-        if (data.length === 0) {
-            setCategoryHierarchy([]);
-            return;
+      const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
+      
+      if (isApiKeySet && uniqueCategories.length > 1) {
+        setIsConsolidating(true);
+        try {
+          const apiKey = getNextApiKey();
+          if (!apiKey) throw new Error("API Key not available.");
+          const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
+          
+          const hierarchyWithCounts = injectCounts(result.hierarchy, data);
+          setCategoryHierarchy(hierarchyWithCounts);
+          updateAnalysis(analysisId, { categoryHierarchy: hierarchyWithCounts });
+        } catch (error) {
+          console.error("Error consolidating categories:", error);
+          toast({
+            variant: "destructive",
+            title: "Could not group categories",
+            description: "Failed to generate category domains. Displaying a flat list."
+          });
+          const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
+          setCategoryHierarchy(flatHierarchy);
+        } finally {
+          setIsConsolidating(false);
         }
-
-        const uniqueCategories = Array.from(new Set(data.map(p => p.category).filter(Boolean)));
-        
-        // If API key is available and there's more than one category, try to consolidate.
-        if (isApiKeySet && uniqueCategories.length > 1) {
-            setIsConsolidating(true);
-            try {
-                const apiKey = getNextApiKey();
-                if (!apiKey) throw new Error("API Key not available.");
-                const result = await consolidateCategories({ categories: uniqueCategories, apiKey });
-                
-                const hierarchyWithCounts = injectCounts(result.hierarchy, data);
-                
-                setCategoryHierarchy(hierarchyWithCounts);
-                updateAnalysis(analysisId, { categoryHierarchy: hierarchyWithCounts });
-            } catch (error) {
-                console.error("Error consolidating categories:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Could not group categories",
-                    description: "Failed to generate category domains. Displaying a flat list."
-                });
-                // Fallback to a flat hierarchy if consolidation fails
-                const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
-                setCategoryHierarchy(flatHierarchy);
-            } finally {
-                setIsConsolidating(false);
-            }
-        } else {
-            // Handle case where consolidation is not possible or not needed: create a flat list.
-            const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
-            setCategoryHierarchy(flatHierarchy);
-        }
+      } else {
+        const flatHierarchy = uniqueCategories.map(cat => ({ name: cat, value: data.filter(p => p.category === cat).length }));
+        setCategoryHierarchy(flatHierarchy);
+      }
     };
 
     consolidate();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, data, isApiKeySet, analysis?.categoryHierarchy]);
+  }, [analysisId, data, isApiKeySet]); // Rerun only when the core data changes
 
   const handleFilterChange = (filterName: 'year' | 'category') => (value: string) => {
     setFilters(prev => ({ ...prev, [filterName]: value, }));
