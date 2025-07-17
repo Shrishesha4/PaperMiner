@@ -8,3 +8,4 @@ import '@/ai/flows/draft-paper-flow.ts';
 import '@/ai/flows/refine-section-flow.ts';
 import '@/ai/flows/regenerate-section-flow.ts';
 import '@/ai/flows/consolidate-categories.ts';
+import '@/ai/flows/categorize-single-title.ts';

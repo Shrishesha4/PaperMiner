@@ -5,6 +5,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { type ResearchPaper, type CategorizedPaper, FailedPaper, Analysis } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { categorizeResearchTitles } from '@/ai/flows/categorize-research-titles';
+import { categorizeSingleTitle } from '@/ai/flows/categorize-single-title';
 import { AppHeader } from './header';
 import { UploaderView } from './uploader-view';
 import { ProcessingView } from './processing-view';
@@ -81,12 +82,12 @@ export function InsightMinerApp() {
     setProcessingMessage('Starting categorization process...');
 
     const results: CategorizedPaper[] = [];
-    const failed: FailedPaper[] = [];
+    let initiallyFailed: FailedPaper[] = [];
     let processedCount = 0;
 
     const papersToProcess = parsedPapers.filter(paper => {
       if (!paper['Document Title']) {
-        failed.push({ ...paper, failureReason: 'Missing document title.' });
+        initiallyFailed.push({ ...paper, failureReason: 'Missing document title.' });
         return false;
       }
       return true;
@@ -94,6 +95,7 @@ export function InsightMinerApp() {
 
     const totalToProcess = papersToProcess.length;
 
+    // STAGE 1: Batch Processing
     for (let i = 0; i < totalToProcess; i += BATCH_SIZE) {
       const batch = papersToProcess.slice(i, i + BATCH_SIZE);
       const titles = batch.map(p => p['Document Title']);
@@ -105,48 +107,66 @@ export function InsightMinerApp() {
         if (!apiKey) throw new Error("No API key available.");
 
         const batchResults = await categorizeResearchTitles({ titles, apiKey });
-
+        
+        // Match results back to original papers
         batch.forEach(paper => {
           const result = batchResults.find(r => r.title === paper['Document Title']);
           if (result && result.category) {
             results.push({ ...paper, ...result });
           } else {
-            failed.push({ ...paper, failureReason: 'AI model did not return a category for this title.' });
+            // This paper failed batch processing, add to retry queue
+            initiallyFailed.push({ ...paper, failureReason: 'Failed initial batch categorization.' });
           }
         });
 
       } catch (error) {
         console.error('Error categorizing title batch:', error);
-        let failureReason = 'An unknown error occurred during batch categorization.';
-        if (error instanceof Error) {
-            failureReason = error.message.includes('SAFETY') 
-              ? 'Categorization failed due to safety settings.' 
-              : error.message.includes('429') 
-              ? 'API rate limit exceeded. Try adding more keys or waiting.'
-              : error.message;
-        }
-
+        // If the whole batch fails, add all to retry queue
         batch.forEach(paper => {
-            failed.push({ ...paper, failureReason });
+            initiallyFailed.push({ ...paper, failureReason: 'An API error occurred during batch processing.' });
         });
-
         toast({
           variant: 'destructive',
-          title: 'Batch Categorization Error',
-          description: `Failed to categorize a batch of titles. They will be shown in the "Failed" section.`,
+          title: 'Batch Categorization Issue',
+          description: `A batch of titles failed. Attempting individual retries.`,
         });
       } finally {
         processedCount += batch.length;
-        setProcessingProgress((processedCount / parsedPapers.length) * 100);
+        setProcessingProgress((processedCount / (parsedPapers.length * 2)) * 100); // Batch is ~half the work
       }
     }
+    
+    // STAGE 2: Individual Retries for Failed Papers
+    const finalFailed: FailedPaper[] = [];
+    if (initiallyFailed.length > 0) {
+        setProcessingMessage(`Retrying ${initiallyFailed.length} failed papers individually...`);
+        let retriedCount = 0;
+        
+        for (const paper of initiallyFailed) {
+            try {
+                const apiKey = getNextApiKey();
+                if (!apiKey) throw new Error("No API key available for retry.");
 
-    const finalFailedPapers = [...failed];
+                const result = await categorizeSingleTitle({ title: paper['Document Title'], apiKey });
+                
+                if (result && result.category) {
+                    results.push({ ...paper, category: result.category, confidence: result.confidence });
+                } else {
+                    finalFailed.push({ ...paper, failureReason: 'AI model did not return a category on retry.' });
+                }
+            } catch (error) {
+                 finalFailed.push({ ...paper, failureReason: 'An API error occurred on retry.' });
+            } finally {
+                retriedCount++;
+                setProcessingProgress(((totalToProcess + retriedCount) / (parsedPapers.length * 2)) * 100);
+            }
+        }
+    }
     
     addAnalysis({
         name: fileName,
         categorizedPapers: results,
-        failedPapers: finalFailedPapers,
+        failedPapers: finalFailed,
     });
 
     setProcessingMessage('Analysis complete!');
