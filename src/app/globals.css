@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,38 +45,38 @@ body {
     --sidebar-ring: var(--primary-hue) 83.3% 57.8%;
   }
   .dark {
-    --background: 220 15% 9%;
+    --background: 220 15% 15%;
     --foreground: 210 20% 98%;
-    --card: 220 15% 12%;
+    --card: 220 15% 18%;
     --card-foreground: 210 20% 98%;
-    --popover: 220 15% 12%;
+    --popover: 220 15% 18%;
     --popover-foreground: 210 20% 98%;
     --primary-hue: 263.4;
     --primary: var(--primary-hue) 95.2% 58.4%;
     --primary-foreground: 210 20% 98%;
-    --secondary: 215 28% 18%;
+    --secondary: 215 28% 24%;
     --secondary-foreground: 210 20% 98%;
-    --muted: 215 28% 18%;
+    --muted: 215 28% 24%;
     --muted-foreground: 218 11% 65%;
-    --accent: 215 28% 18%;
+    --accent: 215 28% 24%;
     --accent-foreground: 210 20% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
-    --border: 215 28% 18%;
-    --input: 215 28% 18%;
+    --border: 215 28% 24%;
+    --input: 215 28% 24%;
     --ring: var(--primary-hue) 95.2% 58.4%;
     --chart-1: var(--primary-hue) 80% 56%;
     --chart-2: 192 70% 50%;
     --chart-3: 39 90% 55%;
     --chart-4: 22 95% 55%;
     --chart-5: 300 85% 60%;
-    --sidebar-background: 220 15% 9%;
+    --sidebar-background: 220 15% 15%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: var(--primary-hue) 95.2% 58.4%;
     --sidebar-primary-foreground: 210 20% 98%;
-    --sidebar-accent: 215 28% 18%;
+    --sidebar-accent: 215 28% 24%;
     --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 215 28% 18%;
+    --sidebar-border: 215 28% 24%;
     --sidebar-ring: var(--primary-hue) 95.2% 58.4%;
   }
 }
