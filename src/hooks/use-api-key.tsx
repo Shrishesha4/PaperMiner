@@ -10,17 +10,21 @@ interface ApiKeyContextType {
   getNextApiKey: () => string | null;
   termsAccepted: boolean;
   acceptTerms: () => void;
+  themeToastShown: boolean;
+  setThemeToastShown: () => void;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextType | undefined>(undefined);
 
 const API_KEY_STORAGE_KEY = 'gemini_api_keys';
 const TERMS_ACCEPTED_KEY = 'paperminer_terms_accepted';
+const THEME_TOAST_SHOWN_KEY = 'paperminer_theme_toast_shown';
 
 export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   const [apiKeys, setApiKeysState] = useState<string[]>([]);
   const [isApiKeySet, setIsApiKeySet] = useState(false);
   const [termsAccepted, setTermsAcceptedState] = useState(false);
+  const [themeToastShown, setThemeToastShownState] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const currentIndex = useRef(0);
 
@@ -38,6 +42,11 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
       const storedTerms = localStorage.getItem(TERMS_ACCEPTED_KEY);
       if (storedTerms === 'true') {
         setTermsAcceptedState(true);
+      }
+      
+      const storedThemeToast = localStorage.getItem(THEME_TOAST_SHOWN_KEY);
+      if (storedThemeToast === 'true') {
+        setThemeToastShownState(true);
       }
 
     } catch (error) {
@@ -83,13 +92,22 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
         console.error("Could not save terms acceptance to localStorage", error);
     }
   }, []);
+  
+  const setThemeToastShown = useCallback(() => {
+    setThemeToastShownState(true);
+    try {
+        localStorage.setItem(THEME_TOAST_SHOWN_KEY, 'true');
+    } catch (error) {
+        console.error("Could not save theme toast status to localStorage", error);
+    }
+  }, []);
 
   // Only render children when the key has been loaded from localStorage
   if (!isLoaded) {
     return null; // Or a loading spinner
   }
 
-  const value = { apiKeys, setApiKeys, isApiKeySet, getNextApiKey, termsAccepted, acceptTerms };
+  const value = { apiKeys, setApiKeys, isApiKeySet, getNextApiKey, termsAccepted, acceptTerms, themeToastShown, setThemeToastShown };
 
   return (
     <ApiKeyContext.Provider value={value}>

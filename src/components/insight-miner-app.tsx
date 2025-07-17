@@ -12,7 +12,7 @@ import { DashboardView } from './dashboard-view';
 import { useApiKey } from '@/hooks/use-api-key';
 import { ApiKeyDialog } from './api-key-dialog';
 import { useHistory } from '@/hooks/use-history';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Settings } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Dialog } from './ui/dialog';
 import { WelcomeDialog } from './welcome-dialog';
@@ -24,7 +24,7 @@ export function InsightMinerApp() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isApiKeySet, getNextApiKey, termsAccepted } = useApiKey();
+  const { isApiKeySet, getNextApiKey, termsAccepted, themeToastShown, setThemeToastShown } = useApiKey();
   const { selectedAnalysis, selectAnalysis, addAnalysis, updateAnalysis, isLoading: isHistoryLoading, history } = useHistory();
 
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
@@ -32,6 +32,25 @@ export function InsightMinerApp() {
   const [processingMessage, setProcessingMessage] = useState('');
   
   const isCancelled = useRef(false);
+
+  // Show theme customization toast on first visit after accepting terms
+  useEffect(() => {
+    if (termsAccepted && !themeToastShown) {
+      setTimeout(() => {
+        toast({
+          title: "Customize Your View!",
+          description: (
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>You can change the theme color in the settings menu.</span>
+            </div>
+          ),
+          duration: 8000,
+        });
+        setThemeToastShown();
+      }, 1500); // Delay to not overwhelm the user immediately
+    }
+  }, [termsAccepted, themeToastShown, setThemeToastShown, toast]);
 
   // Effect to sync URL search param with history selection
   useEffect(() => {
