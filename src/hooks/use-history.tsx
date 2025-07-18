@@ -73,6 +73,11 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
             title: "Analysis Saved",
             description: `"${newAnalysis.name}" has been added to your history.`,
         });
+    } else if (newAnalysis.name.startsWith('Draft:')) {
+        toast({
+            title: "Draft Saved",
+            description: "Your new draft has been saved to your history."
+        });
     }
     return newAnalysis;
   }, [history, toast]);
@@ -96,8 +101,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     // Only show toast for draft saving, not for other background updates.
     if (updates.draftedPaper) {
         toast({
-            title: "Draft Saved",
-            description: "Your paper draft has been saved to your history.",
+            title: "Draft Updated",
+            description: "Your paper draft has been updated.",
         });
     }
   }, [history, selectedAnalysis, toast]);

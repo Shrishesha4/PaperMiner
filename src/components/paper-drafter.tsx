@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save } from 'lucide-react';
+import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save, Check } from 'lucide-react';
 import { draftPaper } from '@/ai/flows/draft-paper-flow';
 import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
@@ -48,7 +48,7 @@ export function PaperDrafter() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { getNextApiKey, isApiKeySet } = useApiKey();
-  const { history, addAnalysis, isLoading: isHistoryLoading, selectAnalysis } = useHistory();
+  const { history, addAnalysis, updateAnalysis, isLoading: isHistoryLoading } = useHistory();
   
   const title = searchParams.get('title') || 'Untitled Document';
   const analysisId = searchParams.get('analysisId');
@@ -61,7 +61,8 @@ export function PaperDrafter() {
   const [refinementState, setRefinementState] = useState<RefinementState>({ isRefining: false, sectionIndex: null });
   const [regenerationState, setRegenerationState] = useState<RegenerationState>({ isRegenerating: false, sectionIndex: null });
   const [refinePrompt, setRefinePrompt] = useState('');
-  const [originalAnalysisName, setOriginalAnalysisName] = useState('Scratch');
+  const [isExistingDraft, setIsExistingDraft] = useState(false);
+  const [sourceAnalysisName, setSourceAnalysisName] = useState('Scratch');
 
 
   const generateDraft = useCallback(async (isFullRegen = false) => {
@@ -74,16 +75,18 @@ export function PaperDrafter() {
 
     if (!isFullRegen && analysisId) {
       const analysis = history.find(h => h.id === analysisId);
-      // Only load a saved draft if its title matches the current one
-      if (analysis && analysis.draftedPaper && analysis.draftedPaper.title === title) {
-          setPaper(analysis.draftedPaper);
-          setOriginalAnalysisName(analysis.name.replace(/^Draft: /, ''));
-          setIsLoading(false);
-          return;
-      }
-      // If we are on a page for an analysis that is NOT a draft, store its name
-      if (analysis && !analysis.draftedPaper) {
-        setOriginalAnalysisName(analysis.name);
+      if (analysis) {
+        // This is an existing history item.
+        const isAlreadyDraft = analysis.name.startsWith('Draft: ');
+        setIsExistingDraft(isAlreadyDraft);
+        setSourceAnalysisName(isAlreadyDraft ? analysis.name.replace(/^Draft: /, '') : analysis.name);
+
+        // Only load a saved draft if its title matches the current one
+        if (analysis.draftedPaper && analysis.draftedPaper.title === title) {
+            setPaper(analysis.draftedPaper);
+            setIsLoading(false);
+            return;
+        }
       }
     }
 
@@ -116,24 +119,27 @@ export function PaperDrafter() {
   }, [analysisId, generateDraft, title, isHistoryLoading]);
 
 
-  const handleSaveDraft = async () => {
+  const handleSaveOrUpdateDraft = async () => {
     if (!paper || !title) return;
     setIsSaving(true);
+    
     try {
-      const newDraftAnalysis = addAnalysis({
-        name: `Draft: ${originalAnalysisName}`,
-        draftedPaper: { ...paper, title },
-        categorizedPapers: [],
-        failedPapers: [],
-        generatedTitles: [],
-      });
-      // Redirect to the new draft's URL
-      router.replace(`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${newDraftAnalysis.id}`);
-      selectAnalysis(newDraftAnalysis.id);
-      toast({
-        title: "Draft Saved",
-        description: `A new draft has been saved to your history.`
-      });
+        if (isExistingDraft && analysisId) {
+            // This is an update to an existing draft.
+            updateAnalysis(analysisId, { draftedPaper: { ...paper, title } });
+        } else {
+            // This is a new draft being saved for the first time.
+            const newDraftAnalysis = addAnalysis({
+                name: `Draft: ${sourceAnalysisName}`,
+                draftedPaper: { ...paper, title },
+                categorizedPapers: [],
+                failedPapers: [],
+                generatedTitles: [],
+            });
+            // Redirect to the new draft's URL to enable updating later
+            router.replace(`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${newDraftAnalysis.id}`);
+            setIsExistingDraft(true); // It's now an existing draft
+        }
     } catch (e) {
       toast({
         variant: 'destructive',
@@ -406,9 +412,9 @@ export function PaperDrafter() {
                 </h1>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={handleSaveDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
-                    {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
-                    <span className="ml-2 hidden sm:inline">Save Draft</span>
+                <Button onClick={handleSaveOrUpdateDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
+                    {isSaving ? <Loader2 className="animate-spin" /> : (isExistingDraft ? <Check /> : <Save />)}
+                    <span className="ml-2 hidden sm:inline">{isExistingDraft ? 'Update Draft' : 'Save Draft'}</span>
                 </Button>
                 <AlertDialog>
                 <AlertDialogTrigger asChild>
