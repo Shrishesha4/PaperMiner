@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
@@ -65,6 +65,8 @@ export function PaperDrafter() {
   const [isExistingDraft, setIsExistingDraft] = useState(false);
   const [sourceAnalysisName, setSourceAnalysisName] = useState('Scratch');
 
+  const draftGenerated = useRef(false);
+
 
   const generateDraft = useCallback(async (isFullRegen = false) => {
     if (!isApiKeySet) {
@@ -74,13 +76,13 @@ export function PaperDrafter() {
       return;
     }
 
+    // Check if we should load an existing draft
     if (!isFullRegen && analysisId) {
       const analysis = history.find(h => h.id === analysisId);
       if (analysis) {
-        // This is an existing history item.
         const isAlreadyDraft = analysis.name.startsWith('Draft: ');
         setIsExistingDraft(isAlreadyDraft);
-        setSourceAnalysisName(isAlreadyDraft ? analysis.name.replace(/^Draft: /, '') : analysis.name);
+        setSourceAnalysisName(analysis.name.replace(/^Draft: /, ''));
 
         // Only load a saved draft if its title matches the current one
         if (analysis.draftedPaper && analysis.draftedPaper.title === title) {
@@ -108,7 +110,7 @@ export function PaperDrafter() {
   }, [title, isApiKeySet, getNextApiKey, toast, history, analysisId]);
 
   useEffect(() => {
-    if (isHistoryLoading) return;
+    if (isHistoryLoading || draftGenerated.current) return;
 
     if (title === 'Untitled Document') {
         setIsLoading(false);
@@ -117,6 +119,7 @@ export function PaperDrafter() {
     }
     
     generateDraft();
+    draftGenerated.current = true;
   }, [analysisId, generateDraft, title, isHistoryLoading]);
 
 
