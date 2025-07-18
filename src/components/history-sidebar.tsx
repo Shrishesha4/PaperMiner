@@ -235,6 +235,7 @@ export function HistorySidebar() {
                                 <SidebarMenuButton
                                     onClick={() => {
                                       selectAnalysis(item.id);
+                                      router.push('/');
                                       handleMobileNav();
                                     }}
                                     isActive={selectedAnalysis?.id === item.id}
