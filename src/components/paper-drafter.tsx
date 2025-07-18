@@ -221,26 +221,39 @@ export function PaperDrafter() {
 
     setIsDownloading(true);
     try {
-        const sections = paper.sections.flatMap(section => [
-            new Paragraph({
+        const docxContent = [];
+
+        docxContent.push(new Paragraph({
+            text: title,
+            heading: HeadingLevel.TITLE,
+            alignment: 'center' as any,
+        }));
+
+        for (const section of paper.sections) {
+            docxContent.push(new Paragraph({
                 text: section.title,
                 heading: HeadingLevel.HEADING_2,
                 spacing: { before: 240, after: 120 },
-            }),
-            ...section.content.split('\n').filter(p => p.trim() !== '').map(pText => new Paragraph({ text: pText }))
-        ]);
+            }));
 
+            const lines = section.content.split('\n').filter(line => line.trim() !== '');
+            for (const line of lines) {
+                if (line.startsWith('### ')) {
+                    docxContent.push(new Paragraph({ text: line.substring(4), heading: HeadingLevel.HEADING_3 }));
+                } else if (line.startsWith('## ')) {
+                    docxContent.push(new Paragraph({ text: line.substring(3), heading: HeadingLevel.HEADING_2 }));
+                } else if (line.startsWith('* ') || line.startsWith('- ')) {
+                    docxContent.push(new Paragraph({ text: line.substring(2), bullet: { level: 0 } }));
+                } else {
+                    docxContent.push(new Paragraph({ text: line }));
+                }
+            }
+        }
+        
         const doc = new Document({
             sections: [{
                 properties: {},
-                children: [
-                    new Paragraph({
-                        text: title,
-                        heading: HeadingLevel.TITLE,
-                        alignment: 'center' as any,
-                    }),
-                    ...sections,
-                ],
+                children: docxContent,
             }],
         });
 
@@ -470,5 +483,3 @@ export function PaperDrafter() {
     </div>
   );
 }
-
-    
