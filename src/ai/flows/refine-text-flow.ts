@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'refineTextPrompt',
   input: { schema: RefineTextInputSchema.omit({ apiKey: true }) },
   output: { schema: RefineTextOutputSchema },
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
   prompt: `You are an expert academic editor. Your task is to revise a piece of text based on the user's instructions.
 
 You will be given the selected text and a prompt from the user.

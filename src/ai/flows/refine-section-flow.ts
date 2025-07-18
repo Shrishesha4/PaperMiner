@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'refineSectionPrompt',
   input: { schema: RefineSectionInputSchema.omit({ apiKey: true }) },
   output: { schema: RefineSectionOutputSchema },
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
   prompt: `You are an expert academic editor. Your task is to revise a section of a research paper based on the user's instructions.
 
 Rewrite the current text of the "{{sectionTitle}}" section to incorporate the user's feedback. Only return the new, refined text for the section, without any preamble or explanation.

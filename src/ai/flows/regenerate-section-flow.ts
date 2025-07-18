@@ -30,7 +30,7 @@ const prompt = ai.definePrompt({
   name: 'regenerateSectionPrompt',
   input: { schema: RegenerateSectionInputSchema.omit({ apiKey: true }) },
   output: { schema: RegenerateSectionOutputSchema },
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
   prompt: `You are an expert academic writer. Your task is to regenerate the content for a specific section of a research paper based on the paper's title.
 
 Provide a concise but comprehensive draft that outlines the key points and structure for only the requested section. The content should be plausible and highly relevant to the paper's title.

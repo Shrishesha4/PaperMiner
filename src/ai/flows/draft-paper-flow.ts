@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   name: 'draftPaperPrompt',
   input: { schema: DraftPaperInputSchema.omit({ apiKey: true }) },
   output: { schema: DraftPaperOutputSchema },
-  model: 'googleai/gemini-2.5-flash',
+  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
   prompt: `You are an expert academic writer and researcher. Your task is to generate a well-structured initial draft for a research paper based on the provided title.
 
 Create content for the following standard academic sections:
