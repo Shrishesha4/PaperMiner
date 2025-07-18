@@ -27,7 +27,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Packer } from 'docx';
 import { saveAs } from 'file-saver';
-import { Document, Packer as DocxPacker, Paragraph, HeadingLevel } from 'docx';
+import { Document, Packer as DocxPacker, Paragraph, HeadingLevel, TextRun } from 'docx';
 import { useHistory } from '@/hooks/use-history';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
@@ -219,6 +219,34 @@ export function PaperDrafter() {
     }
   };
 
+  const createDocxParagraphs = (content: string) => {
+    const paragraphs = [];
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+
+    for (const line of lines) {
+        if (line.startsWith('### ')) {
+            paragraphs.push(new Paragraph({ text: line.substring(4), heading: HeadingLevel.HEADING_3 }));
+        } else if (line.startsWith('## ')) {
+            paragraphs.push(new Paragraph({ text: line.substring(3), heading: HeadingLevel.HEADING_2 }));
+        } else if (line.startsWith('* ') || line.startsWith('- ')) {
+            paragraphs.push(new Paragraph({ text: line.substring(2), bullet: { level: 0 } }));
+        } else {
+            const runs = [];
+            // Simple regex to split by bold tags, keeping the text
+            const parts = line.split(/(\*\*.*?\*\*)/g);
+            for (const part of parts) {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    runs.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+                } else {
+                    runs.push(new TextRun(part));
+                }
+            }
+            paragraphs.push(new Paragraph({ children: runs }));
+        }
+    }
+    return paragraphs;
+  };
+
   const handleDownloadDocx = async () => {
     if (!paper) return;
 
@@ -239,18 +267,7 @@ export function PaperDrafter() {
                 spacing: { before: 240, after: 120 },
             }));
 
-            const lines = section.content.split('\n').filter(line => line.trim() !== '');
-            for (const line of lines) {
-                if (line.startsWith('### ')) {
-                    docxContent.push(new Paragraph({ text: line.substring(4), heading: HeadingLevel.HEADING_3 }));
-                } else if (line.startsWith('## ')) {
-                    docxContent.push(new Paragraph({ text: line.substring(3), heading: HeadingLevel.HEADING_2 }));
-                } else if (line.startsWith('* ') || line.startsWith('- ')) {
-                    docxContent.push(new Paragraph({ text: line.substring(2), bullet: { level: 0 } }));
-                } else {
-                    docxContent.push(new Paragraph({ text: line }));
-                }
-            }
+            docxContent.push(...createDocxParagraphs(section.content));
         }
         
         const doc = new Document({
@@ -275,24 +292,37 @@ export function PaperDrafter() {
     }
   };
 
-  const handleCopyToClipboard = () => {
+  const handleCopyToClipboard = async () => {
     if (!paper) return;
+
+    const markdownToHtml = (markdown: string) => {
+        return markdown
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+            .replace(/### (.*?)(<br>|$)/g, '<h3>$1</h3>')
+            .replace(/## (.*?)(<br>|$)/g, '<h2>$1</h2>')
+            .replace(/(\* |- ) (.*?)(<br>|$)/g, '<ul><li>$2</li></ul>')
+            .replace(/<\/ul><br><ul>/g, ''); // Fix for consecutive list items
+    };
+
+    const htmlContent = `<h1>${title}</h1>` + paper.sections.map(section => 
+        `<h2>${section.title}</h2>${markdownToHtml(section.content)}`
+    ).join('');
     
-    const plainText = [
-        title,
-        '\n\n',
-        ...paper.sections.map(section => `${section.title}\n\n${section.content}\n\n`)
-    ].join('');
-    
-    navigator.clipboard.writeText(plainText).then(() => {
-        // Success handled by the dialog opening
-    }, () => {
-        toast({
-            variant: "destructive",
-            title: "Copy Failed",
-            description: "Could not copy text to clipboard.",
-        });
-    });
+    try {
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'text/html': blob })
+      ]);
+      // Success is handled by the dialog opening
+    } catch (err) {
+      console.error('Failed to copy rich text: ', err);
+      toast({
+        variant: "destructive",
+        title: "Copy Failed",
+        description: "Could not copy rich text to clipboard.",
+      });
+    }
   };
 
   const isAiWorking = refinementState.isRefining || regenerationState.isRegenerating || isLoading;
