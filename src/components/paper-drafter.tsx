@@ -27,7 +27,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Packer } from 'docx';
 import { saveAs } from 'file-saver';
-import { Document, Packer as DocxPacker, Paragraph, HeadingLevel, TextRun } from 'docx';
+import { Document, Packer as DocxPacker, Paragraph, HeadingLevel, TextRun, AlignmentType, SymbolRun } from 'docx';
 import { useHistory } from '@/hooks/use-history';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
@@ -220,30 +220,53 @@ export function PaperDrafter() {
   };
 
   const createDocxParagraphs = (content: string) => {
-    const paragraphs = [];
-    const lines = content.split('\n').filter(line => line.trim() !== '');
+    const paragraphs: Paragraph[] = [];
+    const lines = content.split('\n');
 
-    for (const line of lines) {
-        if (line.startsWith('### ')) {
-            paragraphs.push(new Paragraph({ text: line.substring(4), heading: HeadingLevel.HEADING_3 }));
-        } else if (line.startsWith('## ')) {
-            paragraphs.push(new Paragraph({ text: line.substring(3), heading: HeadingLevel.HEADING_2 }));
-        } else if (line.startsWith('* ') || line.startsWith('- ')) {
-            paragraphs.push(new Paragraph({ text: line.substring(2), bullet: { level: 0 } }));
-        } else {
-            const runs = [];
-            // Simple regex to split by bold tags, keeping the text
-            const parts = line.split(/(\*\*.*?\*\*)/g);
-            for (const part of parts) {
-                if (part.startsWith('**') && part.endsWith('**')) {
-                    runs.push(new TextRun({ text: part.slice(2, -2), bold: true }));
-                } else {
-                    runs.push(new TextRun(part));
-                }
+    const parseLine = (text: string) => {
+        const children = [];
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        for (const part of parts) {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                children.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+            } else {
+                children.push(new TextRun(part));
             }
-            paragraphs.push(new Paragraph({ children: runs }));
         }
-    }
+        return children;
+    };
+
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        const indentation = line.length - line.trimStart().length;
+
+        if (trimmedLine.startsWith('### ')) {
+            paragraphs.push(new Paragraph({ children: parseLine(trimmedLine.substring(4)), heading: HeadingLevel.HEADING_3 }));
+        } else if (trimmedLine.startsWith('## ')) {
+            paragraphs.push(new Paragraph({ children: parseLine(trimmedLine.substring(3)), heading: HeadingLevel.HEADING_2 }));
+        } else if (/^\d+\.\s/.test(trimmedLine)) {
+             paragraphs.push(new Paragraph({
+                children: parseLine(trimmedLine.replace(/^\d+\.\s/, '')),
+                numbering: {
+                    reference: "numbered-list",
+                    level: 0,
+                },
+            }));
+        } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
+            let level = 0;
+            if (indentation >= 4) {
+                level = 2;
+            } else if (indentation >= 2) {
+                level = 1;
+            }
+            paragraphs.push(new Paragraph({
+                children: parseLine(trimmedLine.substring(2)),
+                bullet: { level },
+            }));
+        } else if (trimmedLine.length > 0) {
+            paragraphs.push(new Paragraph({ children: parseLine(trimmedLine) }));
+        }
+    });
     return paragraphs;
   };
 
@@ -252,12 +275,12 @@ export function PaperDrafter() {
 
     setIsDownloading(true);
     try {
-        const docxContent = [];
+        const docxContent: Paragraph[] = [];
 
         docxContent.push(new Paragraph({
             text: title,
             heading: HeadingLevel.TITLE,
-            alignment: 'center' as any,
+            alignment: AlignmentType.CENTER,
         }));
 
         for (const section of paper.sections) {
@@ -271,6 +294,21 @@ export function PaperDrafter() {
         }
         
         const doc = new Document({
+            numbering: {
+                config: [
+                    {
+                        reference: "numbered-list",
+                        levels: [
+                            {
+                                level: 0,
+                                format: "decimal",
+                                text: "%1.",
+                                start: 1,
+                            },
+                        ],
+                    },
+                ],
+            },
             sections: [{
                 properties: {},
                 children: docxContent,
@@ -296,13 +334,35 @@ export function PaperDrafter() {
     if (!paper) return;
 
     const markdownToHtml = (markdown: string) => {
-        return markdown
-            .replace(/\n/g, '<br>')
+        let html = markdown
             .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-            .replace(/### (.*?)(<br>|$)/g, '<h3>$1</h3>')
-            .replace(/## (.*?)(<br>|$)/g, '<h2>$1</h2>')
-            .replace(/(\* |- ) (.*?)(<br>|$)/g, '<ul><li>$2</li></ul>')
-            .replace(/<\/ul><br><ul>/g, ''); // Fix for consecutive list items
+            .replace(/### (.*)/g, '<h3>$1</h3>')
+            .replace(/## (.*)/g, '<h2>$1</h2>')
+
+        const lines = html.split('\n');
+        let inList = false;
+        html = lines.map(line => {
+            if (line.match(/^(\* |- |• )/)) {
+                let li = `<li>${line.replace(/^(\* |- |• )/, '')}</li>`;
+                if (!inList) {
+                    inList = true;
+                    return `<ul>${li}`;
+                }
+                return li;
+            } else {
+                if (inList) {
+                    inList = false;
+                    return `</ul>${line}`;
+                }
+                return line;
+            }
+        }).join('<br>');
+        
+        if (inList) {
+            html += '</ul>';
+        }
+
+        return html.replace(/<br>/g, '\n').replace(/\n/g, '<br>');
     };
 
     const htmlContent = `<h1>${title}</h1>` + paper.sections.map(section => 
