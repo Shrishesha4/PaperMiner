@@ -31,6 +31,7 @@ import { Document, Packer as DocxPacker, Paragraph, HeadingLevel } from 'docx';
 import { useHistory } from '@/hooks/use-history';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
 
 
 type RegenerationState = {
@@ -388,9 +389,7 @@ export function PaperDrafter() {
                         </div>
                     )}
                     <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
-                        {section.content.split('\n').map((paragraph, pIndex) => (
-                            <p key={pIndex}>{paragraph}</p>
-                        ))}
+                       <ReactMarkdown>{section.content}</ReactMarkdown>
                     </article>
                 </CardContent>
             </Card>
@@ -471,3 +470,5 @@ export function PaperDrafter() {
     </div>
   );
 }
+
+    
