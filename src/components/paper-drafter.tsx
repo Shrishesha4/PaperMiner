@@ -48,7 +48,7 @@ export function PaperDrafter() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { getNextApiKey, isApiKeySet } = useApiKey();
-  const { history, updateAnalysis, isLoading: isHistoryLoading } = useHistory();
+  const { history, addAnalysis, isLoading: isHistoryLoading, selectAnalysis } = useHistory();
   
   const title = searchParams.get('title') || 'Untitled Document';
   const analysisId = searchParams.get('analysisId');
@@ -61,6 +61,7 @@ export function PaperDrafter() {
   const [refinementState, setRefinementState] = useState<RefinementState>({ isRefining: false, sectionIndex: null });
   const [regenerationState, setRegenerationState] = useState<RegenerationState>({ isRegenerating: false, sectionIndex: null });
   const [refinePrompt, setRefinePrompt] = useState('');
+  const [originalAnalysisName, setOriginalAnalysisName] = useState('Scratch');
 
 
   const generateDraft = useCallback(async (isFullRegen = false) => {
@@ -76,8 +77,13 @@ export function PaperDrafter() {
       // Only load a saved draft if its title matches the current one
       if (analysis && analysis.draftedPaper && analysis.draftedPaper.title === title) {
           setPaper(analysis.draftedPaper);
+          setOriginalAnalysisName(analysis.name.replace(/^Draft: /, ''));
           setIsLoading(false);
           return;
+      }
+      // If we are on a page for an analysis that is NOT a draft, store its name
+      if (analysis && !analysis.draftedPaper) {
+        setOriginalAnalysisName(analysis.name);
       }
     }
 
@@ -111,11 +117,23 @@ export function PaperDrafter() {
 
 
   const handleSaveDraft = async () => {
-    if (!paper || !analysisId) return;
+    if (!paper || !title) return;
     setIsSaving(true);
     try {
-      // Pass the current title along with the paper sections
-      updateAnalysis(analysisId, { draftedPaper: { ...paper, title } });
+      const newDraftAnalysis = addAnalysis({
+        name: `Draft: ${originalAnalysisName}`,
+        draftedPaper: { ...paper, title },
+        categorizedPapers: [],
+        failedPapers: [],
+        generatedTitles: [],
+      });
+      // Redirect to the new draft's URL
+      router.replace(`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${newDraftAnalysis.id}`);
+      selectAnalysis(newDraftAnalysis.id);
+      toast({
+        title: "Draft Saved",
+        description: `A new draft has been saved to your history.`
+      });
     } catch (e) {
       toast({
         variant: 'destructive',

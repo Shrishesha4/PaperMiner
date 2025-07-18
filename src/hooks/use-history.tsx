@@ -67,8 +67,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     setHistory(newHistory);
     setSelectedAnalysis(newAnalysis); // Automatically select the new analysis
     
-    // Only show toast for actual analysis, not scratchpads
-    if (newAnalysis.name !== 'From Scratch' && !newAnalysis.name.startsWith('Scratchpad:')) {
+    // Only show toast for actual analysis, not scratchpads or drafts
+    if (newAnalysis.name !== 'From Scratch' && !newAnalysis.name.startsWith('Scratchpad:') && !newAnalysis.name.startsWith('Draft:')) {
         toast({
             title: "Analysis Saved",
             description: `"${newAnalysis.name}" has been added to your history.`,
@@ -117,21 +117,22 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     setHistory(updatedHistory);
     
     if (selectedAnalysis?.id === id) {
-        setSelectedAnalysis(updatedHistory.length > 0 ? updatedHistory[0] : null);
+        const newSelection = updatedHistory.length > 0 ? updatedHistory[0] : null;
+        setSelectedAnalysis(newSelection);
     }
     if (analysisToRemove) {
       toast({
-          title: "Analysis Removed",
-          description: `"${analysisToRemove.name}" has been removed from your history.`,
+          title: "Item Removed",
+          description: `"${analysisToRemove.name.replace(/^Draft: /, '')}" has been removed.`,
       });
     }
   }, [selectedAnalysis, history, toast]);
 
   const archiveAnalysis = useCallback((id: string) => {
-    let analysisName = '';
+    let originalName = '';
     const newHistory = history.map(item => {
       if (item.id === id) {
-        analysisName = item.name;
+        originalName = item.name;
         // Keep draft and core identifiers, remove analysis data
         return {
           id: item.id,
@@ -153,7 +154,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
     toast({
       title: "Analysis Archived",
-      description: `Analysis data for "${analysisName}" removed, draft kept.`,
+      description: `Analysis data for "${originalName}" removed, draft kept.`,
     });
   }, [history, selectedAnalysis, toast]);
 

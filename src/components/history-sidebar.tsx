@@ -90,8 +90,14 @@ export function HistorySidebar() {
   const router = useRouter();
 
   const isScratchSelected = selectedAnalysis?.name === 'From Scratch' || (!selectedAnalysis && !isLoading);
-  const drafts = history.filter(item => !!item.draftedPaper);
-  const analysisHistory = history.filter(item => item.categorizedPapers.length > 0 || (item.name.startsWith("Scratchpad:") && !item.draftedPaper));
+  
+  // A draft is a history item that has a draftedPaper but no categorized papers
+  const drafts = history.filter(item => item.draftedPaper && item.categorizedPapers.length === 0 && !item.name.startsWith('Archived Draft from:'));
+  // An analysis is a history item that has categorized papers. It might also have a draft.
+  const analysisHistory = history.filter(item => item.categorizedPapers.length > 0);
+  // An archived draft is a special case
+  const archivedDrafts = history.filter(item => item.name.startsWith('Archived Draft from:'));
+
 
   const handleMobileNav = () => {
     setOpenMobile(false);
@@ -101,6 +107,13 @@ export function HistorySidebar() {
     selectAnalysis(null);
     router.push('/');
     handleMobileNav();
+  }
+
+  const handleDeleteDraft = (id: string) => {
+    removeAnalysis(id);
+    if (selectedAnalysis?.id === id) {
+      router.push('/');
+    }
   }
 
   return (
@@ -161,13 +174,13 @@ export function HistorySidebar() {
                 </SidebarMenuItem>
             </SidebarMenu>
 
-            {drafts.length > 0 && <Separator className="my-2" />}
+            {(drafts.length > 0 || archivedDrafts.length > 0) && <Separator className="my-2" />}
 
-            {drafts.length > 0 && (
+            {(drafts.length > 0 || archivedDrafts.length > 0) && (
                 <SidebarGroup>
                     <SidebarGroupLabel>Saved Drafts</SidebarGroupLabel>
                     <SidebarMenu>
-                        {drafts.map((item) => (
+                        {[...drafts, ...archivedDrafts].map((item) => (
                              <SidebarMenuItem key={`draft-${item.id}`}>
                                 <SidebarMenuButton
                                     asChild
@@ -181,7 +194,7 @@ export function HistorySidebar() {
                                         <div className="flex flex-col text-left overflow-hidden">
                                             <span className="font-medium truncate">{item.draftedPaper?.title}</span>
                                             <span className="text-xs text-muted-foreground truncate">
-                                                Based on: {item.name.replace(/^Archived Draft from: /, '')}
+                                                Based on: {item.name.replace(/^Draft: /, '').replace(/^Archived Draft from: /, '')}
                                             </span>
                                         </div>
                                     </Link>
@@ -197,12 +210,11 @@ export function HistorySidebar() {
                                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
                                         This action cannot be undone. This will permanently delete the draft for <span className="font-bold">{item.draftedPaper?.title}</span>.
-                                        {item.categorizedPapers.length === 0 && ' The original analysis data has been archived.'}
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => item.categorizedPapers.length > 0 ? removeDraft(item.id) : removeAnalysis(item.id)}>Delete Draft</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteDraft(item.id)}>Delete Draft</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                                 </AlertDialog>
