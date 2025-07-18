@@ -446,7 +446,7 @@ export function PaperDrafter() {
                 <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
                     <FileUp />
-                    <span className="ml-2 hidden sm:inline">G Docs</span>
+                    <span className="ml-2 hidden sm:inline">Google Docs</span>
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
