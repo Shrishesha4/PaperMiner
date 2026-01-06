@@ -11,6 +11,7 @@ import { draftPaper } from '@/ai/flows/draft-paper-flow';
 import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
 import { refineSection } from '@/ai/flows/refine-section-flow';
+import { refineText } from '@/ai/flows/refine-text-flow';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import {
   AlertDialog,
@@ -242,6 +243,23 @@ export function PaperDrafter() {
       setPaper({ sections: newSections });
   };
 
+  const handleAiEdit = async (selectedText: string, userPrompt: string): Promise<string> => {
+      if (!isApiKeySet) {
+          toast({ variant: 'destructive', title: 'API Key Required', description: 'Please set your API key to use AI features.' });
+          throw new Error("No API Key");
+      }
+      const apiKey = getNextApiKey();
+      if (!apiKey) throw new Error("No API Key");
+
+      try {
+          const { refinedText } = await refineText({ selectedText, userPrompt, apiKey });
+          return refinedText;
+      } catch (e: any) {
+          toast({ variant: 'destructive', title: 'AI Edit Failed', description: e.message || 'Could not process text.' });
+          throw e;
+      }
+  };
+
   const createDocxParagraphs = (content: string) => {
     const paragraphs: Paragraph[] = [];
     const lines = content.split('\n');
@@ -450,22 +468,91 @@ export function PaperDrafter() {
                     <h1 className="text-3xl font-bold uppercase tracking-wide break-words">{title}</h1>
                 </div>
                 <div className="columns-1 md:columns-2 gap-8 text-justify">
-                    {paper.sections.map((section, index) => (
-                        <div key={index} className="break-inside-avoid mb-6">
-                            <h2 className="text-lg font-bold uppercase mb-2 border-b border-gray-400 pb-1">{section.title}</h2>
+                    {paper.sections.map((section, index) => {
+                        const isSectionRefining = refinementState.isRefining && refinementState.sectionIndex === index;
+                        const isSectionRegenerating = regenerationState.isRegenerating && regenerationState.sectionIndex === index;
+                        const isSectionLoading = isSectionRefining || isSectionRegenerating;
+
+                        return (
+                        <div key={index} className="break-inside-avoid mb-6 relative">
+                            {isSectionLoading && (
+                                <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-10">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            )}
+                            <div className="flex items-center justify-between border-b border-gray-400 pb-1 mb-2">
+                                <h2 className="text-lg font-bold uppercase">{section.title}</h2>
+                                {!isEditMode && (
+                                    <div className="flex gap-1">
+                                        <AlertDialog onOpenChange={() => setRefinePrompt('')}>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={isAiWorking} title="Refine">
+                                                    <Edit className="h-3 w-3" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>Refine "{section.title}"</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Provide specific instructions for how the AI should rewrite this section. Be descriptive for the best results.
+                                                </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <div className="grid gap-2 py-4">
+                                                    <Label htmlFor={`refine-prompt-ieee-${index}`}>Your instructions</Label>
+                                                    <Textarea 
+                                                        id={`refine-prompt-ieee-${index}`}
+                                                        placeholder="e.g., Make this more formal and academic, or expand on the proposed methodology..."
+                                                        value={refinePrompt}
+                                                        onChange={(e) => setRefinePrompt(e.target.value)}
+                                                    />
+                                                </div>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction 
+                                                    onClick={() => handleRefineSection(index)}
+                                                    disabled={!refinePrompt || refinementState.isRefining}
+                                                >
+                                                    {refinementState.isRefining && refinementState.sectionIndex === index ? (
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    ) : null}
+                                                    Submit Refinement
+                                                </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => handleRegenerateSection(index)}
+                                            disabled={isAiWorking}
+                                            title="Regenerate"
+                                        >
+                                            {regenerationState.isRegenerating && regenerationState.sectionIndex === index ? (
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) : (
+                                                <RefreshCw className="h-3 w-3" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                             {isEditMode ? (
                                 <MarkdownEditor
+                                    id={`ieee-editor-${index}`}
                                     value={section.content}
                                     onChange={(newContent) => handleContentChange(index, newContent)}
+                                    onAiEdit={handleAiEdit}
                                     className="mb-4"
                                 />
                             ) : (
-                                <div className="text-sm font-serif leading-relaxed break-words w-full whitespace-normal">
+                                <div className={`text-sm font-serif leading-relaxed break-words w-full whitespace-normal transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
                                     <ReactMarkdown>{section.content}</ReactMarkdown>
                                 </div>
                             )}
                         </div>
-                    ))}
+                    )})}
                 </div>
             </div>
         );
@@ -553,8 +640,10 @@ export function PaperDrafter() {
                     )}
                     {isEditMode ? (
                         <MarkdownEditor 
+                            id={`std-editor-${index}`}
                             value={section.content}
                             onChange={(newContent) => handleContentChange(index, newContent)}
+                            onAiEdit={handleAiEdit}
                             className=""
                         />
                     ) : (
