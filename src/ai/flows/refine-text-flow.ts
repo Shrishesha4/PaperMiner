@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
   name: 'refineTextPrompt',
   input: { schema: RefineTextInputSchema.omit({ apiKey: true }) },
   output: { schema: RefineTextOutputSchema },
-  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
+  model: 'googleai/gemini-flash-latest',
   prompt: `You are an expert academic editor. Your task is to revise a piece of text based on the user's instructions.
 
 You will be given the selected text and a prompt from the user.
@@ -65,7 +65,7 @@ const refineTextFlow = ai.defineFlow(
   async ({ selectedText, userPrompt, apiKey }) => {
     const { output } = await prompt(
       { selectedText, userPrompt },
-      { auth: apiKey }
+      { config: { apiKey } }
     );
     return output!;
   }

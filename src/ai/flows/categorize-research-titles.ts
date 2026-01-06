@@ -34,7 +34,7 @@ const categorizeResearchTitlesPrompt = ai.definePrompt({
   name: 'categorizeResearchTitlesPrompt',
   input: { schema: z.object({titles: z.array(z.string())}) },
   output: { schema: CategorizeResearchTitlesOutputSchema },
-  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
+  model: 'googleai/gemini-flash-latest',
   prompt: `You are an expert in categorizing research paper titles. Given a list of titles, you will determine the most appropriate category for each paper. You will respond with a JSON array where each object contains the original title, its category, and a confidence level (0-1) for your categorization.
 
   Titles:
@@ -65,7 +65,7 @@ const categorizeResearchTitlesFlow = ai.defineFlow(
     const { output } = await categorizeResearchTitlesPrompt(
         { titles },
         {
-            auth: apiKey,
+            config: { apiKey },
         }
     );
     

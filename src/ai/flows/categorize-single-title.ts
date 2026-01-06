@@ -33,7 +33,7 @@ const categorizeSingleTitlePrompt = ai.definePrompt({
   name: 'categorizeSingleTitlePrompt',
   input: { schema: CategorizeSingleTitleInputSchema.omit({ apiKey: true }) },
   output: { schema: CategorizeSingleTitleOutputSchema },
-  model: 'googleai/gemini-2.5-flash-lite-preview-06-17',
+  model: 'googleai/gemini-flash-latest',
   prompt: `You are an expert at categorizing research paper titles. Determine the most specific and appropriate category for the following title.
 
 Respond with only the category name and a confidence score.
@@ -62,7 +62,7 @@ const categorizeSingleTitleFlow = ai.defineFlow(
     const { output } = await categorizeSingleTitlePrompt(
         { title },
         {
-            auth: apiKey,
+            config: { apiKey },
         }
     );
     
