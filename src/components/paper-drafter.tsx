@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
 import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save, Check, FileText, Columns, PenTool } from 'lucide-react';
 import { draftPaper } from '@/ai/flows/draft-paper-flow';
+import { draftIEEEPaper } from '@/ai/flows/draft-ieee-paper-flow';
 import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
 import { refineSection } from '@/ai/flows/refine-section-flow';
@@ -67,12 +68,65 @@ export function PaperDrafter() {
   const [refinePrompt, setRefinePrompt] = useState('');
   const [isExistingDraft, setIsExistingDraft] = useState(false);
   const [sourceAnalysisName, setSourceAnalysisName] = useState('Scratch');
+  const [showIEEERegenDialog, setShowIEEERegenDialog] = useState(false);
   
   // New States for View Modes
   const [isIEEEFormat, setIsIEEEFormat] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
   const draftGenerated = useRef(false);
+
+  // Sync view state from URL on mount
+  useEffect(() => {
+      const viewParam = searchParams.get('view');
+      if (viewParam === 'ieee') {
+          setIsIEEEFormat(true);
+      }
+  }, [searchParams]);
+
+  const handleIEEEViewToggle = (checked: boolean) => {
+      setIsIEEEFormat(checked);
+      
+      // Update URL without reloading
+      const newSearchParams = new URLSearchParams(searchParams.toString());
+      if (checked) {
+          newSearchParams.set('view', 'ieee');
+          // Ask if they want to regenerate specifically for IEEE if switching ON
+          if (paper && paper.sections.length > 0) {
+             setShowIEEERegenDialog(true);
+          }
+      } else {
+          newSearchParams.delete('view');
+      }
+      router.replace(`?${newSearchParams.toString()}`, { scroll: false });
+  };
+
+  const handleRegenToIEEE = async () => {
+      setShowIEEERegenDialog(false);
+      setIsLoading(true);
+      
+      let currentContextData: string | undefined;
+      if (analysisId) {
+        const analysis = history.find(h => h.id === analysisId);
+        if (analysis) {
+            currentContextData = analysis.contextData;
+        }
+      }
+
+      try {
+          const apiKey = getNextApiKey();
+          if (!apiKey) throw new Error("No API key available.");
+          
+          const result = await draftIEEEPaper({ title, contextData: currentContextData, apiKey });
+          setPaper(result);
+          toast({ title: "Paper Regenerated", description: "Your paper has been reformatted to IEEE standards." });
+      } catch (e: any) {
+          toast({ variant: 'destructive', title: 'Regeneration Failed', description: e.message });
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
 
 
   const generateDraft = useCallback(async (isFullRegen = false) => {
@@ -675,7 +729,7 @@ export function PaperDrafter() {
                 {/* View Toggles */}
                 <div className="flex items-center gap-2 border p-2 rounded-lg bg-muted/20">
                     <div className="flex items-center gap-2">
-                        <Switch id="ieee-mode" checked={isIEEEFormat} onCheckedChange={setIsIEEEFormat} />
+                        <Switch id="ieee-mode" checked={isIEEEFormat} onCheckedChange={handleIEEEViewToggle} />
                         <Label htmlFor="ieee-mode" className="flex items-center cursor-pointer">
                             <Columns className="w-4 h-4 mr-1" />
                             IEEE
@@ -749,6 +803,23 @@ export function PaperDrafter() {
         </div>
         
         {renderContent()}
+
+        <AlertDialog open={showIEEERegenDialog} onOpenChange={setShowIEEERegenDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Regenerate for IEEE Format?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You switched to IEEE view. Would you like to regenerate the paper content to strictly follow IEEE formatting guidelines (structure, citation style, tone)? 
+                        <br/><br/>
+                        <b>Note:</b> This will overwrite your current draft.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>No, just view layout</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRegenToIEEE}>Yes, Regenerate</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }

@@ -16,21 +16,25 @@ const paraphrasePrompt = ai.definePrompt({
   name: 'paraphrasePrompt',
   input: { schema: ParaphraseInputSchema.omit({ apiKey: true }) },
   output: { schema: ParaphraseOutputSchema },
-  model: 'googleai/gemini-flash-latest',
-  prompt: `You are an expert editor and writer. Your task is to rewrite the provided text to make it indistinguishable from human writing and to bypass AI detection tools.
+  model: 'googleai/gemini-3-pro-preview',
+  prompt: `You are an expert academic editor and writer. Your task is to rewrite the provided text to make it indistinguishable from human academic writing.
 
-Guidelines for rewriting:
-1.  **Vary Sentence Structure:** Mix short, punchy sentences with longer, complex ones. Avoid repetitive subject-verb-object patterns.
-2.  **Use Natural Idioms and Phrasing:** Employ vocabulary and turns of phrase that are common in high-quality human academic writing but less frequent in AI outputs.
-3.  **Avoid AI "Tells":** Do not use overused transition words like "Furthermore," "Moreover," "In conclusion," or "It is important to note" unless absolutely necessary and natural.
-4.  **Add Nuance and Imperfection:** AI often writes "perfectly" average text. Introduce slight stylistic quirks or specific, less generic examples where appropriate (without changing the meaning).
-5.  **Maintain Academic Tone:** While making it "human," ensure it remains formal and suitable for a research paper.
-6.  **Perplexity and Burstiness:** Increase the perplexity (unpredictability of words) and burstiness (variation in sentence structure) of the text.
+  **Core Objectives:**
+  1.  **Increase Burstiness:** AI text often has a monotonous sentence structure. You must vary sentence length. Mix short, direct sentences with longer, complex clauses to create a natural, human rhythm.
+  2.  **Increase Perplexity:** Use a diverse and sophisticated vocabulary. Avoid predictable word pairings. Choose precise adjectives and verbs that a native expert would use.
+  3.  **Eliminate "AI Tells":** Remove overused AI transition phrases such as "It is important to note," "Furthermore," "Moreover," "In conclusion," "In the realm of," or "crucial aspect." Use organic, conversational transitions instead.
+  4.  **Avoid Generic Buzzwords:** Minimize the use of repetitive words like "delve," "leverage," "underscore," "pivotal," "landscape," "showcase," or "navigate" unless they are the most precise terms available.
+  5.  **Maintain Academic Rigor:** While making the text sound human, do not lower the intellectual standard. Ensure the tone remains formal, objective, and suitable for publication.
 
-**Input Text:**
-"{{{text}}}"
+  **Constraints:**
+  -   Do **NOT** change the underlying technical meaning, facts, or data.
+  -   Preserve all Markdown formatting (headers, bolding, lists).
+  -   Ensure the grammar is flawless but natural.
 
-Rewrite this text now.`,
+  **Input Text:**
+  "{{{text}}}"
+
+  Rewrite this text now:`,
 });
 
 export const paraphraseFlow = ai.defineFlow(
