@@ -38,7 +38,7 @@ export default function RootLayout({
                   <AppHeader />
                   <div className="flex flex-1 h-full pt-16">
                     <HistorySidebar />
-                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 min-w-0">
                       {children}
                     </main>
                   </div>

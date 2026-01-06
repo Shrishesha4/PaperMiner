@@ -33,6 +33,7 @@ import { useHistory } from '@/hooks/use-history';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
+import MarkdownEditor from './markdown-editor';
 
 
 type RegenerationState = {
@@ -444,22 +445,22 @@ export function PaperDrafter() {
     // IEEE Format View
     if (isIEEEFormat) {
         return (
-            <div className="w-full bg-white text-black p-8 shadow-lg min-h-screen">
+            <div className="w-full max-w-full bg-white text-black p-8 shadow-lg min-h-screen">
                 <div className="text-center mb-8 border-b-2 border-black pb-4">
-                    <h1 className="text-3xl font-bold uppercase tracking-wide">{title}</h1>
+                    <h1 className="text-3xl font-bold uppercase tracking-wide break-words">{title}</h1>
                 </div>
-                <div className="columns-2 gap-8 text-justify">
+                <div className="columns-1 md:columns-2 gap-8 text-justify">
                     {paper.sections.map((section, index) => (
                         <div key={index} className="break-inside-avoid mb-6">
                             <h2 className="text-lg font-bold uppercase mb-2 border-b border-gray-400 pb-1">{section.title}</h2>
                             {isEditMode ? (
-                                <Textarea 
-                                    value={section.content} 
-                                    onChange={(e) => handleContentChange(index, e.target.value)}
-                                    className="w-full min-h-[200px] text-sm font-serif"
+                                <MarkdownEditor
+                                    value={section.content}
+                                    onChange={(newContent) => handleContentChange(index, newContent)}
+                                    className="mb-4"
                                 />
                             ) : (
-                                <div className="text-sm font-serif leading-relaxed">
+                                <div className="text-sm font-serif leading-relaxed break-words w-full whitespace-normal">
                                     <ReactMarkdown>{section.content}</ReactMarkdown>
                                 </div>
                             )}
@@ -480,7 +481,7 @@ export function PaperDrafter() {
 
             return (
             <Card key={index} data-section-index={index}>
-                <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
+                <CardHeader className="flex flex-col sm:flex-row flex-wrap justify-between sm:items-center border-b pb-2 mb-4 gap-2">
                     <CardTitle className="text-2xl font-bold">{section.title}</CardTitle>
                     <div className="flex gap-2 shrink-0">
                         {!isEditMode && (
@@ -551,13 +552,13 @@ export function PaperDrafter() {
                         </div>
                     )}
                     {isEditMode ? (
-                        <Textarea 
+                        <MarkdownEditor 
                             value={section.content}
-                            onChange={(e) => handleContentChange(index, e.target.value)}
-                            className="min-h-[300px] font-mono"
+                            onChange={(newContent) => handleContentChange(index, newContent)}
+                            className=""
                         />
                     ) : (
-                        <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
+                        <article className={`prose dark:prose-invert max-w-full w-full break-words transition-opacity whitespace-normal ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
                            <ReactMarkdown>{section.content}</ReactMarkdown>
                         </article>
                     )}
@@ -569,14 +570,14 @@ export function PaperDrafter() {
   }
 
   return (
-    <div className="w-full max-w-none space-y-6">
+    <div className="w-full max-w-full space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
              <div className="flex-1 min-w-0">
                 <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
                     <ArrowLeft className="mr-2 h-4 w-4"/>
                     Back
                 </Button>
-                <h1 className="text-3xl font-bold tracking-tight">
+                <h1 className="text-3xl font-bold tracking-tight break-words">
                     {title}
                 </h1>
             </div>
