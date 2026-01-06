@@ -6,11 +6,16 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useHistory } from '@/hooks/use-history';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { Download, Loader2, ArrowLeft } from 'lucide-react';
+import { Download, Loader2, ArrowLeft, Upload, FileText, Play } from 'lucide-react';
 import { TitleStudioBatch } from './title-studio-batch';
 import { continueInChatGPT } from '@/lib/chatgpt';
 import jsPDF from 'jspdf';
 import type { ExistingPaper } from '@/types/schemas';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Textarea } from './ui/textarea';
 
 
 type AnalysisData = {
@@ -32,6 +37,11 @@ export function TitleStudio() {
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [generationTopics, setGenerationTopics] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Custom Draft State
+  const [customDraftTitle, setCustomDraftTitle] = useState('');
+  const [customDraftContext, setCustomDraftContext] = useState('');
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   
   // Use a ref to track the ID of a newly created scratch analysis
   // so we can update it instead of creating new ones on subsequent generations.
@@ -170,6 +180,43 @@ export function TitleStudio() {
     doc.save(`PaperMiner-Generated-Titles.pdf`);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingFile(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const text = event.target?.result as string;
+        setCustomDraftContext(text);
+        setIsProcessingFile(false);
+        toast({ title: "File Loaded", description: "CSV data ready for context." });
+    };
+    reader.onerror = () => {
+        toast({ variant: "destructive", title: "Error", description: "Could not read file." });
+        setIsProcessingFile(false);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleStartCustomDraft = () => {
+      if (!customDraftTitle) {
+          toast({ variant: "destructive", title: "Missing Title", description: "Please enter a paper title." });
+          return;
+      }
+
+      const newAnalysis = addAnalysis({
+          name: `Custom Draft: ${customDraftTitle}`,
+          categorizedPapers: [],
+          failedPapers: [],
+          generatedTitles: [],
+          contextData: customDraftContext || undefined
+      });
+
+      router.push(`/paper-drafter?title=${encodeURIComponent(customDraftTitle)}&analysisId=${newAnalysis.id}`);
+  };
+
+
   if (isLoading || !analysis) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -194,22 +241,90 @@ export function TitleStudio() {
             }
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <Button onClick={handleDownloadPDF} variant="outline" disabled={generatedTitles.length === 0}>
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-            </Button>
-            <Button onClick={handleContinueInChatGPT} variant="outline" disabled={generatedTitles.length === 0}>
-                Continue in ChatGPT
-            </Button>
-        </div>
       </div>
-      <div className="flex-1 overflow-y-auto">
-        <TitleStudioBatch 
-          analysis={{...analysis, id: analysis.id || 'scratch'}}
-          generatedTitles={generatedTitles}
-          onTitlesGenerated={handleTitlesGenerated}
-        />
+      
+      <div className="flex-1 overflow-y-auto pt-4">
+        <Tabs defaultValue="generate" className="w-full h-full flex flex-col">
+            <div className="px-4 sm:px-6">
+                <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                    <TabsTrigger value="generate">Generate Titles</TabsTrigger>
+                    <TabsTrigger value="custom">Draft Custom Paper</TabsTrigger>
+                </TabsList>
+            </div>
+            
+            <TabsContent value="generate" className="flex-1 flex flex-col mt-4 data-[state=inactive]:hidden h-full">
+                 <div className="flex justify-end px-4 sm:px-6 pb-2 gap-2">
+                    <Button onClick={handleDownloadPDF} variant="outline" disabled={generatedTitles.length === 0} size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download PDF
+                    </Button>
+                    <Button onClick={handleContinueInChatGPT} variant="outline" disabled={generatedTitles.length === 0} size="sm">
+                        Continue in ChatGPT
+                    </Button>
+                </div>
+                <TitleStudioBatch 
+                  analysis={{...analysis, id: analysis.id || 'scratch'}}
+                  generatedTitles={generatedTitles}
+                  onTitlesGenerated={handleTitlesGenerated}
+                />
+            </TabsContent>
+            
+            <TabsContent value="custom" className="flex-1 p-4 sm:p-6 mt-4 data-[state=inactive]:hidden">
+                <Card className="max-w-2xl mx-auto">
+                    <CardHeader>
+                        <CardTitle>Start a Custom Draft</CardTitle>
+                        <CardDescription>
+                            Already have a title? Skip generation and start drafting immediately. You can also upload related data (CSV) to give the AI context.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="paper-title">Paper Title</Label>
+                            <Input 
+                                id="paper-title" 
+                                placeholder="Enter your research paper title..." 
+                                value={customDraftTitle}
+                                onChange={(e) => setCustomDraftTitle(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label htmlFor="context-file">Related Data (CSV) - Optional</Label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    id="context-file" 
+                                    type="file" 
+                                    accept=".csv"
+                                    onChange={handleFileChange}
+                                    className="cursor-pointer"
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Upload a CSV file containing data, results, or related literature. The AI will use this to ground the drafting process.
+                            </p>
+                        </div>
+                        
+                        {customDraftContext && (
+                            <div className="space-y-2">
+                                <Label>Context Preview</Label>
+                                <Textarea value={customDraftContext.slice(0, 500) + (customDraftContext.length > 500 ? '...' : '')} disabled className="min-h-[100px] text-xs font-mono" />
+                                <p className="text-xs text-muted-foreground text-right">{customDraftContext.length} characters loaded.</p>
+                            </div>
+                        )}
+                        
+                        <Button 
+                            className="w-full" 
+                            size="lg" 
+                            onClick={handleStartCustomDraft}
+                            disabled={!customDraftTitle || isProcessingFile}
+                        >
+                            {isProcessingFile ? <Loader2 className="mr-2 animate-spin" /> : <Play className="mr-2" />}
+                            Start Drafting
+                        </Button>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

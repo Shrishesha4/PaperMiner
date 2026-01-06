@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { paraphraseFlow } from './anti-ai-paraphraser';
 
 const RegenerateSectionInputSchema = z.object({
   paperTitle: z.string().describe('The main title of the research paper.'),
@@ -64,6 +65,13 @@ const regenerateSectionFlow = ai.defineFlow(
         { paperTitle, sectionTitle }, 
         { config: { apiKey } }
     );
-    return output!;
+    
+    if (!output) {
+        throw new Error('Failed to regenerate section.');
+    }
+
+    const { paraphrasedText } = await paraphraseFlow({ text: output.newContent, apiKey });
+
+    return { newContent: paraphrasedText };
   }
 );

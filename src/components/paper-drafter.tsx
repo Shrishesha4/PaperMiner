@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useApiKey } from '@/hooks/use-api-key';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
-import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save, Check } from 'lucide-react';
+import { ArrowLeft, Download, Edit, FileUp, Loader2, RefreshCw, Save, Check, FileText, Columns, PenTool } from 'lucide-react';
 import { draftPaper } from '@/ai/flows/draft-paper-flow';
 import type { DraftPaperOutput } from '@/types/schemas';
 import { regenerateSection } from '@/ai/flows/regenerate-section-flow';
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 import { Packer } from 'docx';
 import { saveAs } from 'file-saver';
 import { Document, Packer as DocxPacker, Paragraph, HeadingLevel, TextRun, AlignmentType, SymbolRun } from 'docx';
@@ -64,6 +65,10 @@ export function PaperDrafter() {
   const [refinePrompt, setRefinePrompt] = useState('');
   const [isExistingDraft, setIsExistingDraft] = useState(false);
   const [sourceAnalysisName, setSourceAnalysisName] = useState('Scratch');
+  
+  // New States for View Modes
+  const [isIEEEFormat, setIsIEEEFormat] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const draftGenerated = useRef(false);
 
@@ -76,19 +81,25 @@ export function PaperDrafter() {
       return;
     }
 
+    let currentContextData: string | undefined;
+
     // Check if we should load an existing draft
-    if (!isFullRegen && analysisId) {
+    if (analysisId) {
       const analysis = history.find(h => h.id === analysisId);
       if (analysis) {
-        const isAlreadyDraft = analysis.name.startsWith('Draft: ');
-        setIsExistingDraft(isAlreadyDraft);
-        setSourceAnalysisName(analysis.name.replace(/^Draft: /, ''));
+        currentContextData = analysis.contextData;
 
-        // Only load a saved draft if its title matches the current one
-        if (analysis.draftedPaper && analysis.draftedPaper.title === title) {
-            setPaper(analysis.draftedPaper);
-            setIsLoading(false);
-            return;
+        if (!isFullRegen) {
+            const isAlreadyDraft = analysis.name.startsWith('Draft: ');
+            setIsExistingDraft(isAlreadyDraft);
+            setSourceAnalysisName(analysis.name.replace(/^Draft: /, ''));
+
+            // Only load a saved draft if its title matches the current one
+            if (analysis.draftedPaper && analysis.draftedPaper.title === title) {
+                setPaper(analysis.draftedPaper);
+                setIsLoading(false);
+                return;
+            }
         }
       }
     }
@@ -98,7 +109,8 @@ export function PaperDrafter() {
     try {
       const apiKey = getNextApiKey();
       if (!apiKey) throw new Error("No API key available.");
-      const result = await draftPaper({ title, apiKey });
+      // Pass contextData if available
+      const result = await draftPaper({ title, contextData: currentContextData, apiKey });
       setPaper(result);
     } catch (e: any) {
       const errorMessage = e.message || 'An unknown error occurred.';
@@ -139,11 +151,14 @@ export function PaperDrafter() {
                 categorizedPapers: [],
                 failedPapers: [],
                 generatedTitles: [],
+                // Preserve context data if it was passed
+                contextData: history.find(h => h.id === analysisId)?.contextData
             });
             // Redirect to the new draft's URL to enable updating later
             router.replace(`/paper-drafter?title=${encodeURIComponent(title)}&analysisId=${newDraftAnalysis.id}`);
             setIsExistingDraft(true); // It's now an existing draft
         }
+        toast({ title: "Draft Saved", description: "Your paper draft has been saved successfully." });
     } catch (e) {
       toast({
         variant: 'destructive',
@@ -217,6 +232,13 @@ export function PaperDrafter() {
     } finally {
         setRegenerationState({ isRegenerating: false, sectionIndex: null });
     }
+  };
+  
+  const handleContentChange = (index: number, newContent: string) => {
+      if (!paper) return;
+      const newSections = [...paper.sections];
+      newSections[index] = { ...newSections[index], content: newContent };
+      setPaper({ sections: newSections });
   };
 
   const createDocxParagraphs = (content: string) => {
@@ -419,6 +441,36 @@ export function PaperDrafter() {
        )
     }
 
+    // IEEE Format View
+    if (isIEEEFormat) {
+        return (
+            <div className="w-full bg-white text-black p-8 shadow-lg min-h-screen">
+                <div className="text-center mb-8 border-b-2 border-black pb-4">
+                    <h1 className="text-3xl font-bold uppercase tracking-wide">{title}</h1>
+                </div>
+                <div className="columns-2 gap-8 text-justify">
+                    {paper.sections.map((section, index) => (
+                        <div key={index} className="break-inside-avoid mb-6">
+                            <h2 className="text-lg font-bold uppercase mb-2 border-b border-gray-400 pb-1">{section.title}</h2>
+                            {isEditMode ? (
+                                <Textarea 
+                                    value={section.content} 
+                                    onChange={(e) => handleContentChange(index, e.target.value)}
+                                    className="w-full min-h-[200px] text-sm font-serif"
+                                />
+                            ) : (
+                                <div className="text-sm font-serif leading-relaxed">
+                                    <ReactMarkdown>{section.content}</ReactMarkdown>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    // Standard / Card View
     return (
         <div className="space-y-6">
             {paper.sections.map((section, index) => {
@@ -431,6 +483,8 @@ export function PaperDrafter() {
                 <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-center border-b pb-2 mb-4 gap-2">
                     <CardTitle className="text-2xl font-bold">{section.title}</CardTitle>
                     <div className="flex gap-2 shrink-0">
+                        {!isEditMode && (
+                        <>
                             <AlertDialog onOpenChange={() => setRefinePrompt('')}>
                             <AlertDialogTrigger asChild>
                                 <Button 
@@ -486,6 +540,8 @@ export function PaperDrafter() {
                             )}
                             Regenerate
                         </Button>
+                        </>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="relative">
@@ -494,9 +550,17 @@ export function PaperDrafter() {
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     )}
-                    <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
-                       <ReactMarkdown>{section.content}</ReactMarkdown>
-                    </article>
+                    {isEditMode ? (
+                        <Textarea 
+                            value={section.content}
+                            onChange={(e) => handleContentChange(index, e.target.value)}
+                            className="min-h-[300px] font-mono"
+                        />
+                    ) : (
+                        <article className={`prose dark:prose-invert max-w-none transition-opacity ${isSectionLoading ? 'opacity-50' : 'opacity-100'}`}>
+                           <ReactMarkdown>{section.content}</ReactMarkdown>
+                        </article>
+                    )}
                 </CardContent>
             </Card>
             )})}
@@ -516,59 +580,81 @@ export function PaperDrafter() {
                     {title}
                 </h1>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-                <Button onClick={handleSaveOrUpdateDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
-                    {isSaving ? <Loader2 className="animate-spin" /> : (isExistingDraft ? <Check /> : <Save />)}
-                    <span className="ml-2 hidden sm:inline">{isExistingDraft ? 'Update Draft' : 'Save Draft'}</span>
-                </Button>
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" disabled={isLoading || !!error || isAiWorking}>
-                    <RefreshCw />
-                    <span className="ml-2 hidden sm:inline">Regen All</span>
+            
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+                {/* View Toggles */}
+                <div className="flex items-center gap-2 border p-2 rounded-lg bg-muted/20">
+                    <div className="flex items-center gap-2">
+                        <Switch id="ieee-mode" checked={isIEEEFormat} onCheckedChange={setIsIEEEFormat} />
+                        <Label htmlFor="ieee-mode" className="flex items-center cursor-pointer">
+                            <Columns className="w-4 h-4 mr-1" />
+                            IEEE
+                        </Label>
+                    </div>
+                    <div className="w-px h-6 bg-border mx-2" />
+                    <div className="flex items-center gap-2">
+                        <Switch id="edit-mode" checked={isEditMode} onCheckedChange={setIsEditMode} />
+                        <Label htmlFor="edit-mode" className="flex items-center cursor-pointer">
+                            <PenTool className="w-4 h-4 mr-1" />
+                            Edit
+                        </Label>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button onClick={handleSaveOrUpdateDraft} variant="default" size="sm" disabled={isLoading || !!error || isSaving || isAiWorking}>
+                        {isSaving ? <Loader2 className="animate-spin" /> : (isExistingDraft ? <Check /> : <Save />)}
+                        <span className="ml-2 hidden sm:inline">{isExistingDraft ? 'Update Draft' : 'Save Draft'}</span>
                     </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will regenerate the entire paper, replacing all current content and edits. This action cannot be undone.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => generateDraft(true)}>
-                        Yes, Regenerate
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-                </AlertDialog>
-                <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
-                {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
-                <span className="ml-2 hidden sm:inline">.docx</span>
-                </Button>
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
-                    <FileUp />
-                    <span className="ml-2 hidden sm:inline">Google Docs</span>
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" disabled={isLoading || !!error || isAiWorking}>
+                        <RefreshCw />
+                        <span className="ml-2 hidden sm:inline">Regen All</span>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will regenerate the entire paper, replacing all current content and edits. This action cannot be undone.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => generateDraft(true)}>
+                            Yes, Regenerate
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
+                    <Button onClick={handleDownloadDocx} variant="outline" size="sm" disabled={isLoading || !!error || isDownloading || isAiWorking}>
+                    {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+                    <span className="ml-2 hidden sm:inline">.docx</span>
                     </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Ready to Export</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        The paper content has been copied to your clipboard. Click the button below to open a new Google Doc, where you can paste the content.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => window.open('https://docs.new', '_blank')}>
-                        Open Google Docs
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-                </AlertDialog>
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" disabled={isLoading || !!error || isAiWorking} onClick={handleCopyToClipboard}>
+                        <FileUp />
+                        <span className="ml-2 hidden sm:inline">Google Docs</span>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Ready to Export</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            The paper content has been copied to your clipboard. Click the button below to open a new Google Doc, where you can paste the content.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => window.open('https://docs.new', '_blank')}>
+                            Open Google Docs
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
         </div>
         

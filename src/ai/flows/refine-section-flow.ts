@@ -9,6 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { paraphraseFlow } from './anti-ai-paraphraser';
 
 const RefineSectionInputSchema = z.object({
   sectionTitle: z.string().describe('The title of the section being refined (e.g., "Abstract").'),
@@ -66,6 +67,13 @@ const refineSectionFlow = ai.defineFlow(
       { sectionTitle, currentText, userPrompt },
       { config: { apiKey } }
     );
-    return output!;
+    
+    if (!output) {
+         throw new Error('Failed to refine section.');
+    }
+
+    const { paraphrasedText } = await paraphraseFlow({ text: output.refinedText, apiKey });
+    
+    return { refinedText: paraphrasedText };
   }
 );

@@ -9,9 +9,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { paraphraseFlow } from './anti-ai-paraphraser';
 
 const DraftPaperInputSchema = z.object({
   title: z.string().describe('The title of the research paper.'),
+  contextData: z.string().optional().describe('Optional context or data (e.g., from a CSV) to inform the paper content.'),
   apiKey: z.string().describe('The user-provided Gemini API key.'),
 });
 export type DraftPaperInput = z.infer<typeof DraftPaperInputSchema>;
@@ -37,14 +39,14 @@ const prompt = ai.definePrompt({
   input: { schema: DraftPaperInputSchema.omit({ apiKey: true }) },
   output: { schema: DraftPaperOutputSchema },
   model: 'googleai/gemini-flash-latest',
-  prompt: `You are an expert academic writer and researcher. Your task is to generate a well-structured initial draft for a research paper based on the provided title.
+  prompt: `You are an expert academic writer and researcher. Your task is to generate a well-structured initial draft for a research paper based on the provided title and optional context data.
 
 Create content for the following standard academic sections:
 - Abstract
 - Introduction
 - Literature Review
 - Materials and Methods
-- Results (describe plausible or expected results)
+- Results (describe plausible or expected results, utilizing the context data if provided)
 - Discussion
 - Conclusion
 
@@ -52,6 +54,12 @@ For each section, provide a concise but comprehensive draft that outlines the ke
 
 **Paper Title:**
 "{{{title}}}"
+
+{{#if contextData}}
+**Context / Data:**
+"{{{contextData}}}"
+Use this data/context to ground the Methodology, Results, and Discussion sections specifically.
+{{/if}}
 
 Generate the content for each section and return it in the specified JSON format.`,
   config: {
@@ -71,11 +79,21 @@ const draftPaperFlow = ai.defineFlow(
     inputSchema: DraftPaperInputSchema,
     outputSchema: DraftPaperOutputSchema,
   },
-  async ({ title, apiKey }) => {
+  async ({ title, contextData, apiKey }) => {
     const { output } = await prompt(
-        { title }, 
+        { title, contextData }, 
         { config: { apiKey } }
     );
-    return output!;
+    
+    if (!output) {
+      throw new Error('Failed to generate paper draft.');
+    }
+
+    const sections = await Promise.all(output.sections.map(async (section) => {
+        const { paraphrasedText } = await paraphraseFlow({ text: section.content, apiKey });
+        return { ...section, content: paraphrasedText };
+    }));
+
+    return { sections };
   }
 );

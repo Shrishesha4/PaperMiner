@@ -30,4 +30,5 @@ export type Analysis = {
   failedPapers: FailedPaper[];
   generatedTitles?: string[]; // To store titles from scratch sessions
   draftedPaper?: DraftedPaper;
+  contextData?: string;
 };
