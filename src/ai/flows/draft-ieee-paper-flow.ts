@@ -48,6 +48,15 @@ Write the content for the section: "**{{sectionTitle}}**".
 2.  **Context:** Use the provided data/context below to ground your writing. Do NOT hallucinate specific results if they aren't in the data; instead, describe the methodology or expected theoretical outcomes if data is missing.
 3.  **Detail:** Expand on every point. Use examples, theoretical background, and detailed explanations.
 4.  **No Headers:** Do not include the section title itself in the output, just the body text.
+5.  **Visuals:** Proactively identify opportunities for visual aids. Insert placeholders in the text where a diagram, graph, flow-chart or image would be valuable. 
+    -   Format them strictly as: 
+        \
+\n> **[FIGURE PLACEHOLDER]:** <Detailed description of what the diagram/image should depict to illustrate the preceding text.>
+\n\
+        OR
+        \
+\n> **[TABLE PLACEHOLDER]:** <Detailed description of the columns and data the table should contain.>
+\n\
 
 {{#if contextData}}
 **Grounding Data/Context:**
@@ -72,32 +81,32 @@ const sectionsToGenerate = [
   {
     title: 'Keywords',
     wordCount: '50',
-    description: 'List 5-8 relevant keywords. Start immediately with "Keywords—" Do not give a separate heading. do not use bullet points; separate keywords with commas. and append this at the end of the abstract. leaving two line breaks after the abstract.',
+    description: 'List 5-8 relevant keywords. Start immediately with "Keywords—".',
   },
   {
     title: 'I. INTRODUCTION',
     wordCount: '800',
-    description: 'Introduce the domain, the specific problem statement, the motivation for this research, and the contributions of this paper. Discuss the significance of the study.',
+    description: 'Introduce the domain, the specific problem statement, the motivation for this research, and the contributions of this paper. Discuss the significance of the study. Suggest a figure illustrating the high-level concept.',
   },
   {
     title: 'II. RELATED WORK',
     wordCount: '1000',
-    description: 'Provide a thorough literature review. Discuss at least 5-10 theoretical approaches or related studies in this field. Compare them to the proposed approach. do not use the DOI links directly; instead, add references at the end. and cite them appropriately in IEEE format within the text.',
+    description: 'Provide a thorough literature review. Discuss at least 5-10 theoretical approaches or related studies in this field. Compare them to the proposed approach. Suggest a comparison table.',
   },
   {
     title: 'III. METHODOLOGY',
     wordCount: '1200',
-    description: 'Detail the proposed system or methodology. Explain the algorithms, mathematical models, system architecture, and design choices in extreme depth. Use formatting for equations if necessary.',
+    description: 'Detail the proposed system or methodology. Explain the algorithms, mathematical models, system architecture, and design choices in extreme depth. Use formatting for equations if necessary. Include placeholders for System Architecture Diagrams and Flowcharts.',
   },
   {
     title: 'IV. EXPERIMENTAL SETUP',
     wordCount: '800',
-    description: 'Describe the simulation environment, datasets used (refer to Context Data if available), hardware/software specifications, and evaluation metrics.',
+    description: 'Describe the simulation environment, datasets used (refer to Context Data if available), hardware/software specifications, and evaluation metrics. Include a placeholder for a diagram of the experimental testbed.',
   },
   {
     title: 'V. RESULTS AND DISCUSSION',
     wordCount: '1200',
-    description: 'Present the results. Analyze them critically. Discuss trends, anomalies, and comparisons with existing methods. If data is provided, use it extensively. If not, describe plausible theoretical results.',
+    description: 'Present the results. Analyze them critically. Discuss trends, anomalies, and comparisons with existing methods. If data is provided, use it extensively. If not, describe plausible theoretical results. Include placeholders for Graphs (bar charts, line graphs) and Tables showing results.',
   },
   {
     title: 'VI. CONCLUSION',
@@ -107,7 +116,7 @@ const sectionsToGenerate = [
   {
     title: 'REFERENCES',
     wordCount: '300',
-    description: 'Generate a list of 15-20 plausible, high-quality citations in IEEE format (numbered [1], [2], etc.). as numbered bullets. Ensure they are relevant to the content discussed.',
+    description: 'Generate a list of 15-20 plausible, high-quality citations in IEEE format (numbered [1], [2], etc.).',
   },
 ];
 
@@ -118,6 +127,9 @@ const draftIEEEPaperFlow = ai.defineFlow(
     outputSchema: DraftIEEEPaperOutputSchema,
   },
   async ({ title, contextData, apiKey }) => {
+    // Generate sections in parallel to save time, but usually serial is better for coherence.
+    // However, given the strong "No Hallucination" req, treating them as independent modules grounded in the same context is often safer than allowing drift.
+    // We will run them in parallel batches to be efficient.
     
     const generatedSections = await Promise.all(
       sectionsToGenerate.map(async (sectionDef) => {
@@ -133,7 +145,13 @@ const draftIEEEPaperFlow = ai.defineFlow(
                 { config: { apiKey } }
             );
             
+            // Paraphrase immediately to ensure "Anti-AI" style
             if (output && output.content) {
+                // Skip paraphrasing for References to preserve citation format and avoid AI-rewrite errors
+                if (sectionDef.title === 'REFERENCES') {
+                    return { title: sectionDef.title, content: output.content };
+                }
+
                 const { paraphrasedText } = await paraphraseFlow({ text: output.content, apiKey });
                 return { title: sectionDef.title, content: paraphrasedText };
             }
